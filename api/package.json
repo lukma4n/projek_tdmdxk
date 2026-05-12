@@ -1,0 +1,42 @@
+{
+  "name": "dxk-api",
+  "version": "1.0.0",
+  "description": "DXK Workshop & Sparepart Management API",
+  "main": "src/app.js",
+  "type": "module",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "scripts": {
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js",
+    "db:migrate": "npx prisma migrate dev",
+    "db:seed": "npx prisma db seed",
+    "db:generate": "npx prisma generate",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.7.0",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.5.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^2.4.5",
+    "redis": "^4.7.0",
+    "xlsx": "^0.18.5",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9",
+    "prisma": "^6.7.0",
+    "supertest": "^7.2.2"
+  }
+}

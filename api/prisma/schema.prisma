@@ -1,0 +1,783 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id            Int      @id @default(autoincrement())
+  username      String   @unique
+  password_hash String
+  name          String
+  role          String
+  created_at    DateTime @default(now())
+
+  showroom_user_locations showroom_user_locations[]
+  sync_logs        sync_logs[]
+  hotlines_updated hotlines[]   @relation("HotlineStateUpdater")
+  opname_sessions  opname_sessions[]
+  opname_items     opname_items[]
+  audit_logs       audit_logs[]
+  kpb_followups    kpb_followups[]
+  showroom_document_followups showroom_document_followups[]
+  showroom_ksu_standards showroom_ksu_standards[]
+  showroom_unit_ksu_checks showroom_unit_ksu_checks[] @relation("KsuChecker")
+  showroom_unit_ksu_handover showroom_unit_ksu_checks[] @relation("KsuHandover")
+  showroom_opname_sessions showroom_opname_sessions[]
+  showroom_opname_reviews showroom_opname_sessions[] @relation("ShowroomOpnameReviewer")
+  showroom_opname_items showroom_opname_items[]
+  showroom_sales_order_margins showroom_sales_order_margins[]
+  showroom_opname_assignments showroom_opname_assignments[]
+  showroom_notifications showroom_notifications[]
+}
+
+model sync_logs {
+  id          Int      @id @default(autoincrement())
+  user_id     Int?
+  module      String
+  filename    String
+  rows_success Int
+  rows_error   Int
+  error_detail String?
+  synced_at   DateTime @default(now())
+
+  user users? @relation(fields: [user_id], references: [id])
+}
+
+model import_locks {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  module      String
+  reason      String
+  owner       String
+  metadata    String?
+  acquired_at DateTime @default(now())
+  expires_at  DateTime
+
+  @@index([expires_at])
+}
+
+model hotlines {
+  id               Int      @id @default(autoincrement())
+  no_hotline       String   @unique
+  branch_code      String
+  branch_name      String
+  tgl_hotline      DateTime
+  no_engine        String?
+  no_chassis       String?
+  no_polisi        String?
+  customer         String
+  pembawa          String?
+  no_telp          String?
+  jenis_po         String
+  qty_hotline      Int      @default(0)
+  qty_available    Int      @default(0)
+  amount_hotline   Int      @default(0)
+  qty_po           Int      @default(0)
+  qty_wo           Int      @default(0)
+  total_dp         Int      @default(0)
+  sisa_dp          Int      @default(0)
+  tgl_po_md        DateTime?
+  state            String
+  state_updated_at DateTime?
+  state_updated_by Int?
+  synced_at        DateTime @default(now())
+
+  @@index([state, synced_at])
+
+  state_updater users?         @relation("HotlineStateUpdater", fields: [state_updated_by], references: [id])
+  items         hotline_items[]
+}
+
+model hotline_items {
+  id               Int      @id @default(autoincrement())
+  hotline_id       Int
+  no_urut          Int
+  product_code     String
+  description      String?
+  price            Int?
+  qty_hotline      Int
+  qty_po           Int?
+  qty_consolidated Int?
+  no_po            String?
+  tgl_po           DateTime?
+  umur_po          Int?
+  qty_wo           Int?
+  no_wo            String?
+  tgl_wo           DateTime?
+  tgl_po_md        DateTime?
+
+  hotline hotlines @relation(fields: [hotline_id], references: [id], onDelete: Cascade)
+}
+
+model stock_parts {
+  id                  Int      @id @default(autoincrement())
+  branch_code         String
+  branch_name         String
+  profit_center       Int?
+  kategori            String
+  product_code        String   @unique
+  product_name        String
+  aging_raw           String?
+  aging_days          Int
+  lokasi              String?
+  movement_aging_raw  String?
+  movement_aging_days Int?
+  qty_titipan         Float    @default(0)
+  amount_titipan      Float    @default(0)
+  qty_rfa             Float    @default(0)
+  amount_rfa          Float    @default(0)
+  qty_reserved        Float    @default(0)
+  amount_reserved     Float    @default(0)
+  harga_satuan        Float    @default(0)
+  qty_available       Float    @default(0)
+  amount_available    Float    @default(0)
+  total_stock_qty     Float    @default(0)
+  total_stock_amt     Float    @default(0)
+  ranking             String?
+  synced_at           DateTime @default(now())
+
+  locations stock_part_locations[]
+
+  @@index([aging_days])
+}
+
+model stock_part_locations {
+  id               Int      @id @default(autoincrement())
+  product_code     String
+  product_name     String?
+  kategori         String?
+  location         String
+  qty_titipan      Float    @default(0)
+  amount_titipan   Float    @default(0)
+  qty_rfa          Float    @default(0)
+  amount_rfa       Float    @default(0)
+  qty_reserved     Float    @default(0)
+  amount_reserved  Float    @default(0)
+  harga_satuan     Float    @default(0)
+  qty_available    Float    @default(0)
+  amount_available Float    @default(0)
+  total_stock_qty  Float    @default(0)
+  total_stock_amt  Float    @default(0)
+  aging_days       Int      @default(0)
+  ranking          String?
+  synced_at        DateTime @default(now())
+
+  part stock_parts @relation(fields: [product_code], references: [product_code], onDelete: Cascade)
+
+  @@index([product_code])
+  @@index([location])
+  @@index([kategori])
+  @@unique([product_code, location])
+}
+
+model work_orders {
+  id                    Int      @id @default(autoincrement())
+  branch_code           String
+  branch_name           String
+  wo_number             String   @unique
+  state                 String
+  date_confirm          DateTime?
+  type                  String
+  main_dealer           String?
+  login                 String?
+  mechanic              String?
+  no_polisi             String?
+  customer_code         String?
+  customer_name         String?
+  customer_mobile       String?
+  unit_name             String?
+  engine_number         String?
+  cassis_number         String?
+  workshop_category     String?
+  category_name         String?
+  product_name          String?
+  product_code          String?
+  quantity              Float    @default(0)
+  het                   Float    @default(0)
+  discount              Float    @default(0)
+  discount_amount       Float    @default(0)
+  dpp                   Float    @default(0)
+  ppn                   Float    @default(0)
+  hpp                   Float    @default(0)
+  gp_total              Float    @default(0)
+  total                 Float    @default(0)
+  total_dengan_diskon   Float    @default(0)
+  status_id_pajak       String?
+  nilai_penyisihan      Float    @default(0)
+  faktur_pajak          String?
+  alamat_konsumen       String?
+  nomor_batal           String?
+  alasan_batal          String?
+  tanggal_batal         DateTime?
+  tanggal_confirm_batal DateTime?
+  kecamatan             String?
+  ring                  Int?
+  pembawa               String?
+  no_ktp                String?
+  npwp                  String?
+  alasan_ke_ahass       String?
+  dealer_sendiri        String?
+  tahun_perakitan       Int?
+  create_date           DateTime?
+  km                    Int?
+  amount_voucher        Float    @default(0)
+  cuci                  String?
+  synced_at             DateTime @default(now())
+
+  @@index([state, date_confirm])
+  @@index([mechanic, state])
+  @@index([type, state])
+}
+
+model opname_sessions {
+  id          Int      @id @default(autoincrement())
+  session_name String
+  pic_opname_name String?
+  workshop_head_name String?
+  branch_head_name String?
+  baso_signed_file String?
+  submitted_at DateTime?
+  kabeng_approved_at DateTime?
+  sent_to_kacab_at DateTime?
+  kacab_approved_at DateTime?
+  baso_printed_at DateTime?
+  baso_uploaded_at DateTime?
+  rejection_reason String?
+  start_date  DateTime @default(now())
+  end_date    DateTime?
+  status      String   @default("active")
+  created_by  Int
+  created_at  DateTime @default(now())
+
+  creator users          @relation(fields: [created_by], references: [id])
+  items   opname_items[]
+}
+
+model opname_items {
+  id          Int      @id @default(autoincrement())
+  session_id  Int
+  product_code String
+  product_name String
+  qty_system  Float
+  qty_physical Float
+  selisih     Float
+  status      String
+  scanned_at  DateTime @default(now())
+  scanned_by  Int
+
+  session opname_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  scanner users            @relation(fields: [scanned_by], references: [id])
+}
+
+model audit_logs {
+  id         Int      @id @default(autoincrement())
+  table_name String
+  record_id  String
+  field_name String
+  old_value  String?
+  new_value  String?
+  user_id    Int
+  changed_at DateTime @default(now())
+
+  user users @relation(fields: [user_id], references: [id])
+}
+
+model customers {
+  id              Int      @id @default(autoincrement())
+
+  // Identitas Konsumen
+  customer_name   String
+  customer_mobile String?
+  no_ktp          String?
+  alamat_konsumen String?
+  kecamatan       String?
+  kabupaten       String?
+  kelurahan       String?
+
+  // Data Penjualan
+  so_number       String   @unique
+  so_date         DateTime
+  sales_type      String?
+  payment_type    String?
+  salesman        String?
+  leasing         String?
+  tenor           String?
+
+  // Data Motor
+  product_code    String?
+  model           String?
+  type            String?
+  category        String?
+  color           String?
+  no_frame        String?
+  no_engine       String?
+
+  // Harga
+  harga_otr       Float    @default(0)
+  diskon          Float    @default(0)
+  dp              Float    @default(0)
+
+  // Metadata
+  branch_code     String   @default("DXK")
+  state           String   @default("aktif")
+  synced_at       DateTime @default(now())
+
+  followups       kpb_followups[]
+}
+
+model kpb_followups {
+  id          Int      @id @default(autoincrement())
+  customer_id Int
+  kpb_level   String
+  status      String
+  note        String?
+  followup_at DateTime @default(now())
+  created_by  Int
+  created_at  DateTime @default(now())
+
+  customer customers @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  creator  users     @relation(fields: [created_by], references: [id])
+
+  @@index([customer_id, kpb_level, followup_at])
+  @@index([status, followup_at])
+}
+
+model showroom_document_followups {
+  id            Int      @id @default(autoincrement())
+  document_type String
+  engine_number String
+  status        String
+  note          String?
+  followup_at   DateTime @default(now())
+  created_by    Int
+  created_at    DateTime @default(now())
+
+  creator users @relation(fields: [created_by], references: [id])
+
+  @@index([document_type, engine_number, followup_at])
+  @@index([document_type, status, followup_at])
+}
+
+model showroom_stock_units {
+  id                     Int      @id @default(autoincrement())
+  branch_code            String
+  branch_name            String
+  profit_center          String?
+  product_type           String?
+  color                  String?
+  incoming_date          DateTime?
+  stock_aging_raw        String?
+  stock_aging_days       Int      @default(0)
+  location               String?
+  movement_aging_raw     String?
+  movement_aging_days    Int      @default(0)
+  engine_number          String   @unique
+  chassis_number         String?
+  engine_state           String?
+  year                   String?
+  quantity               Int      @default(0)
+  cost                   Float    @default(0)
+  freight_cost           Float    @default(0)
+  last_movement          String?
+  last_transaction       String?
+  branch_destination     String?
+  parent_category        String?
+  category_name          String?
+  series                 String?
+  incoming_date_mutation DateTime?
+  synced_at              DateTime @default(now())
+
+  @@index([series])
+  @@index([engine_state])
+  @@index([stock_aging_days])
+}
+
+model showroom_otr_prices {
+  id             Int      @id @default(autoincrement())
+  product_code   String   @unique
+  description    String?
+  model_name     String?
+  otr_price      Float    @default(0)
+  off_road_price Float    @default(0)
+  dealer_purchase_price Float @default(0)
+  effective_date DateTime?
+  source_file    String?
+  source_file_off_purchase String?
+  synced_at      DateTime @default(now())
+
+  @@index([model_name])
+  @@index([effective_date])
+}
+
+model showroom_bbn_prices {
+  id           Int      @id @default(autoincrement())
+  product_code String
+  city_code    String?
+  city_name    String
+  notice       Float    @default(0)
+  pnbp_stck    Float    @default(0)
+  jasa         Float    @default(0)
+  jasa_area    Float    @default(0)
+  fee_pusat    Float    @default(0)
+  total        Float    @default(0)
+  source_file  String?
+  synced_at    DateTime @default(now())
+
+  @@unique([product_code, city_name])
+  @@index([product_code])
+  @@index([city_name])
+}
+
+model showroom_leasing_programs {
+  id            Int      @id @default(autoincrement())
+  product_code  String
+  series        String?
+  tenor         Int
+  leasing       String
+  finco_subsidy Float    @default(0)
+  source_file   String?
+  synced_at     DateTime @default(now())
+
+  @@unique([product_code, tenor, leasing])
+  @@index([product_code])
+  @@index([leasing, tenor])
+}
+
+model showroom_series_aliases {
+  id         Int      @id @default(autoincrement())
+  keyword    String   @unique
+  series_key String
+  priority   Int      @default(100)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([series_key])
+  @@index([priority])
+}
+
+model showroom_leasing_tac_programs {
+  id           Int      @id @default(autoincrement())
+  leasing      String
+  series_key   String
+  dp_category  String
+  tenor        Int
+  amount       Float    @default(0)
+  period_start DateTime?
+  period_end   DateTime?
+  is_active    Boolean  @default(true)
+  source_file  String?
+  synced_at    DateTime @default(now())
+
+  @@unique([leasing, series_key, dp_category, tenor, period_start])
+  @@index([leasing, series_key])
+  @@index([period_start, period_end])
+}
+
+model showroom_leasing_promo_schemes {
+  id                    Int      @id @default(autoincrement())
+  leasing               String
+  scheme_name           String   @default("Dana Promosi Scheme")
+  otr_min               Float    @default(0)
+  otr_max               Float    @default(999999999999)
+  tenor                 Int      @default(0)
+  dp_min_percent        Float    @default(0)
+  dp_max_percent        Float    @default(100)
+  gross_amount          Float    @default(0)
+  branch_deposit_amount Float    @default(0)
+  amount                Float    @default(0)
+  period_start          DateTime?
+  period_end            DateTime?
+  is_active             Boolean  @default(true)
+  source_file           String?
+  synced_at             DateTime @default(now())
+
+  @@unique([leasing, otr_min, otr_max, tenor, dp_min_percent, dp_max_percent, period_start])
+  @@index([leasing, otr_min, otr_max])
+  @@index([period_start, period_end])
+}
+
+model showroom_md_programs {
+  id              Int      @id @default(autoincrement())
+  product_code    String
+  sale_type       String
+  ahm_discount    Float    @default(0)
+  md_discount     Float    @default(0)
+  dealer_discount Float    @default(0)
+  total_discount  Float    @default(0)
+  area            String?
+  program_name    String?
+  document_number String?
+  period_start    DateTime?
+  period_end      DateTime?
+  is_active       Boolean  @default(true)
+  source_file     String?
+  synced_at       DateTime @default(now())
+
+  @@unique([product_code, sale_type, document_number, period_start])
+  @@index([product_code])
+  @@index([sale_type])
+  @@index([period_start, period_end])
+}
+
+model showroom_ksu_standards {
+  id                    Int      @id @default(autoincrement())
+  product_type          String   @unique
+  series                String?
+  helmet_required       Boolean  @default(true)
+  service_book_required Boolean  @default(true)
+  tool_kit_required     Boolean  @default(true)
+  mirror_required       Boolean  @default(true)
+  battery_required      Boolean  @default(true)
+  standard_battery_type String?
+  is_verified           Boolean  @default(false)
+  notes                 String?
+  updated_by            Int?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  updater users? @relation(fields: [updated_by], references: [id])
+
+  @@index([series])
+  @@index([standard_battery_type])
+}
+
+model showroom_unit_ksu_checks {
+  id                  Int       @id @default(autoincrement())
+  engine_number       String    @unique
+  has_helmet          Boolean   @default(false)
+  has_service_book    Boolean   @default(false)
+  has_tool_kit        Boolean   @default(false)
+  has_mirror          Boolean   @default(false)
+  has_battery         Boolean   @default(false)
+  actual_battery_type String?
+  status              String    @default("belum_dicek")
+  notes               String?
+  checked_by          Int?
+  checked_at          DateTime?
+  handed_over_by      Int?
+  handed_over_at      DateTime?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+
+  checker users? @relation("KsuChecker", fields: [checked_by], references: [id])
+  handover_user users? @relation("KsuHandover", fields: [handed_over_by], references: [id])
+
+  @@index([status])
+  @@index([actual_battery_type])
+}
+
+model showroom_opname_sessions {
+  id               Int       @id @default(autoincrement())
+  session_code     String    @unique
+  opname_type      String
+  target_location  String?
+  status           String    @default("draft")
+  pic_so_name      String?
+  adh_name         String?
+  branch_head_name String?
+  rfa_reason       String?
+  rejection_reason String?
+  baso_signed_file String?
+  reviewed_by      Int?
+  adh_approved_by  Int?
+  kacab_approved_by Int?
+  created_by       Int
+  created_at       DateTime  @default(now())
+  confirmed_at     DateTime?
+  submitted_at     DateTime?
+  adh_approved_at  DateTime?
+  sent_to_kacab_at DateTime?
+  kacab_approved_at DateTime?
+  adh_done_at      DateTime?
+  rfa_at           DateTime?
+  approved_at      DateTime?
+  rejected_at      DateTime?
+  baso_printed_at  DateTime?
+  baso_uploaded_at DateTime?
+  baso_verified_at DateTime?
+  closed_at        DateTime?
+  completed_at     DateTime?
+
+  creator users @relation(fields: [created_by], references: [id])
+  reviewer users? @relation("ShowroomOpnameReviewer", fields: [reviewed_by], references: [id])
+  items   showroom_opname_items[]
+  assignments showroom_opname_assignments[]
+  notifications showroom_notifications[]
+
+  @@index([opname_type, status])
+  @@index([created_at])
+}
+
+model showroom_opname_items {
+  id                Int       @id @default(autoincrement())
+  session_id        Int
+  reference_key     String
+  secondary_key     String?
+  display_name      String?
+  system_location   String?
+  physical_location String?
+  status            String    @default("belum_scan")
+  scanned_at        DateTime?
+  scanned_by        Int?
+  photo_url         String?
+  geo_lat           Float?
+  geo_lng           Float?
+  notes             String?
+
+  session showroom_opname_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  scanner users? @relation(fields: [scanned_by], references: [id])
+
+  @@unique([session_id, reference_key])
+  @@index([session_id, status])
+  @@index([reference_key])
+}
+
+model showroom_opname_assignments {
+  id           Int    @id @default(autoincrement())
+  session_id   Int
+  user_id      Int
+  location_name String
+  is_primary   Boolean @default(true)
+  created_at   DateTime @default(now())
+
+  session showroom_opname_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  user    users  @relation(fields: [user_id], references: [id])
+
+  @@unique([session_id, user_id, location_name])
+  @@index([session_id, location_name])
+}
+
+model showroom_notifications {
+  id          Int      @id @default(autoincrement())
+  session_id  Int
+  user_id     Int?
+  type        String
+  message     String
+  data        String?
+  is_read     Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  session showroom_opname_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  user    users? @relation(fields: [user_id], references: [id])
+
+  @@index([session_id, is_read])
+  @@index([user_id, is_read])
+}
+
+model showroom_sales_order_margins {
+  id                Int      @id @default(autoincrement())
+  so_number         String   @unique
+  so_date           DateTime
+  customer_name     String
+  customer_phone    String?
+  customer_address  String?
+  salesman          String?
+  payment_type      String   @default("cash")
+  finance_company   String?
+  tenor             Int?
+  down_payment      Int      @default(0)
+  engine_number     String?
+  chassis_number    String?
+  product_type      String?
+  series            String?
+  color             String?
+  year              String?
+  location          String?
+  otr_price         Int      @default(0)
+  purchase_price    Int      @default(0)
+  deal_price        Int      @default(0)
+  customer_discount Int      @default(0)
+  dealer_subsidy    Int      @default(0)
+  leasing_subsidy   Int      @default(0)
+  cashback          Int      @default(0)
+  sales_commission  Int      @default(0)
+  mediator_commission Int    @default(0)
+  accessory_cost    Int      @default(0)
+  gift_cost         Int      @default(0)
+  other_cost        Int      @default(0)
+  margin_initial    Int      @default(0)
+  total_deduction   Int      @default(0)
+  margin_remaining  Int      @default(0)
+  margin_percent    Float    @default(0)
+  margin_status     String   @default("aman")
+  notes             String?
+  status            String   @default("draft")
+  created_by        Int
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  creator users @relation(fields: [created_by], references: [id])
+
+  @@index([so_date])
+  @@index([engine_number])
+  @@index([margin_status])
+}
+
+model showroom_stnks {
+  id                 Int      @id @default(autoincrement())
+  branch_code        String
+  branch_name        String
+  stnk_name          String?
+  customer_code      String?
+  customer_address   String?
+  sale_order_number  String?
+  receipt_number     String?
+  receipt_date       DateTime?
+  stnk_location      String?
+  engine_number      String   @unique
+  stnk_ready_date    DateTime?
+  stnk_expired_date  DateTime?
+  police_number      String?
+  mobile             String?
+  applicant_name     String?
+  age_raw            String?
+  salesman           String?
+  finance_company    String?
+  synced_at          DateTime @default(now())
+
+  @@index([stnk_location])
+  @@index([stnk_ready_date])
+  @@index([stnk_expired_date])
+  @@index([age_raw])
+}
+
+model showroom_bpkbs {
+  id                    Int      @id @default(autoincrement())
+  branch_code           String
+  branch_name           String
+  stnk_name             String?
+  applicant_name        String?
+  customer_address      String?
+  receipt_number        String?
+  receipt_date          DateTime?
+  bpkb_location         String?
+  engine_number         String   @unique
+  bpkb_number           String?
+  bpkb_ready_date       DateTime?
+  finance_company       String?
+  invoice_number        String?
+  customer_phone        String?
+  salesman              String?
+  requestor_name        String?
+  age_raw               String?
+  overdue_days          Int      @default(0)
+  synced_at             DateTime @default(now())
+
+  @@index([bpkb_location])
+  @@index([bpkb_ready_date])
+  @@index([overdue_days])
+}
+
+model showroom_user_locations {
+  id            Int    @id @default(autoincrement())
+  user_id       Int
+  location_name String
+  user          users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, location_name])
+}

@@ -1,0 +1,111 @@
+import { prisma } from '../config/db.js'
+import { getCache, setCache } from '../config/redis.js'
+
+export async function getSummary(req, res, next) {
+  try {
+    const cacheKey = 'dashboard:summary'
+    const cached = await getCache(cacheKey)
+    
+    if (cached) {
+      return res.json(JSON.parse(cached))
+    }
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const [totalWO, totalHotline, criticalStock, openWO, attentionStock, syncLogs, moduleCounts] = await Promise.all([
+      prisma.work_orders.count({
+        where: {
+          date_confirm: { gte: today },
+          state: 'done',
+        },
+      }),
+      prisma.hotlines.count({
+        where: {
+          state: { in: ['Approved', 'Waiting_For_Approval'] },
+        },
+      }),
+      prisma.stock_parts.count({
+        where: { aging_days: { gt: 365 } },
+      }),
+      prisma.work_orders.count({
+        where: { state: 'open' },
+      }),
+      prisma.stock_parts.count({
+        where: {
+          aging_days: { gte: 180, lte: 365 },
+        },
+      }),
+      prisma.sync_logs.findMany({
+        orderBy: { synced_at: 'desc' },
+        take: 20,
+      }),
+      Promise.all([
+        prisma.hotlines.count(),
+        prisma.stock_parts.count(),
+        prisma.work_orders.count(),
+        prisma.customers.count({ where: { branch_code: 'DXK' } }),
+      ]),
+    ])
+
+    const revenue = await prisma.work_orders.aggregate({
+      where: {
+        date_confirm: { gte: today },
+        state: 'done',
+      },
+      _sum: { total: true },
+    })
+
+    const moduleLabels = {
+      hotline: 'Hotline',
+      stock: 'Stock',
+      workshop: 'Workshop',
+      sales: 'Data Konsumen',
+    }
+    const countMap = {
+      hotline: moduleCounts[0],
+      stock: moduleCounts[1],
+      workshop: moduleCounts[2],
+      sales: moduleCounts[3],
+    }
+    const latestByModule = new Map()
+    for (const log of syncLogs) {
+      if (!latestByModule.has(log.module)) latestByModule.set(log.module, log)
+    }
+
+    const result = {
+      totalWO,
+      totalHotline,
+      criticalStock,
+      openWO,
+      attentionStock,
+      revenue: revenue._sum.total || 0,
+      alerts: {
+        critical: [
+          ...(criticalStock > 0 ? [{ type: 'stock', message: `${criticalStock} part aging > 365 hari`, path: '/stock' }] : []),
+        ],
+        attention: [
+          ...(attentionStock > 0 ? [{ type: 'stock', message: `${attentionStock} part aging 180-365 hari`, path: '/stock' }] : []),
+          ...(openWO > 0 ? [{ type: 'workshop', message: `${openWO} WO masih open`, path: '/workshop' }] : []),
+        ],
+      },
+      freshness: ['hotline', 'stock', 'workshop', 'sales'].map((module) => {
+        const log = latestByModule.get(module)
+        return {
+          module,
+          label: moduleLabels[module],
+          last_import_at: log?.synced_at || null,
+          filename: log?.filename || null,
+          rows_success: log?.rows_success || 0,
+          rows_error: log?.rows_error || 0,
+          total_rows: countMap[module] || 0,
+        }
+      }),
+    }
+
+    await setCache(cacheKey, JSON.stringify(result), 300)
+    res.json(result)
+  } catch (error) {
+    next(error)
+  }
+}

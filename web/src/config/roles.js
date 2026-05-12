@@ -1,0 +1,46 @@
+// Shared role definitions — single source of truth for frontend routing and guards.
+// Backend authorization uses these same role strings.
+
+export const ROLES = {
+  ADMIN_SHOWROOM: 'Admin',
+  PIC_STOCK_OPNAME: 'PIC Stock opname',
+  LEAD_PIC_STOCK_OPNAME: 'Lead PIC Stock opname',
+  ADH: 'ADH',
+  KEPALA_CABANG: 'Kepala Cabang',
+  KEPALA_BENGKEL: 'Kepala Bengkel',
+  FRONDESK: 'Frondesk',
+  SERVICE_ADVISOR: 'Service Advisor',
+  PARTMAN: 'Partman',
+  ADMIN_CRM: 'CRM',
+}
+
+// Route-level allowed roles
+export const HOTLINE_ROLES = [ROLES.SERVICE_ADVISOR, ROLES.PARTMAN, ROLES.KEPALA_BENGKEL]
+export const STOCK_ROLES = [ROLES.SERVICE_ADVISOR, ROLES.PARTMAN, ROLES.KEPALA_BENGKEL]
+export const WORKSHOP_ROLES = [ROLES.FRONDESK, ROLES.SERVICE_ADVISOR, ROLES.KEPALA_BENGKEL]
+export const PROGRAM_ROLES = [ROLES.SERVICE_ADVISOR, ROLES.KEPALA_BENGKEL]
+export const CUSTOMER_ROLES = [ROLES.ADMIN_CRM, ROLES.SERVICE_ADVISOR, ROLES.KEPALA_BENGKEL]
+export const FOLLOWUP_ROLES = [ROLES.ADMIN_CRM, ROLES.FRONDESK, ROLES.SERVICE_ADVISOR, ROLES.KEPALA_BENGKEL]
+export const OPNAME_ROLES = [ROLES.PARTMAN, ROLES.KEPALA_BENGKEL, ROLES.KEPALA_CABANG]
+export const ADMIN_ROLES = [ROLES.KEPALA_BENGKEL]
+export const MANAGEMENT_ROLES = [ROLES.KEPALA_BENGKEL, ROLES.KEPALA_CABANG]
+export const DASHBOARD_BENGKEL_ROLES = [
+  ROLES.KEPALA_CABANG,
+  ROLES.FRONDESK,
+  ROLES.SERVICE_ADVISOR,
+  ROLES.KEPALA_BENGKEL,
+  ROLES.PARTMAN,
+]
+export const SHOWROOM_ROLES = [ROLES.ADMIN_SHOWROOM, ROLES.KEPALA_CABANG]
+export const SHOWROOM_SALES_ORDER_ROLES = [ROLES.ADMIN_SHOWROOM, ROLES.KEPALA_CABANG]
+export const SHOWROOM_OPNAME_ROLES = [ROLES.PIC_STOCK_OPNAME, ROLES.LEAD_PIC_STOCK_OPNAME, ROLES.ADH, ROLES.KEPALA_CABANG]
+export const SHOWROOM_DOCUMENT_STOCK_ROLES = [ROLES.ADMIN_SHOWROOM]
+export const DOCUMENT_FOLLOWUP_ROLES = [ROLES.ADMIN_CRM]
+
+// Default redirects after login
+export function getDefaultRoute(role) {
+  if (role === ROLES.ADMIN_SHOWROOM) return '/showroom/dashboard'
+  if (role === ROLES.ADMIN_CRM) return '/follow-up-kpb'
+  if (role === ROLES.ADH || role === ROLES.PIC_STOCK_OPNAME || role === ROLES.LEAD_PIC_STOCK_OPNAME) return '/showroom/opname-unit'
+  return '/'
+}

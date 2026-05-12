@@ -1,0 +1,200 @@
+import fetchWithAuth from './fetchWithAuth.js'
+
+// Dashboard
+export const getShowroomDashboard = () => fetchWithAuth('/showroom/dashboard')
+
+// Sales Order Margins
+export const getSalesOrderMargins = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/sales-order-margins${query ? '?' + query : ''}`)
+}
+export const previewSalesOrderMargin = (data) => fetchWithAuth('/showroom/sales-order-margins/preview', { method: 'POST', body: data })
+export const createSalesOrderMargin = (data) => fetchWithAuth('/showroom/sales-order-margins', { method: 'POST', body: data })
+export const updateSalesOrderMargin = (id, data) => fetchWithAuth(`/showroom/sales-order-margins/${id}`, { method: 'PATCH', body: data })
+
+// Stock Units
+export const getShowroomStockUnits = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/stock-units${query ? '?' + query : ''}`)
+}
+export const getShowroomStockUnitSummary = () => fetchWithAuth('/showroom/stock-units/summary')
+export const getShowroomStockUnitFilters = () => fetchWithAuth('/showroom/stock-units/filters')
+export const getShowroomUnitKsu = (engineNumber) => fetchWithAuth(`/showroom/stock-units/${encodeURIComponent(engineNumber)}/ksu`)
+export const updateShowroomUnitKsu = (engineNumber, data) => fetchWithAuth(`/showroom/stock-units/${encodeURIComponent(engineNumber)}/ksu`, { method: 'PATCH', body: data })
+export const getShowroomKsuStandards = () => fetchWithAuth('/showroom/ksu-standards')
+export const updateShowroomKsuStandard = (productType, data) => fetchWithAuth(`/showroom/ksu-standards/${encodeURIComponent(productType)}`, { method: 'PATCH', body: data })
+
+// Upload imports
+export const previewShowroomStockUnit = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/stock-units/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const uploadShowroomStockUnit = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/stock-units/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+
+// STNK
+export const getShowroomStnks = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/stnks${query ? '?' + query : ''}`)
+}
+export const getShowroomStnkSummary = () => fetchWithAuth('/showroom/stnks/summary')
+export const getShowroomStnkFilters = () => fetchWithAuth('/showroom/stnks/filters')
+export const previewShowroomStnk = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/stnks/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const uploadShowroomStnk = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/stnks/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+
+// BPKB
+export const getShowroomBpkbs = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/bpkbs${query ? '?' + query : ''}`)
+}
+export const getShowroomBpkbSummary = () => fetchWithAuth('/showroom/bpkbs/summary')
+export const getShowroomBpkbFilters = () => fetchWithAuth('/showroom/bpkbs/filters')
+export const previewShowroomBpkb = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/bpkbs/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const uploadShowroomBpkb = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/bpkbs/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+
+// Document Followups
+export const getShowroomDocumentFollowups = (type, params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/document-followups/${type}${query ? '?' + query : ''}`)
+}
+export const createShowroomDocumentFollowup = (type, engineNumber, data) => fetchWithAuth(`/showroom/document-followups/${type}/${encodeURIComponent(engineNumber)}`, { method: 'POST', body: data })
+
+// OTR Prices
+export const getShowroomOtrPrices = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/otr-prices${query ? '?' + query : ''}`)
+}
+export const getShowroomOtrPriceSummary = () => fetchWithAuth('/showroom/otr-prices/summary')
+export const previewShowroomOtrPrice = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/otr-prices/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const uploadShowroomOtrPrice = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/otr-prices/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const previewShowroomOffPurchasePrice = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/otr-prices/off-purchase/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const uploadShowroomOffPurchasePrice = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/otr-prices/off-purchase/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+
+// BBN Prices
+export const getShowroomBbnPrices = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/bbn-prices${query ? '?' + query : ''}`)
+}
+export const getShowroomBbnPriceSummary = () => fetchWithAuth('/showroom/bbn-prices/summary')
+export const previewShowroomBbnPrice = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/bbn-prices/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const uploadShowroomBbnPrice = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/bbn-prices/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const updateShowroomBbnAdjustment = (data) => fetchWithAuth('/showroom/bbn-prices/adjustment', { method: 'PATCH', body: data })
+export const createShowroomBbnPrice = (data) => fetchWithAuth('/showroom/bbn-prices', { method: 'POST', body: data })
+export const updateShowroomBbnPrice = (id, data) => fetchWithAuth(`/showroom/bbn-prices/${id}`, { method: 'PATCH', body: data })
+
+// Programs
+export const getShowroomProgramSummary = () => fetchWithAuth('/showroom/programs/summary')
+export const getShowroomLeasingPrograms = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/programs/leasing${query ? '?' + query : ''}`)
+}
+export const getShowroomMdPrograms = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/programs/md${query ? '?' + query : ''}`)
+}
+export const previewShowroomPrograms = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/programs/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const uploadShowroomPrograms = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/programs/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+
+// TAC
+export const getShowroomTacSummary = () => fetchWithAuth('/showroom/tac/summary')
+export const getShowroomTacPrograms = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/tac/programs${query ? '?' + query : ''}`)
+}
+export const upsertShowroomTacMatrix = (data) => fetchWithAuth('/showroom/tac/programs', { method: 'POST', body: data })
+export const getShowroomPromoSchemes = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/tac/promo-schemes${query ? '?' + query : ''}`)
+}
+export const upsertShowroomPromoScheme = (data) => fetchWithAuth('/showroom/tac/promo-schemes', { method: 'POST', body: data })
+export const getShowroomSeriesAliases = () => fetchWithAuth('/showroom/tac/series-aliases')
+export const upsertShowroomSeriesAlias = (data) => fetchWithAuth('/showroom/tac/series-aliases', { method: 'POST', body: data })
+
+// Opname
+export const getShowroomOpnameSessions = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/opname${query ? '?' + query : ''}`)
+}
+export const createShowroomOpnameSession = (data) => fetchWithAuth('/showroom/opname', { method: 'POST', body: data })
+export const getShowroomOpnameItems = (id) => fetchWithAuth(`/showroom/opname/${id}/items`)
+export const getShowroomOpnameReport = (id) => fetchWithAuth(`/showroom/opname/${id}/report`)
+export const confirmShowroomOpnameSession = (id, data) => fetchWithAuth(`/showroom/opname/${id}/confirm`, { method: 'PATCH', body: data })
+export const scanShowroomOpnameItem = (id, data) => fetchWithAuth(`/showroom/opname/${id}/scan`, { method: 'POST', body: data })
+export const updateShowroomOpnameItem = (id, itemId, data) => fetchWithAuth(`/showroom/opname/${id}/items/${itemId}`, { method: 'PATCH', body: data })
+export const submitShowroomOpnameSession = (id) => fetchWithAuth(`/showroom/opname/${id}/submit`, { method: 'PATCH' })
+export const adhDoneShowroomOpnameSession = (id) => fetchWithAuth(`/showroom/opname/${id}/adh-done`, { method: 'PATCH' })
+export const sendShowroomOpnameToKacab = (id) => fetchWithAuth(`/showroom/opname/${id}/send-kacab`, { method: 'PATCH' })
+export const approveKacabShowroomOpnameSession = (id) => fetchWithAuth(`/showroom/opname/${id}/approve-kacab`, { method: 'PATCH' })
+export const rfaShowroomOpnameSession = (id, reason) => fetchWithAuth(`/showroom/opname/${id}/rfa`, { method: 'PATCH', body: { reason } })
+export const approveShowroomOpnameSession = (id) => fetchWithAuth(`/showroom/opname/${id}/approve`, { method: 'PATCH' })
+export const rejectShowroomOpnameSession = (id, reason) => fetchWithAuth(`/showroom/opname/${id}/reject`, { method: 'PATCH', body: { reason } })
+export const markShowroomOpnameBasoPrinted = (id) => fetchWithAuth(`/showroom/opname/${id}/baso-print`, { method: 'PATCH' })
+export const uploadShowroomOpnameBaso = (id, file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth(`/showroom/opname/${id}/baso-upload`, { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const verifyShowroomOpnameBaso = (id) => fetchWithAuth(`/showroom/opname/${id}/baso-verify`, { method: 'PATCH' })
+export const completeShowroomOpnameSession = (id) => fetchWithAuth(`/showroom/opname/${id}/complete`, { method: 'PATCH' })
+export const deleteShowroomOpnameSession = (id) => fetchWithAuth(`/showroom/opname/${id}`, { method: 'DELETE' })
+
+// Assignment & notifications
+export const getShowroomOpnameLocations = (id) => fetchWithAuth(`/showroom/opname/${id}/locations`)
+export const assignShowroomOpnameLocations = (id, assignments) => fetchWithAuth(`/showroom/opname/${id}/assignments`, { method: 'POST', body: { assignments } })
+export const getShowroomOpnameNotifications = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/opname/notifications${query ? '?' + query : ''}`)
+}
+export const markShowroomOpnameNotificationRead = (id) => fetchWithAuth(`/showroom/opname/notifications/${id}/read`, { method: 'PATCH' })

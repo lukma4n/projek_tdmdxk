@@ -1,0 +1,93 @@
+import fs from 'fs/promises'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const prismaDir = path.resolve(__dirname, '../../prisma')
+const dbPath = path.join(prismaDir, 'dev.db')
+const backupDir = path.join(prismaDir, 'backups')
+
+function timestamp() {
+  return new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12)
+}
+
+function safeBackupName(name) {
+  if (!/^dev\.db\.backup\.[a-z0-9_-]+\.\d{12}$/.test(name)) {
+    throw new Error('Nama backup tidak valid')
+  }
+  return name
+}
+
+export async function createDatabaseBackup(reason = 'manual') {
+  await fs.mkdir(backupDir, { recursive: true })
+  const safeReason = String(reason).toLowerCase().replace(/[^a-z0-9_-]/g, '_').slice(0, 40) || 'manual'
+  const filename = `dev.db.backup.${safeReason}.${timestamp()}`
+  const target = path.join(backupDir, filename)
+
+  await fs.copyFile(dbPath, target)
+  return { filename, path: target, created_at: new Date().toISOString() }
+}
+
+export async function listDatabaseBackups() {
+  await fs.mkdir(backupDir, { recursive: true })
+  const entries = await fs.readdir(backupDir, { withFileTypes: true })
+  const backups = await Promise.all(entries
+    .filter((entry) => entry.isFile() && entry.name.startsWith('dev.db.backup.'))
+    .map(async (entry) => {
+      const filePath = path.join(backupDir, entry.name)
+      const stat = await fs.stat(filePath)
+      return {
+        filename: entry.name,
+        size: stat.size,
+        created_at: stat.birthtime,
+        modified_at: stat.mtime,
+      }
+    }))
+
+  return backups.sort((a, b) => new Date(b.modified_at) - new Date(a.modified_at))
+}
+
+export async function cleanupPreImportBackups(keepLatest = 30) {
+  const backups = await listDatabaseBackups()
+  const preImportBackups = backups.filter((backup) => backup.filename.startsWith('dev.db.backup.pre_import_'))
+  const keepCount = Math.max(parseInt(keepLatest) || 30, 1)
+  const deleted = []
+  const candidates = preImportBackups.slice(keepCount)
+
+  for (const backup of candidates) {
+    await fs.unlink(path.join(backupDir, backup.filename))
+    deleted.push({ filename: backup.filename, size: backup.size })
+  }
+
+  return {
+    keep_latest: keepCount,
+    candidates: candidates.length,
+    deleted_count: deleted.length,
+    deleted_size: deleted.reduce((sum, backup) => sum + backup.size, 0),
+    deleted,
+  }
+}
+
+export async function restoreDatabaseBackup(filename) {
+  const safeName = safeBackupName(filename)
+  const source = path.join(backupDir, safeName)
+  await fs.access(source)
+
+  const restorePoint = await createDatabaseBackup('pre_restore')
+  const tempTarget = `${dbPath}.restore_tmp`
+  const oldDbPath = `${dbPath}.restore_old`
+
+  await fs.copyFile(source, tempTarget)
+
+  try {
+    await fs.rename(dbPath, oldDbPath)
+    await fs.rename(tempTarget, dbPath)
+    await fs.unlink(oldDbPath).catch(() => {})
+  } catch (error) {
+    await fs.rename(oldDbPath, dbPath).catch(() => {})
+    await fs.unlink(tempTarget).catch(() => {})
+    throw error
+  }
+
+  return { restored_from: safeName, restore_point: restorePoint.filename }
+}
