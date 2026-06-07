@@ -78,6 +78,7 @@ function buildTrackWhere(query) {
   if (query.area) where.area = String(query.area)
   if (query.series) where.series = String(query.series)
   if (query.finance_company) where.finance_company = String(query.finance_company)
+  if (query.birojasa) where.birojasa = String(query.birojasa)
   if (query.tahun) where.tahun = parseInt(query.tahun)
   if (query.status_stnk) where.stnk_status = String(query.status_stnk)
   if (query.status_bpkb) where.bpkb_status = String(query.status_bpkb)
@@ -196,6 +197,32 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
       'tahun'
     )
 
+    // Per-birojasa breakdown (4 metrics: STNK belum jadi, BPKB belum jadi, Plat belum jadi, BPKB overdue)
+    const birojasaPending = filtered.filter(
+      (t) => t.stnk_status === 'BELUM_JADI' || t.bpkb_status === 'BELUM_JADI' || !t.tgl_terima_plat
+    )
+    const birojasaMap = new Map()
+    for (const t of birojasaPending) {
+      const key = t.birojasa || 'TIDAK_DIKETAHUI'
+      if (!birojasaMap.has(key)) birojasaMap.set(key, { name: key, stnk_belum_jadi: 0, bpkb_belum_jadi: 0, plat_belum_jadi: 0, bpkb_overdue: 0 })
+      const entry = birojasaMap.get(key)
+      if (t.stnk_status === 'BELUM_JADI') entry.stnk_belum_jadi++
+      if (t.bpkb_status === 'BELUM_JADI') entry.bpkb_belum_jadi++
+      if (!t.tgl_terima_plat) entry.plat_belum_jadi++
+      if (
+        t.bpkb_status === 'BELUM_DIAMBIL' &&
+        t.tgl_jadi_bpkb &&
+        (today - new Date(t.tgl_jadi_bpkb)) / (24 * 60 * 60 * 1000) > BPKB_OVERDUE_DAYS
+      ) {
+        entry.bpkb_overdue++
+      }
+    }
+    const byBirojasa = Array.from(birojasaMap.values()).sort((a, b) => {
+      const aTotal = a.stnk_belum_jadi + a.bpkb_belum_jadi
+      const bTotal = b.stnk_belum_jadi + b.bpkb_belum_jadi
+      return bTotal - aTotal
+    })
+
     // Anomalies
     const stnkBelumJadiBelumFollowup = filtered
       .filter((t) => t.stnk_status === 'BELUM_JADI' && !stnkFollowupMap.has(t.engine_number))
@@ -282,6 +309,7 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
       areas: Array.from(new Set(allTracks.map((t) => t.area).filter(Boolean))).sort(),
       series: Array.from(new Set(allTracks.map((t) => t.series).filter(Boolean))).sort(),
       financeCompanies: Array.from(new Set(allTracks.map((t) => t.finance_company).filter(Boolean))).sort(),
+      birojasas: Array.from(new Set(allTracks.map((t) => t.birojasa).filter(Boolean))).sort(),
       tahun: Array.from(new Set(allTracks.map((t) => t.tahun).filter(Boolean))).sort((a, b) => b - a),
     }
 
@@ -299,6 +327,7 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
       bySeries,
       byArea,
       byFinance,
+      byBirojasa,
       byTahun,
       anomalies: {
         stnkBelumJadiBelumFollowup: { count: filtered.filter((t) => t.stnk_status === 'BELUM_JADI' && !stnkFollowupMap.has(t.engine_number)).length, rows: stnkBelumJadiBelumFollowup },

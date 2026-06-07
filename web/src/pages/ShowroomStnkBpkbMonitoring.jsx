@@ -22,6 +22,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Briefcase,
 } from 'lucide-react'
 
 function formatTanggalIndo(dateStr) {
@@ -240,6 +241,7 @@ export default function ShowroomStnkBpkbMonitoring() {
     area: '',
     series: '',
     finance_company: '',
+    birojasa: '',
     tahun: '',
     status_stnk: '',
     status_bpkb: '',
@@ -279,7 +281,7 @@ export default function ShowroomStnkBpkbMonitoring() {
   }
 
   const handleResetFilters = () => {
-    setFilters({ area: '', series: '', finance_company: '', tahun: '', status_stnk: '', status_bpkb: '', aging_min: '', aging_max: '' })
+    setFilters({ area: '', series: '', finance_company: '', birojasa: '', tahun: '', status_stnk: '', status_bpkb: '', aging_min: '', aging_max: '' })
     setTimeout(() => void loadData(), 0)
   }
 
@@ -301,7 +303,7 @@ export default function ShowroomStnkBpkbMonitoring() {
   }
 
   const summary = data?.summary || { stnk: {}, bpkb: {}, total: 0, platPending: 0, fakturPending: 0, bpkbOverdue: 0 }
-  const facets = data?.facets || { areas: [], series: [], financeCompanies: [], tahun: [] }
+  const facets = data?.facets || { areas: [], series: [], financeCompanies: [], birojasas: [], tahun: [] }
 
   const statCards = [
     {
@@ -425,7 +427,7 @@ export default function ShowroomStnkBpkbMonitoring() {
           <Filter size={18} className="text-blue-600" />
           <h3 className="font-bold text-slate-800">Filter</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-3">
           <select
             value={filters.area}
             onChange={(e) => setFilters({ ...filters, area: e.target.value })}
@@ -449,6 +451,14 @@ export default function ShowroomStnkBpkbMonitoring() {
           >
             <option value="">Semua Leasing</option>
             {facets.financeCompanies.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+          <select
+            value={filters.birojasa}
+            onChange={(e) => setFilters({ ...filters, birojasa: e.target.value })}
+            className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="">Semua Biro Jasa</option>
+            {facets.birojasas.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
           <select
             value={filters.tahun}
@@ -644,6 +654,98 @@ export default function ShowroomStnkBpkbMonitoring() {
           )}
         </SectionCard>
       </div>
+
+      {/* Biro Jasa breakdown */}
+      <SectionCard
+        title="Per Biro Jasa (STNK/BPKB Belum Jadi)"
+        icon={Briefcase}
+        action={<span className="text-sm font-semibold text-slate-500">{(data?.byBirojasa || []).length} biro jasa</span>}
+      >
+        {(data?.byBirojasa || []).length > 0 ? (
+          <>
+            <div className="h-[320px] mb-5">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.byBirojasa} margin={{ top: 10, right: 20, left: 0, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis
+                    dataKey="name"
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    angle={-15}
+                    textAnchor="end"
+                    height={80}
+                    interval={0}
+                  />
+                  <YAxis stroke="#94a3b8" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value, name) => [`${value} unit`, name]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="stnk_belum_jadi" name="STNK Belum Jadi" fill="#ef4444" radius={[4, 4, 0, 0]} stackId="a" />
+                  <Bar dataKey="plat_belum_jadi" name="Plat Belum Jadi" fill="#f59e0b" radius={[4, 4, 0, 0]} stackId="a" />
+                  <Bar dataKey="bpkb_belum_jadi" name="BPKB Belum Jadi" fill="#3b82f6" radius={[4, 4, 0, 0]} stackId="a" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase text-slate-500">Biro Jasa</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-slate-500">STNK Belum Jadi</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-slate-500">Plat Belum Jadi</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-slate-500">BPKB Belum Jadi</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-rose-600">BPKB Overdue</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-slate-500">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {data.byBirojasa.map((row) => {
+                    const total = row.stnk_belum_jadi + row.bpkb_belum_jadi
+                    return (
+                      <tr key={row.name} className="hover:bg-slate-50">
+                        <td className="px-3 py-2.5 text-slate-700 font-medium">{row.name}</td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">
+                          {row.stnk_belum_jadi > 0 ? (
+                            <span className="inline-flex px-2 py-0.5 rounded bg-red-50 text-red-700 font-semibold text-xs">{row.stnk_belum_jadi}</span>
+                          ) : (
+                            <span className="text-slate-300">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">
+                          {row.plat_belum_jadi > 0 ? (
+                            <span className="inline-flex px-2 py-0.5 rounded bg-amber-50 text-amber-700 font-semibold text-xs">{row.plat_belum_jadi}</span>
+                          ) : (
+                            <span className="text-slate-300">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">
+                          {row.bpkb_belum_jadi > 0 ? (
+                            <span className="inline-flex px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold text-xs">{row.bpkb_belum_jadi}</span>
+                          ) : (
+                            <span className="text-slate-300">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-right tabular-nums">
+                          {row.bpkb_overdue > 0 ? (
+                            <span className="inline-flex px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-bold text-xs">{row.bpkb_overdue}</span>
+                          ) : (
+                            <span className="text-slate-300">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-right font-black text-slate-800 tabular-nums">{total}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-slate-400 py-4 text-center">Belum ada data biro jasa. Semua unit sudah selesai.</p>
+        )}
+      </SectionCard>
 
       {/* Tahun breakdown */}
       <SectionCard title="Distribusi per Tahun (STNK/BPKB Belum Jadi)" icon={Clock}>
