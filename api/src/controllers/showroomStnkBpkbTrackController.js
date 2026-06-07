@@ -75,7 +75,6 @@ const BPKB_OVERDUE_DAYS = 180
 
 function buildTrackWhere(query) {
   const where = { branch_code: 'DXK' }
-  if (query.area) where.area = String(query.area)
   if (query.series) where.series = String(query.series)
   if (query.finance_company) where.finance_company = String(query.finance_company)
   if (query.birojasa) where.birojasa = String(query.birojasa)
@@ -170,10 +169,6 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
     const bySeries = groupCountBy(
       filtered.filter((t) => t.stnk_status === 'BELUM_JADI' || t.bpkb_status === 'BELUM_JADI'),
       'series'
-    ).slice(0, 10)
-    const byArea = groupCountBy(
-      filtered.filter((t) => t.stnk_status === 'BELUM_JADI' || t.bpkb_status === 'BELUM_JADI'),
-      'area'
     ).slice(0, 10)
     const byFinance = groupCountBy(
       filtered.filter((t) => t.bpkb_status === 'BELUM_JADI'),
@@ -299,7 +294,6 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
 
     // Filter facets (for UI dropdowns)
     const facets = {
-      areas: Array.from(new Set(allTracks.map((t) => t.area).filter(Boolean))).sort(),
       series: Array.from(new Set(allTracks.map((t) => t.series).filter(Boolean))).sort(),
       financeCompanies: Array.from(new Set(allTracks.map((t) => t.finance_company).filter(Boolean))).sort(),
       birojasas: Array.from(new Set(allTracks.map((t) => t.birojasa).filter(Boolean))).sort(),
@@ -320,7 +314,6 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
         total: filtered.length,
       },
       bySeries,
-      byArea,
       byFinance,
       byBirojasa,
       byTahun,
@@ -342,7 +335,6 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
 
 function buildExportWhere(query) {
   const where = { branch_code: 'DXK' }
-  if (query.area) where.area = String(query.area)
   if (query.series) where.series = String(query.series)
   if (query.finance_company) where.finance_company = String(query.finance_company)
   if (query.tahun) where.tahun = parseInt(query.tahun)
@@ -366,7 +358,6 @@ export async function exportStnkBpkbTrackExcel(req, res, next) {
       Chassis_No: t.chassis_number || '-',
       Nama_STNK: t.stnk_name || '-',
       Series: t.series || '-',
-      Area: t.area || '-',
       Finance_Company: getFinanceCompanyShort(t.finance_company) || '-',
       Customer_Type: getCustomerType(t.finance_company),
       Tgl_Mohon_Faktur: formatForExcel(t.tgl_mohon_faktur),

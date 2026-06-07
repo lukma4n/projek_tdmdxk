@@ -241,7 +241,6 @@ export default function ShowroomStnkBpkbMonitoring() {
   const [activeAnomalyTab, setActiveAnomalyTab] = useState('stnkBelumJadi')
   const [anomalyExpanded, setAnomalyExpanded] = useState(true)
   const [filters, setFilters] = useState({
-    area: '',
     series: '',
     finance_company: '',
     birojasa: '',
@@ -285,7 +284,7 @@ export default function ShowroomStnkBpkbMonitoring() {
   }
 
   const handleResetFilters = () => {
-    setFilters({ area: '', series: '', finance_company: '', birojasa: '', tahun: '', status_stnk: '', status_bpkb: '', customer_type: '', aging_min: '', aging_max: '' })
+    setFilters({ series: '', finance_company: '', birojasa: '', tahun: '', status_stnk: '', status_bpkb: '', customer_type: '', aging_min: '', aging_max: '' })
     setTimeout(() => void loadData(), 0)
   }
 
@@ -307,7 +306,7 @@ export default function ShowroomStnkBpkbMonitoring() {
   }
 
   const summary = data?.summary || { stnk: {}, bpkb: {}, total: 0, platPending: 0, fakturPending: 0, bpkbOverdue: 0, cashCount: 0, kreditCount: 0 }
-  const facets = data?.facets || { areas: [], series: [], financeCompanies: [], birojasas: [], tahun: [] }
+  const facets = data?.facets || { series: [], financeCompanies: [], birojasas: [], tahun: [] }
 
   const statCards = [
     {
@@ -449,15 +448,7 @@ export default function ShowroomStnkBpkbMonitoring() {
           <Filter size={18} className="text-blue-600" />
           <h3 className="font-bold text-slate-800">Filter</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-10 gap-3">
-          <select
-            value={filters.area}
-            onChange={(e) => setFilters({ ...filters, area: e.target.value })}
-            className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">Semua Area</option>
-            {facets.areas.map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-3">
           <select
             value={filters.series}
             onChange={(e) => setFilters({ ...filters, series: e.target.value })}
@@ -632,59 +623,42 @@ export default function ShowroomStnkBpkbMonitoring() {
         )}
       </SectionCard>
 
-      {/* Breakdown 2 kolom */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SectionCard title="Top 10 Area (Belum Jadi)" icon={Filter}>
-          {(data?.byArea || []).length > 0 ? (
-            <div className="space-y-3">
-              {data.byArea.map((item) => (
-                <CountBar
-                  key={item.name}
-                  label={item.name}
-                  value={item.count}
-                  total={Math.max(...data.byArea.map((d) => d.count), 1)}
-                  color="bg-purple-500"
+      {/* Distribusi BPKB Belum Jadi per Leasing */}
+      <SectionCard title="Distribusi BPKB Belum Jadi per Leasing" icon={FileBadge}>
+        {(data?.byFinance || []).length > 0 ? (
+          <div className="h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data.byFinance}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={110}
+                  paddingAngle={2}
+                  dataKey="count"
+                  nameKey="name"
+                  label={(entry) => entry.count > 0 ? `${financeShortName(entry.name)?.slice(0, 12) || '?'}: ${entry.count}` : ''}
+                >
+                  {data.byFinance.map((entry, idx) => (
+                    <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                  formatter={(value, name) => [`${value} unit`, financeShortName(name) || name]}
                 />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-400 py-4 text-center">Belum ada data area.</p>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Distribusi BPKB Belum Jadi per Leasing" icon={FileBadge}>
-          {(data?.byFinance || []).length > 0 ? (
-            <div className="h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data.byFinance}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    dataKey="count"
-                    nameKey="name"
-                    label={(entry) => entry.count > 0 ? `${financeShortName(entry.name)?.slice(0, 12) || '?'}: ${entry.count}` : ''}
-                  >
-                    {data.byFinance.map((entry, idx) => (
-                      <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
-                    formatter={(value, name) => [`${value} unit`, financeShortName(name) || name]}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="text-sm text-slate-400 py-4 text-center">Belum ada data leasing.</p>
-          )}
-        </SectionCard>
-      </div>
+                <Legend
+                  wrapperStyle={{ fontSize: 12 }}
+                  formatter={(name) => financeShortName(name) || name}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-400 py-4 text-center">Belum ada data leasing.</p>
+        )}
+      </SectionCard>
 
       {/* Biro Jasa breakdown */}
       <SectionCard
