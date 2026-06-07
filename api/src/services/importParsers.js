@@ -408,6 +408,7 @@ export function parseSalesFile(filePath) {
         sales_type: String(row[7] || ''),
         payment_type: String(row[8] || ''),
         salesman: String(row[12] || ''),
+        sales_coord_name: String(row[9] || ''),
         customer_name: String(row[15] || '').trim(),
         product_code: String(row[16] || ''),
         color: String(row[17] || ''),

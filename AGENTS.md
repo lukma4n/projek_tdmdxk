@@ -190,6 +190,8 @@ Karena `createMany` Prisma butuh waktu, timeout transaction diatur:
 36. ✅ Bug fix: `attachKsuToStockUnits` dipanggil tanpa parameter `prisma` — menyebabkan TypeError
 37. ✅ Performance: `aging_tag` pagination dari in-memory filter ke DB-level Prisma date range query
 38. ✅ Cleanup: hapus `showroomController.js.bak`
+39. ✅ PDF Parser: tambah `parseMdProgramPdfV2` dengan coordinate-based extraction untuk PDF LMC dengan layout tabel multi-kolom (LMC 136 Juni 2026). Parser lama tetap jalan untuk PDF flow-based (LMC 104 Mei 2026).
+40. ✅ Program MD Import: sebelum import program MD baru, semua program MD lama di-deactivate (`is_active = false`) agar hanya program terbaru yang aktif. Endpoint `getMdPrograms` dan `getProgramSummary` juga difilter by `is_active: true`.
 
 ## Improv yang Masih Bisa Dilakukan
 - [x] Export Excel Stock Unit, Stock STNK, Stock BPKB, Follow-up KPB, Follow-up STNK, dan Follow-up BPKB

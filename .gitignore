@@ -20,6 +20,7 @@ api/prisma/backups/*.db*
 api/prisma/backups/*.sqlite*
 api/prisma/backups/*.backup.*
 api/prisma/*.db*
+api/database.sqlite
 api/uploads/
 
 dist/
@@ -27,3 +28,20 @@ build/
 coverage/
 
 .DS_Store
+
+# DXK runtime state (auth, browser, pids, screenshots)
+.dxk-auth.json
+.dxk-browser-state.json
+.dxk-pids/
+.dxk-screenshots/
+
+# Temporary analysis scripts (one-off PDF exploration)
+api/analyze-lmc136.mjs
+api/extract-pdf.mjs
+
+# Local sample data (PDF LMC, sales report, etc.)
+file/
+
+# Claude Code local
+.claude/settings.local.json
+.claude/skills/

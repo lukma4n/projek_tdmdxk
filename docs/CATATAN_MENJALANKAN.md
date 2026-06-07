@@ -22,46 +22,85 @@ cd /Users/lukma4n/Documents/projek_tdmdxk
 
 ---
 
-## Cara Menjalankan
+## Cara Menjalankan (Cara Baru — Rekomendasi)
 
-### Langkah 1: Start Backend (Terminal 1)
+Sekarang ada **script otomatis** `start-dxk.sh` yang menjalankan backend + frontend sekaligus tanpa perlu buka 2 terminal.
 
+### Opsi 1: Gunakan Script `start-dxk.sh` (Paling Mudah)
+
+```bash
+cd /Users/lukma4n/Documents/projek_tdmdxk
+./start-dxk.sh start
+```
+
+**Output yang diharapkan:**
+```
+🚀 Menjalankan backend...
+✅ Backend berjalan di PID xxxx — http://localhost:3001
+
+🎨 Menjalankan frontend dev server...
+✅ Frontend berjalan di PID xxxx — http://localhost:5173
+
+✅ DXK sudah siap!
+   🌐 Aplikasi  : http://localhost:5173
+   🔌 API       : http://localhost:3001
+```
+
+**Perintah lainnya:**
+| Perintah | Fungsi |
+|----------|--------|
+| `./start-dxk.sh start` | Mulai backend + frontend |
+| `./start-dxk.sh stop` | Hentikan semua service |
+| `./start-dxk.sh status` | Cek status service |
+| `./start-dxk.sh restart` | Restart semua service |
+
+**Keunggulan:**
+- ✅ Auto-check duplikat (tidak start ulang kalau sudah jalan)
+- ✅ PID disimpan di `.dxk-pids/` — stop/restart akurat
+- ✅ Graceful + force kill otomatis
+- ✅ Log terpisah: `api/backend.log` & `web/frontend.log`
+
+---
+
+### Opsi 2: Alias Terminal (Lebih Cepat)
+
+Tambahkan alias ke `~/.zshrc` (sudah ditambahkan otomatis):
+
+```bash
+source ~/.zshrc
+```
+
+| Alias | Fungsi |
+|-------|--------|
+| `dxk-start` | Mulai DXK dari mana saja |
+| `dxk-stop` | Hentikan DXK |
+| `dxk-status` | Cek status |
+| `dxk-restart` | Restart DXK |
+
+Contoh:
+```bash
+dxk-start    # Langsung start dari mana saja di terminal
+```
+
+---
+
+### Opsi 3: Manual (Terminal Terpisah) — Jika Diperlukan
+
+Kalau ingin kontrol penuh atau debug, jalankan manual:
+
+**Terminal 1 — Backend:**
 ```bash
 cd /Users/lukma4n/Documents/projek_tdmdxk/api
 node src/app.js
 ```
 
-**Output yang diharapkan:**
-```
-✅ SQLite connected
-🚀 Server running on http://localhost:3001
-```
-
-**Jangan tutup terminal ini.** Biarkan tetap terbuka.
-
-**Untuk stop backend:** Tekan `Ctrl + C`
-
----
-
-### Langkah 2: Start Frontend (Terminal 2)
-
-Buka terminal/tab baru:
-
+**Terminal 2 — Frontend:**
 ```bash
 cd /Users/lukma4n/Documents/projek_tdmdxk/web
 npm run dev
 ```
 
-**Output yang diharapkan:**
-```
-🚀 VITE v8.x  ready in xxx ms
-
-➜  Local:   http://localhost:5173/
-```
-
-**Jangan tutup terminal ini.** Biarkan tetap terbuka.
-
-**Untuk stop frontend:** Tekan `Ctrl + C`
+**Jangan tutup terminal.** Biarkan tetap terbuka. Tekan `Ctrl + C` untuk stop.
 
 ---
 
@@ -202,5 +241,5 @@ cd web && npm run lint
 
 ---
 
-**Terakhir diupdate:** 8 Mei 2026  
-**Update:** Ditambahkan SOP startup/shutdown, checklist pre-start, troubleshooting import lock, dan langkah verifikasi sebelum/after kerja.
+**Terakhir diupdate:** 29 Mei 2026  
+**Update:** Ditambahkan script `start-dxk.sh` untuk menjalankan backend + frontend sekaligus, alias terminal (`dxk-start`, `dxk-stop`, `dxk-status`, `dxk-restart`), dan opsi manual tetap tersedia.

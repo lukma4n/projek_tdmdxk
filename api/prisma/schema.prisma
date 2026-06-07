@@ -303,9 +303,10 @@ model customers {
   so_date         DateTime
   sales_type      String?
   payment_type    String?
-  salesman        String?
-  leasing         String?
-  tenor           String?
+  salesman          String?
+  sales_coord_name  String?
+  leasing           String?
+  tenor             String?
 
   // Data Motor
   product_code    String?
@@ -780,4 +781,28 @@ model showroom_user_locations {
   user          users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@unique([user_id, location_name])
+}
+
+model showroom_dealer_burdens {
+  id            Int      @id @default(autoincrement())
+  series_key    String   @unique
+  cash_amount   Float    @default(0)
+  credit_amount Float    @default(0)
+  is_active     Boolean  @default(true)
+  source_file   String?
+  synced_at     DateTime @default(now())
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+}
+
+model showroom_salespeople {
+  id          Int      @id @default(autoincrement())
+  no          Int?
+  name        String   @unique
+  team_leader String?
+  is_active   Boolean  @default(true)
+  source_file String?
+  synced_at   DateTime @default(now())
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 }

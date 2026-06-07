@@ -5,6 +5,12 @@ import {
   getShowroomDashboard,
 } from '../controllers/showroomDashboardController.js'
 import {
+  getShowroomSalesDashboard, exportShowroomSalesDashboard,
+} from '../controllers/showroomSalesDashboardController.js'
+import {
+  getServiceBookLabels,
+} from '../controllers/showroomLabelServiceController.js'
+import {
   getStockUnits,
   exportStockUnitsExcel,
   getStockUnitSummary,
@@ -24,11 +30,17 @@ import {
   createBbnPrice, getBbnPrices, getBbnPriceSummary, previewBbnPrices, updateBbnPrice, updateBbnPriceAdjustment, uploadBbnPrices,
 } from '../controllers/showroomBbnController.js'
 import {
-  getLeasingPrograms, getMdPrograms, getProgramSummary, previewPrograms, uploadPrograms,
+  getLeasingPrograms, getMdPrograms, getProgramSummary, previewPrograms, uploadPrograms, getDiscountTable,
 } from '../controllers/showroomProgramController.js'
 import {
   getPromoSchemes, getSeriesAliases, getTacPrograms, getTacSummary, upsertPromoScheme, upsertSeriesAlias, upsertTacMatrix,
 } from '../controllers/showroomTacController.js'
+import {
+  getDealerBurdens, getDealerBurdenSummary, upsertDealerBurden, previewDealerBurdenImport, uploadDealerBurdenImport,
+} from '../controllers/showroomBurdenController.js'
+import {
+  getSalespeople, upsertSalesperson, getSalespersonSummary, previewSalespeopleImport, uploadSalespeopleImport, deleteSalesperson,
+} from '../controllers/showroomSalespeopleController.js'
 import {
   getStnks, exportStnksExcel, getStnkSummary, getStnkFilters, previewStnk, uploadStnk,
 } from '../controllers/showroomStnkController.js'
@@ -68,6 +80,11 @@ const showroomStockUnitFilterAccess = authorize('Admin', 'Kepala Cabang', 'Lead 
 const showroomUserAdminAccess = authorize('Kepala Bengkel', 'Kepala Cabang', 'Lead PIC Stock opname')
 
 router.get('/dashboard', authenticate, showroomAccess, getShowroomDashboard)
+
+router.get('/penjualan/dashboard', authenticate, showroomAccess, getShowroomSalesDashboard)
+router.get('/penjualan/export', authenticate, showroomAccess, exportShowroomSalesDashboard)
+
+router.get('/label-buku-service', authenticate, showroomAccess, getServiceBookLabels)
 
 router.get('/sales-order-margins', authenticate, showroomSalesOrderAccess, getSalesOrderMargins)
 router.post('/sales-order-margins/preview', authenticate, showroomSalesOrderAccess, previewSalesOrderMargin)
@@ -116,6 +133,7 @@ router.patch('/bbn-prices/:id', authenticate, showroomAccess, updateBbnPrice)
 router.get('/programs/summary', authenticate, showroomAccess, getProgramSummary)
 router.get('/programs/leasing', authenticate, showroomAccess, getLeasingPrograms)
 router.get('/programs/md', authenticate, showroomAccess, getMdPrograms)
+router.get('/programs/discount-table', authenticate, showroomAccess, getDiscountTable)
 router.post('/programs/preview', authenticate, showroomAccess, upload.single('file'), previewPrograms)
 router.post('/programs/import', authenticate, showroomAccess, upload.single('file'), uploadPrograms)
 
@@ -168,5 +186,20 @@ router.patch('/opname/notifications/:id/read', authenticate, showroomOpnameReadA
 router.get('/document-followups/:type', authenticate, documentFollowupAccess, getDocumentFollowups)
 router.get('/document-followups/:type/export', authenticate, documentFollowupAccess, exportDocumentFollowupsExcel)
 router.post('/document-followups/:type/:engineNumber', authenticate, documentFollowupAccess, createDocumentFollowup)
+
+// Dealer Burdens
+router.get('/dealer-burdens', authenticate, showroomAccess, getDealerBurdens)
+router.get('/dealer-burdens/summary', authenticate, showroomAccess, getDealerBurdenSummary)
+router.post('/dealer-burdens', authenticate, showroomAccess, upsertDealerBurden)
+router.post('/dealer-burdens/preview', authenticate, showroomAccess, upload.single('file'), previewDealerBurdenImport)
+router.post('/dealer-burdens/import', authenticate, showroomAccess, upload.single('file'), uploadDealerBurdenImport)
+
+// Salespeople
+router.get('/salespeople', authenticate, showroomAccess, getSalespeople)
+router.get('/salespeople/summary', authenticate, showroomAccess, getSalespersonSummary)
+router.post('/salespeople', authenticate, showroomAccess, upsertSalesperson)
+router.post('/salespeople/preview', authenticate, showroomAccess, upload.single('file'), previewSalespeopleImport)
+router.post('/salespeople/import', authenticate, showroomAccess, upload.single('file'), uploadSalespeopleImport)
+router.delete('/salespeople/:id', authenticate, showroomAccess, deleteSalesperson)
 
 export default router
