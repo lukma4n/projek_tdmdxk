@@ -4,6 +4,7 @@ import path from 'path'
 import os from 'os'
 import { prisma } from '../config/db.js'
 import { formatForExcel } from '../utils/excelUtils.js'
+import { applyCustomerTypeFilter, getCustomerType, getFinanceCompanyShort } from './showroomUtils.js'
 
 /**
  * STNK stock = STNK yang sudah jadi (ada tgl_terima_stnk) tapi belum diserahkan
@@ -29,6 +30,7 @@ function buildStnkStockWhere(query) {
   if (query.location && query.location !== 'all') {
     where.lokasi_stnk = String(query.location)
   }
+  applyCustomerTypeFilter(where, query.customer_type)
   return where
 }
 
@@ -50,6 +52,8 @@ function trackToStnkStock(item) {
     applicant_name: item.stnk_name,
     salesman: null, // tidak tersedia di Track
     finance_company: item.finance_company,
+    finance_company_short: getFinanceCompanyShort(item.finance_company),
+    customer_type: getCustomerType(item.finance_company),
     age_raw: null,
     synced_at: item.synced_at,
   }
@@ -102,7 +106,7 @@ export async function exportStnksExcel(req, res, next) {
       No_Resi: item.no_stnk || '-',
       No_HP: item.mobile || '-',
       Salesman: '-',
-      Leasing: item.finance_company || '-',
+      Leasing: item.finance_company_short || '-',
     }))
 
     const wb = xlsx.utils.book_new()
@@ -131,7 +135,7 @@ export async function exportStnksExcel(req, res, next) {
 export async function getStnkSummary(req, res, next) {
   try {
     const where = { branch_code: 'DXK', stnk_status: 'BELUM_DIAMBIL' }
-    const [total, byLocation, latest] = await Promise.all([
+    const [total, byLocation, latest, byCustomerType] = await Promise.all([
       prisma.showroom_stnk_bpkb_tracks.count({ where }),
       prisma.showroom_stnk_bpkb_tracks.groupBy({
         by: ['lokasi_stnk'],
@@ -144,6 +148,12 @@ export async function getStnkSummary(req, res, next) {
         orderBy: { synced_at: 'desc' },
         select: { synced_at: true },
       }),
+      // Cash vs Kredit
+      prisma.showroom_stnk_bpkb_tracks.groupBy({
+        by: ['finance_company'],
+        where,
+        _count: true,
+      }),
     ])
 
     // Map lokasi_stnk → stnk_location format untuk kompatibilitas UI
@@ -152,9 +162,18 @@ export async function getStnkSummary(req, res, next) {
       _count: item._count,
     }))
 
+    // Hitung Cash (finance_company kosong) vs Kredit (ada)
+    let cash = 0
+    let kredit = 0
+    for (const item of byCustomerType) {
+      if (!item.finance_company || !String(item.finance_company).trim()) cash += item._count
+      else kredit += item._count
+    }
+
     res.json({
       total,
       byLocation: mappedByLocation,
+      byCustomerType: { cash, kredit },
       latestSyncedAt: latest?.synced_at || null,
     })
   } catch (error) {

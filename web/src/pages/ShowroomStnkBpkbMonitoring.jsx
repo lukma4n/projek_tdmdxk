@@ -3,6 +3,7 @@ import {
   getShowroomStnkBpkbTrackMonitoring,
   exportShowroomStnkBpkbTrack,
 } from '../services/api/showroom'
+import { financeShortName, customerType } from '../data/financeCompanyMap'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend,
 } from 'recharts'
@@ -136,7 +137,8 @@ const STNK_COLUMNS = [
   { key: 'engine_number', label: 'No Mesin', render: (r) => <span className="font-mono text-xs">{r.engine_number}</span> },
   { key: 'stnk_name', label: 'Nama' },
   { key: 'series', label: 'Series' },
-  { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company || <span className="text-slate-400">CASH</span> },
+  { key: 'customer_type', label: 'Tipe', render: (r) => <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${r.customer_type === 'CASH' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>{r.customer_type}</span> },
+  { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company_short || <span className="text-slate-400">CASH</span> },
   { key: 'tgl_mohon_faktur', label: 'Tgl Mohon Faktur', render: (r) => formatTanggalIndo(r.tgl_mohon_faktur) },
   { key: 'birojasa', label: 'Birojasa', render: (r) => r.birojasa || '-' },
   {
@@ -199,7 +201,8 @@ const BPKB_OVERDUE_COLUMNS = [
   { key: 'engine_number', label: 'No Mesin', render: (r) => <span className="font-mono text-xs">{r.engine_number}</span> },
   { key: 'stnk_name', label: 'Nama' },
   { key: 'series', label: 'Series' },
-  { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company || <span className="text-slate-400">CASH</span> },
+  { key: 'customer_type', label: 'Tipe', render: (r) => <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${r.customer_type === 'CASH' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>{r.customer_type}</span> },
+  { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company_short || <span className="text-slate-400">CASH</span> },
   { key: 'tgl_jadi_bpkb', label: 'Tgl Jadi BPKB', render: (r) => formatTanggalIndo(r.tgl_jadi_bpkb) },
   { key: 'no_bpkb', label: 'No BPKB', render: (r) => <span className="font-mono text-xs">{r.no_bpkb || '-'}</span> },
   {
@@ -245,6 +248,7 @@ export default function ShowroomStnkBpkbMonitoring() {
     tahun: '',
     status_stnk: '',
     status_bpkb: '',
+    customer_type: '',
     aging_min: '',
     aging_max: '',
   })
@@ -281,7 +285,7 @@ export default function ShowroomStnkBpkbMonitoring() {
   }
 
   const handleResetFilters = () => {
-    setFilters({ area: '', series: '', finance_company: '', birojasa: '', tahun: '', status_stnk: '', status_bpkb: '', aging_min: '', aging_max: '' })
+    setFilters({ area: '', series: '', finance_company: '', birojasa: '', tahun: '', status_stnk: '', status_bpkb: '', customer_type: '', aging_min: '', aging_max: '' })
     setTimeout(() => void loadData(), 0)
   }
 
@@ -302,7 +306,7 @@ export default function ShowroomStnkBpkbMonitoring() {
     }
   }
 
-  const summary = data?.summary || { stnk: {}, bpkb: {}, total: 0, platPending: 0, fakturPending: 0, bpkbOverdue: 0 }
+  const summary = data?.summary || { stnk: {}, bpkb: {}, total: 0, platPending: 0, fakturPending: 0, bpkbOverdue: 0, cashCount: 0, kreditCount: 0 }
   const facets = data?.facets || { areas: [], series: [], financeCompanies: [], birojasas: [], tahun: [] }
 
   const statCards = [
@@ -341,6 +345,24 @@ export default function ShowroomStnkBpkbMonitoring() {
       colorClass: 'text-rose-700',
       borderClass: 'border-rose-200',
       iconBgClass: 'bg-rose-100 text-rose-600',
+    },
+    {
+      label: 'Cash Customer',
+      value: summary.cashCount || 0,
+      subtext: 'Tanpa finance company',
+      icon: TrendingUp,
+      colorClass: 'text-emerald-700',
+      borderClass: 'border-emerald-200',
+      iconBgClass: 'bg-emerald-100 text-emerald-600',
+    },
+    {
+      label: 'Kredit Customer',
+      value: summary.kreditCount || 0,
+      subtext: 'Ada finance company',
+      icon: Briefcase,
+      colorClass: 'text-indigo-700',
+      borderClass: 'border-indigo-200',
+      iconBgClass: 'bg-indigo-100 text-indigo-600',
     },
   ]
 
@@ -427,7 +449,7 @@ export default function ShowroomStnkBpkbMonitoring() {
           <Filter size={18} className="text-blue-600" />
           <h3 className="font-bold text-slate-800">Filter</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-10 gap-3">
           <select
             value={filters.area}
             onChange={(e) => setFilters({ ...filters, area: e.target.value })}
@@ -450,7 +472,7 @@ export default function ShowroomStnkBpkbMonitoring() {
             className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
           >
             <option value="">Semua Leasing</option>
-            {facets.financeCompanies.map((f) => <option key={f} value={f}>{f}</option>)}
+            {facets.financeCompanies.map((f) => <option key={f} value={f}>{financeShortName(f)}</option>)}
           </select>
           <select
             value={filters.birojasa}
@@ -488,6 +510,15 @@ export default function ShowroomStnkBpkbMonitoring() {
             <option value="BELUM_DIAMBIL">Belum Diambil</option>
             <option value="SUDAH_DIAMBIL">Sudah Diambil</option>
           </select>
+          <select
+            value={filters.customer_type}
+            onChange={(e) => setFilters({ ...filters, customer_type: e.target.value })}
+            className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 font-medium"
+          >
+            <option value="">Semua: Cash & Kredit</option>
+            <option value="CASH">💵 Cash</option>
+            <option value="KREDIT">💳 Kredit</option>
+          </select>
           <input
             type="number"
             placeholder="Aging min (hari)"
@@ -520,7 +551,7 @@ export default function ShowroomStnkBpkbMonitoring() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {statCards.map((card) => (
           <StatCard key={card.label} {...card} />
         ))}
@@ -635,7 +666,7 @@ export default function ShowroomStnkBpkbMonitoring() {
                     paddingAngle={2}
                     dataKey="count"
                     nameKey="name"
-                    label={(entry) => entry.count > 0 ? `${entry.name?.slice(0, 12) || '?'}: ${entry.count}` : ''}
+                    label={(entry) => entry.count > 0 ? `${financeShortName(entry.name)?.slice(0, 12) || '?'}: ${entry.count}` : ''}
                   >
                     {data.byFinance.map((entry, idx) => (
                       <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
@@ -643,7 +674,7 @@ export default function ShowroomStnkBpkbMonitoring() {
                   </Pie>
                   <Tooltip
                     contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
-                    formatter={(value, name) => [`${value} unit`, name]}
+                    formatter={(value, name) => [`${value} unit`, financeShortName(name) || name]}
                   />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
@@ -834,7 +865,8 @@ export default function ShowroomStnkBpkbMonitoring() {
             { key: 'engine_number', label: 'No Mesin', render: (r) => <span className="font-mono text-xs">{r.engine_number}</span> },
             { key: 'stnk_name', label: 'Nama' },
             { key: 'series', label: 'Series' },
-            { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company || <span className="text-slate-400">CASH</span> },
+            { key: 'customer_type', label: 'Tipe', render: (r) => <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${r.customer_type === 'CASH' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>{r.customer_type}</span> },
+            { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company_short || <span className="text-slate-400">CASH</span> },
             { key: 'birojasa', label: 'Birojasa' },
             { key: 'tgl_mohon_faktur', label: 'Tgl Mohon Faktur', render: (r) => formatTanggalIndo(r.tgl_mohon_faktur) },
             {

@@ -5,7 +5,7 @@ import os from 'os'
 import { prisma } from '../config/db.js'
 import { withImportLock } from '../services/importLockService.js'
 import { parseStnkBpkbTrackFile } from '../services/importParsers.js'
-import { cleanupUpload } from './showroomUtils.js'
+import { applyCustomerTypeFilter, cleanupUpload, getCustomerType, getFinanceCompanyShort } from './showroomUtils.js'
 import { runShowroomSnapshotImport, getSnapshotPreviewMeta } from './showroomImport.js'
 import { formatForExcel } from '../utils/excelUtils.js'
 
@@ -82,6 +82,7 @@ function buildTrackWhere(query) {
   if (query.tahun) where.tahun = parseInt(query.tahun)
   if (query.status_stnk) where.stnk_status = String(query.status_stnk)
   if (query.status_bpkb) where.bpkb_status = String(query.status_bpkb)
+  applyCustomerTypeFilter(where, query.customer_type)
   return where
 }
 
@@ -209,6 +210,14 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
       return bTotal - aTotal
     })
 
+    // Cash vs Kredit breakdown (semua row difilter, bukan hanya pending)
+    let cashCount = 0
+    let kreditCount = 0
+    for (const t of filtered) {
+      if (!t.finance_company || !String(t.finance_company).trim()) cashCount++
+      else kreditCount++
+    }
+
     // Anomalies
     const stnkBelumJadiBelumFollowup = filtered
       .filter((t) => t.stnk_status === 'BELUM_JADI' && !stnkFollowupMap.has(t.engine_number))
@@ -219,6 +228,8 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
         mobile: t.mobile,
         series: t.series,
         finance_company: t.finance_company,
+        finance_company_short: getFinanceCompanyShort(t.finance_company),
+        customer_type: getCustomerType(t.finance_company),
         tgl_mohon_faktur: t.tgl_mohon_faktur,
         tgl_proses_stnk: t.tgl_proses_stnk,
         birojasa: t.birojasa,
@@ -233,6 +244,9 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
         stnk_name: t.stnk_name,
         mobile: t.mobile,
         series: t.series,
+        finance_company: t.finance_company,
+        finance_company_short: getFinanceCompanyShort(t.finance_company),
+        customer_type: getCustomerType(t.finance_company),
         no_stnk: t.no_stnk,
         tgl_terima_stnk: t.tgl_terima_stnk,
         no_so: t.no_so,
@@ -254,6 +268,8 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
         mobile: t.mobile,
         series: t.series,
         finance_company: t.finance_company,
+        finance_company_short: getFinanceCompanyShort(t.finance_company),
+        customer_type: getCustomerType(t.finance_company),
         tgl_jadi_bpkb: t.tgl_jadi_bpkb,
         no_bpkb: t.no_bpkb,
         days_overdue: Math.floor((today - new Date(t.tgl_jadi_bpkb)) / (24 * 60 * 60 * 1000)),
@@ -272,6 +288,8 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
         mobile: t.mobile,
         series: t.series,
         finance_company: t.finance_company,
+        finance_company_short: getFinanceCompanyShort(t.finance_company),
+        customer_type: getCustomerType(t.finance_company),
         birojasa: t.birojasa,
         tgl_mohon_faktur: t.tgl_mohon_faktur,
         lt_mohon_faktur: t.lt_mohon_faktur,
@@ -297,6 +315,8 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
         platPending,
         fakturPending,
         bpkbOverdue,
+        cashCount,
+        kreditCount,
         total: filtered.length,
       },
       bySeries,
@@ -328,6 +348,7 @@ function buildExportWhere(query) {
   if (query.tahun) where.tahun = parseInt(query.tahun)
   if (query.status_stnk) where.stnk_status = String(query.status_stnk)
   if (query.status_bpkb) where.bpkb_status = String(query.status_bpkb)
+  applyCustomerTypeFilter(where, query.customer_type)
   return where
 }
 
@@ -346,7 +367,8 @@ export async function exportStnkBpkbTrackExcel(req, res, next) {
       Nama_STNK: t.stnk_name || '-',
       Series: t.series || '-',
       Area: t.area || '-',
-      Finance_Company: t.finance_company || '-',
+      Finance_Company: getFinanceCompanyShort(t.finance_company) || '-',
+      Customer_Type: getCustomerType(t.finance_company),
       Tgl_Mohon_Faktur: formatForExcel(t.tgl_mohon_faktur),
       L_T_Mohon: t.lt_mohon_faktur || 0,
       Tgl_Terima_Faktur: formatForExcel(t.tgl_terima_faktur),

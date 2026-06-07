@@ -3,7 +3,7 @@ import { rmSync } from 'fs'
 import path from 'path'
 import os from 'os'
 import { prisma } from '../config/db.js'
-import { DOCUMENT_FOLLOWUP_STATUSES } from './showroomUtils.js'
+import { DOCUMENT_FOLLOWUP_STATUSES, applyCustomerTypeFilter, getCustomerType, getFinanceCompanyShort } from './showroomUtils.js'
 import { formatForExcel } from '../utils/excelUtils.js'
 
 function documentFollowupStatusLabel(status) {
@@ -42,6 +42,11 @@ function buildDocumentTrackWhere(documentType, query) {
     if (documentType === 'STNK') where.lokasi_stnk = String(query.location)
     else where.lokasi_bpkb = String(query.location)
   }
+  // BPKB followup sudah otomatis cash (finance_company IS NULL) via where clause di atas.
+  // STNK followup bisa semua customer type, tapi filter cash/kredit tetap dihormati.
+  if (documentType === 'STNK') {
+    applyCustomerTypeFilter(where, query.customer_type)
+  }
   return where
 }
 
@@ -77,6 +82,8 @@ function trackToFollowupRow(documentType, item) {
       mobile: item.mobile,
       salesman: null,
       finance_company: item.finance_company,
+      finance_company_short: getFinanceCompanyShort(item.finance_company),
+      customer_type: getCustomerType(item.finance_company),
     }
   }
   return {
@@ -91,6 +98,8 @@ function trackToFollowupRow(documentType, item) {
     customer_phone: item.mobile,
     salesman: null,
     finance_company: item.finance_company,
+    finance_company_short: getFinanceCompanyShort(item.finance_company),
+    customer_type: getCustomerType(item.finance_company),
   }
 }
 

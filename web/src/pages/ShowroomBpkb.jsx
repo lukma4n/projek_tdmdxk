@@ -40,6 +40,7 @@ export default function ShowroomBpkb() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [location, setLocation] = useState('all')
+  const [customerType, setCustomerType] = useState('all')
   const [selectedItem, setSelectedItem] = useState(null)
   const [selectedMap, setSelectedMap] = useState(new Map())
 
@@ -50,7 +51,7 @@ export default function ShowroomBpkb() {
     try {
       setLoading(true)
       setError('')
-      const params = { page: 1, limit: 50, ...(search && { search }), ...(location !== 'all' && { location }) }
+      const params = { page: 1, limit: 50, ...(search && { search }), ...(location !== 'all' && { location }), ...(customerType !== 'all' && { customer_type: customerType }) }
       const [listRes, summaryRes, filterRes] = await Promise.all([
         api.getShowroomBpkbs(params),
         api.getShowroomBpkbSummary(),
@@ -70,7 +71,7 @@ export default function ShowroomBpkb() {
   useEffect(() => {
     void Promise.resolve().then(loadData)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, location])
+  }, [search, location, customerType])
 
   const handleExport = async () => {
     try {
@@ -79,6 +80,7 @@ export default function ShowroomBpkb() {
       const params = new URLSearchParams({
         ...(search && { search }),
         ...(location !== 'all' && { location }),
+        ...(customerType !== 'all' && { customer_type: customerType }),
       }).toString()
 
       const response = await fetch(`${API_BASE}/showroom/bpkbs/export${params ? '?' + params : ''}`, {
@@ -177,6 +179,7 @@ export default function ShowroomBpkb() {
         limit: Math.max(total, 1),
         ...(search && { search }),
         ...(location !== 'all' && { location }),
+        ...(customerType !== 'all' && { customer_type: customerType }),
       }
       const response = await api.getShowroomBpkbs(params)
       printLabels(response.data || [], 'Print Semua Label BPKB')
@@ -262,22 +265,26 @@ export default function ShowroomBpkb() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="p-4 rounded-xl border border-blue-200 bg-blue-50 text-blue-700">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Total BPKB</p><FileBadge size={18} /></div>
           <p className="text-2xl font-bold mt-1">{summary?.total || 0}</p>
+        </div>
+        <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700">
+          <div className="flex items-center justify-between"><p className="text-xs font-medium">💵 Cash</p><UserRound size={18} /></div>
+          <p className="text-2xl font-bold mt-1">{summary?.byCustomerType?.cash || 0}</p>
+        </div>
+        <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700">
+          <div className="flex items-center justify-between"><p className="text-xs font-medium">💳 Kredit</p><UserRound size={18} /></div>
+          <p className="text-2xl font-bold mt-1">{summary?.byCustomerType?.kredit || 0}</p>
         </div>
         <div className="p-4 rounded-xl border border-danger-200 bg-danger-50 text-danger-700">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Overdue &gt;= 365 Hari</p><AlertTriangle size={18} /></div>
           <p className="text-2xl font-bold mt-1">{summary?.overdue365 || 0}</p>
         </div>
-        <div className="p-4 rounded-xl border border-success-200 bg-success-50 text-success-700">
-          <div className="flex items-center justify-between"><p className="text-xs font-medium">Lokasi Terbanyak</p><MapPin size={18} /></div>
-          <p className="text-xl font-bold mt-1 truncate">{summary?.byLocation?.[0]?.bpkb_location || '-'}</p>
-        </div>
         <div className="p-4 rounded-xl border border-slate-200 bg-white text-slate-700">
-          <div className="flex items-center justify-between"><p className="text-xs font-medium">Sync Terakhir</p><RefreshCw size={18} /></div>
-          <p className="text-lg font-bold mt-1">{formatDate(summary?.latestSyncedAt)}</p>
+          <div className="flex items-center justify-between"><p className="text-xs font-medium">Lokasi Terbanyak</p><MapPin size={18} /></div>
+          <p className="text-lg font-bold mt-1 truncate">{summary?.byLocation?.[0]?.bpkb_location || '-'}</p>
         </div>
       </div>
 
@@ -289,6 +296,11 @@ export default function ShowroomBpkb() {
         <select value={location} onChange={(e) => setLocation(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
           <option value="all">Semua Lokasi</option>
           {filters.locations?.map((item) => <option key={item} value={item}>{item}</option>)}
+        </select>
+        <select value={customerType} onChange={(e) => setCustomerType(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium">
+          <option value="all">Semua: Cash & Kredit</option>
+          <option value="CASH">💵 Cash</option>
+          <option value="KREDIT">💳 Kredit</option>
         </select>
         <div className="flex basis-full items-center gap-2 text-xs text-slate-500">
           <Printer size={13} className="text-slate-400" />
@@ -314,7 +326,7 @@ export default function ShowroomBpkb() {
                     {allPageSelected ? <Check size={14} className="text-blue-600" /> : null}
                   </button>
                 </th>
-                {['Nama', 'Engine/BPKB', 'Lokasi', 'Jadi BPKB', 'Overdue', 'Salesman', 'Label'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">{h}</th>)}
+                {['Nama', 'Tipe', 'Engine/BPKB', 'Lokasi', 'Jadi BPKB', 'Leasing', 'Overdue', 'Salesman', 'Label'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {items.map((item) => (
@@ -325,9 +337,11 @@ export default function ShowroomBpkb() {
                       </button>
                     </td>
                     <td className="px-4 py-3"><p className="text-sm font-semibold text-slate-800">{item.stnk_name || '-'}</p><p className="text-xs text-slate-500 flex items-center gap-1"><UserRound size={12} />{item.applicant_name || item.requestor_name || '-'}</p></td>
+                    <td className="px-4 py-3 whitespace-nowrap"><span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${item.customer_type === 'CASH' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>{item.customer_type || '-'}</span></td>
                     <td className="px-4 py-3 font-mono text-xs text-slate-600"><p>{item.engine_number}</p><p className="text-slate-400">{item.bpkb_number || '-'}</p></td>
                     <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{item.bpkb_location || '-'}</td>
                     <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{formatDate(item.bpkb_ready_date)}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{item.finance_company_short || <span className="text-slate-400">-</span>}</td>
                     <td className="px-4 py-3 whitespace-nowrap"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${item.overdue_days >= 365 ? 'bg-danger-50 text-danger-600 border-danger-200' : 'bg-success-50 text-success-600 border-success-200'}`}>{item.overdue_days || 0} hari</span></td>
                     <td className="px-4 py-3 text-sm text-slate-600">{item.salesman || '-'}</td>
                     <td className="px-4 py-3">

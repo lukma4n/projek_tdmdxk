@@ -4,6 +4,7 @@ import path from 'path'
 import os from 'os'
 import { prisma } from '../config/db.js'
 import { formatForExcel } from '../utils/excelUtils.js'
+import { applyCustomerTypeFilter, getCustomerType, getFinanceCompanyShort } from './showroomUtils.js'
 
 const OVERDUE_THRESHOLD_DAYS = 365
 
@@ -31,6 +32,7 @@ function buildBpkbStockWhere(query) {
   if (query.location && query.location !== 'all') {
     where.lokasi_bpkb = String(query.location)
   }
+  applyCustomerTypeFilter(where, query.customer_type)
   return where
 }
 
@@ -52,6 +54,8 @@ function trackToBpkbStock(item) {
     bpkb_number: item.no_bpkb,
     bpkb_ready_date: item.tgl_jadi_bpkb,
     finance_company: item.finance_company,
+    finance_company_short: getFinanceCompanyShort(item.finance_company),
+    customer_type: getCustomerType(item.finance_company),
     invoice_number: null,
     customer_phone: item.mobile,
     salesman: null,
@@ -112,7 +116,7 @@ export async function exportBpkbsExcel(req, res, next) {
         No_Resi: item.no_bpkb || '-',
         No_HP: item.mobile || '-',
         Salesman: '-',
-        Leasing: item.finance_company || '-',
+        Leasing: item.finance_company_short || '-',
       }
     })
 
@@ -145,7 +149,7 @@ export async function getBpkbSummary(req, res, next) {
     const thresholdDate = new Date()
     thresholdDate.setDate(thresholdDate.getDate() - OVERDUE_THRESHOLD_DAYS)
 
-    const [total, allOverdueItems, byLocation, latest] = await Promise.all([
+    const [total, allOverdueItems, byLocation, latest, byCustomerType] = await Promise.all([
       prisma.showroom_stnk_bpkb_tracks.count({ where }),
       prisma.showroom_stnk_bpkb_tracks.findMany({
         where: { ...where, tgl_jadi_bpkb: { lt: thresholdDate } },
@@ -162,6 +166,12 @@ export async function getBpkbSummary(req, res, next) {
         orderBy: { synced_at: 'desc' },
         select: { synced_at: true },
       }),
+      // Cash vs Kredit
+      prisma.showroom_stnk_bpkb_tracks.groupBy({
+        by: ['finance_company'],
+        where,
+        _count: true,
+      }),
     ])
 
     const mappedByLocation = byLocation.map((item) => ({
@@ -169,10 +179,18 @@ export async function getBpkbSummary(req, res, next) {
       _count: item._count,
     }))
 
+    let cash = 0
+    let kredit = 0
+    for (const item of byCustomerType) {
+      if (!item.finance_company || !String(item.finance_company).trim()) cash += item._count
+      else kredit += item._count
+    }
+
     res.json({
       total,
       overdue365: allOverdueItems.length,
       byLocation: mappedByLocation,
+      byCustomerType: { cash, kredit },
       latestSyncedAt: latest?.synced_at || null,
     })
   } catch (error) {

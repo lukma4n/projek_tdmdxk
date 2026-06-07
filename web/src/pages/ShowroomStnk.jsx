@@ -17,12 +17,13 @@ export default function ShowroomStnk() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [location, setLocation] = useState('all')
+  const [customerType, setCustomerType] = useState('all')
 
   const loadData = async () => {
     try {
       setLoading(true)
       setError('')
-      const params = { page: 1, limit: 50, ...(search && { search }), ...(location !== 'all' && { location }) }
+      const params = { page: 1, limit: 50, ...(search && { search }), ...(location !== 'all' && { location }), ...(customerType !== 'all' && { customer_type: customerType }) }
       const [listRes, summaryRes, filterRes] = await Promise.all([
         api.getShowroomStnks(params),
         api.getShowroomStnkSummary(),
@@ -42,7 +43,7 @@ export default function ShowroomStnk() {
   useEffect(() => {
     void Promise.resolve().then(loadData)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, location])
+  }, [search, location, customerType])
 
   const handleExport = async () => {
     try {
@@ -51,6 +52,7 @@ export default function ShowroomStnk() {
       const params = new URLSearchParams({
         ...(search && { search }),
         ...(location !== 'all' && { location }),
+        ...(customerType !== 'all' && { customer_type: customerType }),
       }).toString()
 
       const response = await fetch(`${API_BASE}/showroom/stnks/export${params ? '?' + params : ''}`, {
@@ -96,10 +98,18 @@ export default function ShowroomStnk() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="p-4 rounded-xl border border-blue-200 bg-blue-50 text-blue-700">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Total STNK</p><FileText size={18} /></div>
           <p className="text-2xl font-bold mt-1">{summary?.total || 0}</p>
+        </div>
+        <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700">
+          <div className="flex items-center justify-between"><p className="text-xs font-medium">💵 Cash</p><UserRound size={18} /></div>
+          <p className="text-2xl font-bold mt-1">{summary?.byCustomerType?.cash || 0}</p>
+        </div>
+        <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700">
+          <div className="flex items-center justify-between"><p className="text-xs font-medium">💳 Kredit</p><UserRound size={18} /></div>
+          <p className="text-2xl font-bold mt-1">{summary?.byCustomerType?.kredit || 0}</p>
         </div>
         <div className="p-4 rounded-xl border border-success-200 bg-success-50 text-success-700">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Lokasi Terbanyak</p><MapPin size={18} /></div>
@@ -120,6 +130,11 @@ export default function ShowroomStnk() {
           <option value="all">Semua Lokasi</option>
           {filters.locations?.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
+        <select value={customerType} onChange={(e) => setCustomerType(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium">
+          <option value="all">Semua: Cash & Kredit</option>
+          <option value="CASH">💵 Cash</option>
+          <option value="KREDIT">💳 Kredit</option>
+        </select>
       </div>
 
       {error && <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg text-sm text-danger-600">{error}</div>}
@@ -134,15 +149,17 @@ export default function ShowroomStnk() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead><tr className="bg-slate-50 border-b border-slate-200">{['Nama', 'Engine/Polisi', 'Lokasi', 'Jadi STNK', 'Expired STNK', 'Salesman'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">{h}</th>)}</tr></thead>
+              <thead><tr className="bg-slate-50 border-b border-slate-200">{['Nama', 'Tipe', 'Engine/Polisi', 'Lokasi', 'Jadi STNK', 'Expired STNK', 'Leasing', 'Salesman'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {items.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50/50">
                     <td className="px-4 py-3"><p className="text-sm font-semibold text-slate-800">{item.stnk_name || '-'}</p><p className="text-xs text-slate-500 flex items-center gap-1"><UserRound size={12} />{item.applicant_name || '-'}</p></td>
+                    <td className="px-4 py-3 whitespace-nowrap"><span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${item.customer_type === 'CASH' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>{item.customer_type || '-'}</span></td>
                     <td className="px-4 py-3 font-mono text-xs text-slate-600"><p>{item.engine_number}</p><p className="text-slate-400">{item.police_number || '-'}</p></td>
                     <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{item.stnk_location || '-'}</td>
                     <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{formatDate(item.stnk_ready_date)}</td>
                     <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{formatDate(item.stnk_expired_date)}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{item.finance_company_short || <span className="text-slate-400">-</span>}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{item.salesman || '-'}</td>
                   </tr>
                 ))}
