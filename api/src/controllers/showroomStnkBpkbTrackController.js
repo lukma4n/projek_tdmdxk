@@ -85,10 +85,10 @@ function buildTrackWhere(query) {
   return where
 }
 
-function groupCountBy(rows, key) {
+function groupCountBy(rows, key, fallbackLabel = 'TIDAK_DIKETAHUI') {
   const map = new Map()
   for (const row of rows) {
-    const k = row[key] || 'TIDAK_DIKETAHUI'
+    const k = row[key] || fallbackLabel
     map.set(k, (map.get(k) || 0) + 1)
   }
   return Array.from(map.entries())
@@ -172,11 +172,13 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
     ).slice(0, 10)
     const byFinance = groupCountBy(
       filtered.filter((t) => t.bpkb_status === 'BELUM_JADI'),
-      'finance_company'
+      'finance_company',
+      'Cash'
     ).slice(0, 10)
     const byTahun = groupCountBy(
       filtered.filter((t) => t.stnk_status === 'BELUM_JADI' || t.bpkb_status === 'BELUM_JADI'),
-      'tahun'
+      'tahun',
+      'Tanpa Tahun'
     )
 
     // Per-birojasa breakdown (4 metrics: STNK belum jadi, BPKB belum jadi, Plat belum jadi, BPKB overdue)
