@@ -36,6 +36,10 @@ async function fetchWithAuth(endpoint, options = {}) {
       throw new Error(error.error || `HTTP ${response.status}`)
     }
 
+    if (config.responseType === 'blob') {
+      return response.blob()
+    }
+
     return response.json()
   } catch (err) {
     clearTimeout(timeoutId)

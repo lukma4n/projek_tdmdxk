@@ -7,7 +7,7 @@ const modules = [
   { key: 'hotline', label: 'Part Hotline', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Service Advisor', 'Partman', 'Kepala Bengkel'] },
   { key: 'stock', label: 'Stok Sparepart', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Partman', 'Kepala Bengkel'] },
   { key: 'workshop', label: 'Workshop Tahun Berjalan', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Frondesk', 'Service Advisor', 'Kepala Bengkel'] },
-  { key: 'sales', label: 'Data Konsumen', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Service Advisor', 'Kepala Bengkel'] },
+  { key: 'sales', label: 'Data Konsumen', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Service Advisor', 'Kepala Bengkel', 'Admin', 'Kepala Cabang'] },
   { key: 'showroom-stock-unit', label: 'Stock Unit', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin', 'Kepala Cabang'] },
   { key: 'showroom-stnk', label: 'STNK', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin'] },
   { key: 'showroom-bpkb', label: 'BPKB', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin'] },

@@ -1,0 +1,255 @@
+import { useEffect, useState } from 'react'
+import { api } from '../services/api'
+import { FileUp, Loader2, RefreshCw, Save, Search, Trash2 } from 'lucide-react'
+
+function clean(value = '') {
+  return String(value || '').trim()
+}
+
+export default function ShowroomSalespeople() {
+  const [items, setItems] = useState([])
+  const [summary, setSummary] = useState(null)
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [previewData, setPreviewData] = useState(null)
+  const [showPreview, setShowPreview] = useState(false)
+  const [pendingFile, setPendingFile] = useState(null)
+  const [form, setForm] = useState({ no: '', name: '', team_leader: '' })
+
+  const loadData = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const [listRes, sumRes] = await Promise.all([
+        api.getShowroomSalespeople({ ...(search && { search }) }),
+        api.getShowroomSalespersonSummary(),
+      ])
+      setItems(listRes.data || [])
+      setSummary(sumRes)
+    } catch (err) {
+      setError(err.message || 'Gagal memuat data Sales')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => { void loadData() }, 300)
+    return () => clearTimeout(timer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
+
+  const saveItem = async (event) => {
+    event.preventDefault()
+    setSaving(true)
+    setMessage('')
+    setError('')
+    try {
+      const res = await api.upsertShowroomSalesperson({
+        no: parseInt(form.no) || null,
+        name: clean(form.name),
+        team_leader: clean(form.team_leader),
+      })
+      setMessage(res.message)
+      setForm({ no: '', name: '', team_leader: '' })
+      await loadData()
+    } catch (err) {
+      setError(err.message || 'Gagal simpan data Sales')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id) => {
+    if (!confirm('Yakin hapus data sales ini?')) return
+    setError('')
+    setMessage('')
+    try {
+      const res = await api.deleteShowroomSalesperson(id)
+      setMessage(res.message)
+      await loadData()
+    } catch (err) {
+      setError(err.message || 'Gagal hapus data Sales')
+    }
+  }
+
+  const handleFileSelect = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setPendingFile(file)
+    setImporting(true)
+    setError('')
+    setMessage('')
+    try {
+      const res = await api.previewShowroomSalespeople(file)
+      setPreviewData(res)
+      setShowPreview(true)
+    } catch (err) {
+      setError(err.message || 'Gagal preview file')
+      setPendingFile(null)
+    } finally {
+      setImporting(false)
+      event.target.value = ''
+    }
+  }
+
+  const handleImportConfirm = async () => {
+    if (!pendingFile) return
+    setImporting(true)
+    setError('')
+    setMessage('')
+    try {
+      const res = await api.uploadShowroomSalespeople(pendingFile)
+      setMessage(`${res.message} (${res.total} rows)`)
+      setShowPreview(false)
+      setPreviewData(null)
+      setPendingFile(null)
+      await loadData()
+    } catch (err) {
+      setError(err.message || 'Gagal import data Sales')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Master Sales</h1>
+          <p className="text-sm text-slate-500">Daftar Sales dan Team Leader untuk laporan performance.</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={loadData} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+            <RefreshCw size={16} /> Refresh
+          </button>
+          <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+            <FileUp size={16} /> Import Excel
+            <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileSelect} disabled={importing} />
+          </label>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-700">
+          <p className="text-xs font-medium">Total Sales</p>
+          <p className="mt-1 text-2xl font-bold">{summary?.total || 0}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 text-slate-700">
+          <p className="text-xs font-medium">Source</p>
+          <p className="mt-1 truncate text-sm font-semibold">{summary?.sourceFile || '-'}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 text-slate-700">
+          <p className="text-xs font-medium">Last Sync</p>
+          <p className="mt-1 text-sm font-semibold">
+            {summary?.latestSyncedAt ? new Date(summary.latestSyncedAt).toLocaleDateString('id-ID') : '-'}
+          </p>
+        </div>
+      </div>
+
+      {message && <div className="rounded-lg border border-success-200 bg-success-50 p-3 text-sm text-success-700">{message}</div>}
+      {error && <div className="rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-600">{error}</div>}
+
+      {/* Import Preview */}
+      {showPreview && previewData && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-slate-800">Preview Import ({previewData.total} rows)</h2>
+            <div className="flex gap-2">
+              <button onClick={() => { setShowPreview(false); setPreviewData(null); setPendingFile(null) }} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Batal</button>
+              <button onClick={handleImportConfirm} disabled={importing} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+                {importing && <Loader2 className="animate-spin" size={16} />} Konfirmasi Import
+              </button>
+            </div>
+          </div>
+          <div className="overflow-x-auto rounded-lg bg-white">
+            <table className="w-full">
+              <thead><tr className="bg-slate-50 border-b border-slate-200">
+                {['No', 'Nama', 'Team Leader'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500">{h}</th>)}
+              </tr></thead>
+              <tbody className="divide-y divide-slate-100">
+                {(previewData.sample || []).map((row, i) => (
+                  <tr key={i}>
+                    <td className="px-4 py-3 text-sm">{row.no || '-'}</td>
+                    <td className="px-4 py-3 text-sm font-semibold">{row.name}</td>
+                    <td className="px-4 py-3 text-sm">{row.team_leader || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Form tambah */}
+      <form onSubmit={saveItem} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+        <h2 className="font-semibold text-slate-800">Tambah / Edit Sales</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">No</label>
+            <input type="number" value={form.no} onChange={(e) => setForm({ ...form, no: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Contoh: 1" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">Nama Sales *</label>
+            <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Contoh: GUNAWAN" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">Team Leader</label>
+            <input value={form.team_leader} onChange={(e) => setForm({ ...form, team_leader: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Contoh: ANDRI YANI SUSANTO" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button type="submit" disabled={saving} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+            {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Simpan
+          </button>
+          <button type="button" onClick={() => setForm({ no: '', name: '', team_leader: '' })} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Reset</button>
+        </div>
+      </form>
+
+      {/* Tabel */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <span className="text-sm font-semibold text-slate-700">Daftar Sales</span>
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama atau team leader..." className="w-64 rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm" />
+          </div>
+        </div>
+        {loading ? (
+          <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600" size={24} /></div>
+        ) : items.length === 0 ? (
+          <div className="p-8 text-center text-sm text-slate-500">Tidak ada data Sales.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  {['No', 'Nama', 'Team Leader', 'Aksi'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">{h}</th>)}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {items.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-50/50">
+                    <td className="px-4 py-3 text-sm text-slate-600">{item.no || '-'}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-slate-800">{item.name}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{item.team_leader || '-'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        <button onClick={() => setForm({ no: String(item.no || ''), name: item.name, team_leader: item.team_leader || '' })} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">Edit</button>
+                        <button onClick={() => handleDelete(item.id)} className="rounded-lg border border-danger-200 bg-danger-50 px-3 py-1.5 text-xs text-danger-600 hover:bg-danger-100"><Trash2 size={14} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -18,7 +18,10 @@ import {
   FileBadge,
   BadgeDollarSign,
   Calculator,
-  BatteryCharging
+  BatteryCharging,
+  TrendingUp,
+  BookOpen,
+  Table2
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useThemeStore } from '../../stores/themeStore'
@@ -33,12 +36,17 @@ const navItems = [
   { path: '/follow-up-kpb', label: 'Follow-up KPB', icon: MessageCircle, group: 'Bengkel', roles: ['CRM', 'Frondesk', 'Service Advisor', 'Kepala Bengkel'] },
   { path: '/follow-up-stnk', label: 'Follow-up STNK', icon: FileText, group: 'Bengkel', roles: ['CRM'] },
   { path: '/follow-up-bpkb', label: 'Follow-up BPKB', icon: FileBadge, group: 'Bengkel', roles: ['CRM'] },
-  { path: '/showroom/dashboard', label: 'Dashboard Showroom', icon: LayoutDashboard, group: 'Showroom', roles: ['Admin', 'Kepala Cabang', 'Lead PIC Stock opname'] },
+  { path: '/showroom/dashboard', label: 'Dashboard Unit', icon: Bike, group: 'Showroom', roles: ['Admin', 'Kepala Cabang', 'Lead PIC Stock opname'] },
+  { path: '/showroom/dashboard-penjualan', label: 'Dashboard Penjualan', icon: TrendingUp, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
+  { path: '/showroom/label-buku-service', label: 'Label Buku Service', icon: BookOpen, group: 'Showroom', roles: ['Admin'] },
   { path: '/showroom/stock-unit', label: 'Stock Unit Showroom', icon: Bike, group: 'Showroom', roles: ['Admin', 'Kepala Cabang', 'Lead PIC Stock opname'] },
   { path: '/showroom/harga-otr', label: 'Master Harga', icon: BadgeDollarSign, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
   { path: '/showroom/bbn', label: 'Master BBN', icon: FileText, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
   { path: '/showroom/program', label: 'Master Program', icon: BadgeDollarSign, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
+  { path: '/showroom/tabel-diskon', label: 'Tabel Diskon', icon: Table2, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
   { path: '/showroom/tac-leasing', label: 'Master TAC Leasing', icon: BadgeDollarSign, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
+  { path: '/showroom/dealer-burden', label: 'Master Beban Dealer', icon: BadgeDollarSign, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
+  { path: '/showroom/salespeople', label: 'Master Sales', icon: Users, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
   { path: '/showroom/ksu', label: 'Master KSU', icon: BatteryCharging, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
   { path: '/showroom/sales-order-margin', label: 'Kalkulator Margin', icon: Calculator, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
   { path: '/showroom/opname-unit', label: 'Opname Unit', icon: ScanBarcode, group: 'Showroom', roles: ['Lead PIC Stock opname', 'ADH', 'Kepala Cabang'] },

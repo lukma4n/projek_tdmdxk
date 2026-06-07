@@ -1,10 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Printer, X } from 'lucide-react'
 
-function getCustomerName(item) {
-  return item?.stnk_name || item?.applicant_name || item?.requestor_name || '-'
-}
-
 function escapeHtml(value) {
   return String(value ?? '-')
     .replace(/&/g, '&amp;')
@@ -14,7 +10,7 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;')
 }
 
-export default function BpkbBarcodeLabel({ item, onClose }) {
+export default function StockUnitBarcodeLabel({ item, onClose }) {
   const svgRef = useRef(null)
 
   useEffect(() => {
@@ -39,14 +35,14 @@ export default function BpkbBarcodeLabel({ item, onClose }) {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Label BPKB ${escapeHtml(item.engine_number)}</title>
+        <title>Label Stock Unit ${escapeHtml(item.engine_number)}</title>
         <style>
           @page { size: A4 portrait; margin: 0; }
           body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
           .page { display: grid; grid-template-columns: repeat(3, 64mm); grid-auto-rows: 32mm; width: 192mm; margin-left: 9mm; margin-top: 2mm; }
           .label { width: 64mm; height: 32mm; padding: 4.5mm 4.5mm 2mm; box-sizing: border-box; overflow: hidden; }
           .header { font-size: 8px; font-weight: bold; color: #1e40af; margin-bottom: 0.8mm; }
-          .name { font-size: 8px; font-weight: bold; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .series { font-size: 8px; font-weight: bold; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           .meta { font-size: 7px; color: #374151; display: grid; grid-template-columns: 13mm 1fr; gap: 0.4mm 1mm; margin-top: 0.8mm; }
           .label-text { color: #111827; }
           svg { width: 100%; height: 12mm; margin-top: 1mm; }
@@ -56,11 +52,11 @@ export default function BpkbBarcodeLabel({ item, onClose }) {
       <body>
         <div class="page">
           <div class="label">
-            <div class="header">BPKB - TDM Ketapang</div>
-            <div class="name">${escapeHtml(getCustomerName(item))}</div>
+            <div class="header">STOCK UNIT - TDM Ketapang</div>
+            <div class="series">${escapeHtml(item.series || '-')} / ${escapeHtml(item.color || '-')}</div>
             <div class="meta">
               <span class="label-text">No Mesin</span><span>${escapeHtml(item.engine_number)}</span>
-              <span class="label-text">No BPKB</span><span>${escapeHtml(item.bpkb_number || '-')}</span>
+              <span class="label-text">No Rangka</span><span>${escapeHtml(item.chassis_number || '-')}</span>
             </div>
             ${svgRef.current?.outerHTML || ''}
           </div>
@@ -80,7 +76,7 @@ export default function BpkbBarcodeLabel({ item, onClose }) {
       onClick={(event) => event.target === event.currentTarget && onClose()}>
       <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <h2 className="text-lg font-bold text-slate-800">Print Label BPKB</h2>
+          <h2 className="text-lg font-bold text-slate-800">Print Label Stock Unit</h2>
           <button onClick={onClose} className="rounded-lg p-1 hover:bg-slate-100">
             <X size={20} className="text-slate-400" />
           </button>
@@ -88,17 +84,17 @@ export default function BpkbBarcodeLabel({ item, onClose }) {
 
         <div className="space-y-4 p-6">
           <div className="mx-auto max-w-[280px] rounded-lg border border-slate-300 bg-white p-4">
-            <div className="mb-1 text-xs font-bold text-blue-600">BPKB - TDM Ketapang</div>
-            <div className="truncate text-sm font-bold text-slate-800">{getCustomerName(item)}</div>
+            <div className="mb-1 text-xs font-bold text-blue-600">STOCK UNIT - TDM Ketapang</div>
+            <div className="truncate text-sm font-bold text-slate-800">{item.series || '-'} / {item.color || '-'}</div>
             <div className="mt-1 grid grid-cols-[72px_1fr] gap-x-2 text-xs text-slate-900">
               <span className="text-slate-900">No Mesin</span><span className="font-mono">{item.engine_number}</span>
-              <span className="text-slate-900">No BPKB</span><span className="font-mono">{item.bpkb_number || '-'}</span>
+              <span className="text-slate-900">No Rangka</span><span className="font-mono">{item.chassis_number || '-'}</span>
             </div>
             <svg ref={svgRef} className="mt-2 w-full" />
           </div>
 
           <div className="text-center text-xs text-slate-400">
-            Barcode memakai No Mesin untuk scan Opname BPKB
+            Barcode memakai No Mesin untuk scan Opname Unit
           </div>
 
           <button

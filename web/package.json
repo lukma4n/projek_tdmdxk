@@ -11,13 +11,18 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
+    "html-to-image": "^1.11.13",
     "jsbarcode": "^3.12.3",
     "lucide-react": "^0.460.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.2",
+    "recharts": "^3.8.1",
     "tailwindcss": "^4.2.4",
     "zustand": "^5.0.12"
+  },
+  "overrides": {
+    "es-toolkit": "1.46.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

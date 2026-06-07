@@ -24,6 +24,12 @@ export const uploadWorkshop = (file) => {
   return fetchWithAuth('/sync/workshop', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
 }
 
+export const uploadSales = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/sync/sales', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+
 export const getSyncLogs = () => fetchWithAuth('/sync/logs')
 export const getAuditLogs = () => fetchWithAuth('/sync/audit-logs')
 export const getBackups = () => fetchWithAuth('/sync/backups')

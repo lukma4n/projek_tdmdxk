@@ -25,7 +25,9 @@ export default function ShowroomProgram() {
     setError('')
     try {
       const [listRes, summaryRes] = await Promise.all([
-        tab === 'leasing' ? api.getShowroomLeasingPrograms({ page: 1, limit: 100, ...(search && { search }) }) : api.getShowroomMdPrograms({ page: 1, limit: 100, ...(search && { search }) }),
+        tab === 'leasing'
+          ? api.getShowroomTacPrograms({ ...(search && { search }) }).then((res) => ({ ...res, pagination: { total: res.data?.length || 0 } }))
+          : api.getShowroomMdPrograms({ page: 1, limit: 100, ...(search && { search }) }),
         api.getShowroomProgramSummary(),
       ])
       setItems(listRes.data || [])
@@ -137,7 +139,7 @@ export default function ShowroomProgram() {
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
         <div className="flex gap-2">
-          <button onClick={() => setTab('leasing')} className={`rounded-lg px-4 py-2 text-sm font-semibold ${tab === 'leasing' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>Leasing/TAC</button>
+          <button onClick={() => setTab('leasing')} className={`rounded-lg px-4 py-2 text-sm font-semibold ${tab === 'leasing' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>TAC Leasing</button>
           <button onClick={() => setTab('md')} className={`rounded-lg px-4 py-2 text-sm font-semibold ${tab === 'md' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>AHM/MD/SCP</button>
         </div>
         <div className="relative"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari kode unit, series, leasing..." className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm" /></div>
@@ -152,7 +154,7 @@ export default function ShowroomProgram() {
 }
 
 function LeasingTable({ items }) {
-  return <table className="w-full"><thead><tr className="border-b border-slate-200 bg-slate-50">{['Kode', 'Series', 'Leasing', 'Tenor', 'Subsidi Finco'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">{h}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{items.map((item) => <tr key={item.id}><td className="px-4 py-3 font-mono text-sm font-semibold">{item.product_code}</td><td className="px-4 py-3 text-sm text-slate-600">{item.series || '-'}</td><td className="px-4 py-3 text-sm font-semibold">{item.leasing}</td><td className="px-4 py-3 text-sm">{item.tenor}</td><td className="px-4 py-3 text-sm font-bold text-blue-700">{currency(item.finco_subsidy)}</td></tr>)}</tbody></table>
+  return <table className="w-full"><thead><tr className="border-b border-slate-200 bg-slate-50">{['Series', 'Leasing', 'DP Category', 'Tenor', 'Amount', 'Periode'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">{h}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{items.map((item) => <tr key={item.id}><td className="px-4 py-3 text-sm font-semibold">{item.series_key}</td><td className="px-4 py-3 text-sm font-semibold">{item.leasing}</td><td className="px-4 py-3 text-sm">{item.dp_category === 'GT_15' ? '> 15%' : '< 15%'}</td><td className="px-4 py-3 text-sm">{item.tenor}</td><td className="px-4 py-3 text-sm font-bold text-blue-700">{currency(item.amount)}</td><td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDate(item.period_start)} - {formatDate(item.period_end)}</td></tr>)}</tbody></table>
 }
 
 function MdTable({ items }) {

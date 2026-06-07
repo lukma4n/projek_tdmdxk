@@ -24,10 +24,15 @@ const ShowroomBpkb = lazy(() => import('./pages/ShowroomBpkb'))
 const ShowroomOtrPrice = lazy(() => import('./pages/ShowroomOtrPrice'))
 const ShowroomBbnPrice = lazy(() => import('./pages/ShowroomBbnPrice'))
 const ShowroomProgram = lazy(() => import('./pages/ShowroomProgram'))
+const ShowroomDiscountTable = lazy(() => import('./pages/ShowroomDiscountTable'))
 const ShowroomTacLeasing = lazy(() => import('./pages/ShowroomTacLeasing'))
+const ShowroomDealerBurden = lazy(() => import('./pages/ShowroomDealerBurden'))
+const ShowroomSalespeople = lazy(() => import('./pages/ShowroomSalespeople'))
 const ShowroomKsuMaster = lazy(() => import('./pages/ShowroomKsuMaster'))
 const ShowroomOpname = lazy(() => import('./pages/ShowroomOpname'))
 const SalesOrderMargin = lazy(() => import('./pages/SalesOrderMargin'))
+const ShowroomSalesDashboard = lazy(() => import('./pages/ShowroomSalesDashboard'))
+const ShowroomLabelBukuService = lazy(() => import('./pages/ShowroomLabelBukuService'))
 const ShowroomDocumentFollowup = lazy(() => import('./pages/ShowroomDocumentFollowup'))
 import {
   HOTLINE_ROLES,
@@ -230,10 +235,34 @@ function App() {
           }
         />
         <Route
+          path="showroom/tabel-diskon"
+          element={
+            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+              <LazyPage><ShowroomDiscountTable /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
           path="showroom/tac-leasing"
           element={
             <RoleGuard allowedRoles={SHOWROOM_ROLES}>
               <LazyPage><ShowroomTacLeasing /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="showroom/dealer-burden"
+          element={
+            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+              <LazyPage><ShowroomDealerBurden /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="showroom/salespeople"
+          element={
+            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+              <LazyPage><ShowroomSalespeople /></LazyPage>
             </RoleGuard>
           }
         />
@@ -250,6 +279,22 @@ function App() {
           element={
             <RoleGuard allowedRoles={SHOWROOM_SALES_ORDER_ROLES}>
               <LazyPage><SalesOrderMargin /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="showroom/dashboard-penjualan"
+          element={
+            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+              <LazyPage><ShowroomSalesDashboard /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="showroom/label-buku-service"
+          element={
+            <RoleGuard allowedRoles={['Admin']}>
+              <LazyPage><ShowroomLabelBukuService /></LazyPage>
             </RoleGuard>
           }
         />

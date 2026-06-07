@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { AlertTriangle, CheckCircle, Download, ExternalLink, FileUp, Loader2, Pencil, Plus, RefreshCw, ScanBarcode, Send, ShieldCheck, Trash2, XCircle, Bell, MapPin, Users } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Download, ExternalLink, FileUp, Loader2, Pencil, Plus, RefreshCw, ScanBarcode, Send, ShieldCheck, Trash2, XCircle, Bell, MapPin } from 'lucide-react'
 import { API_BASE, api } from '../services/api'
 import { useAuthStore } from '../stores/authStore'
 
@@ -91,7 +91,7 @@ function isHundredPercent(summary) {
 export default function ShowroomOpname({ type = 'unit' }) {
   const config = TYPE_CONFIG[type] || TYPE_CONFIG.unit
   const { user } = useAuthStore()
-  const canOperate = user?.role === 'PIC Stock opname'
+  const canOperate = ['PIC Stock opname', 'Lead PIC Stock opname'].includes(user?.role)
   const canApproveAdh = user?.role === 'ADH'
   const canApproveKacab = user?.role === 'Kepala Cabang'
   const [sessions, setSessions] = useState([])
@@ -123,7 +123,23 @@ export default function ShowroomOpname({ type = 'unit' }) {
   const [assignments, setAssignments] = useState({})
   const [picUsers, setPicUsers] = useState([])
   const [notifications, setNotifications] = useState([])
-  const [showNotifications, setShowNotifications] = useState(false)
+
+  const loadSessionDetails = async (sessionId) => {
+    try {
+      const locRes = await api.getShowroomOpnameLocations(sessionId)
+      setSessionLocations(locRes.data || [])
+      const usersRes = await api.getUsers()
+      const picUsersList = (usersRes.data || []).filter((u) => u.role === 'PIC Stock opname')
+      setPicUsers(picUsersList)
+    } catch { /* ignore */ }
+  }
+
+  const loadNotifications = async () => {
+    try {
+      const res = await api.getShowroomOpnameNotifications({ is_read: 'false' })
+      setNotifications(res.data || [])
+    } catch { /* ignore */ }
+  }
 
   const loadItems = async (session) => {
     const res = await api.getShowroomOpnameItems(session.id)
@@ -192,34 +208,16 @@ export default function ShowroomOpname({ type = 'unit' }) {
     }
   }
 
-  const createSession = () => runAction(async () => {
-    const res = await api.createShowroomOpnameSession({ opname_type: type })
-    await loadSessions({ autoResume: false })
-    await loadItems(res.data)
-  })
-
   const confirmSession = () => runAction(async () => {
     const res = await api.confirmShowroomOpnameSession(activeSession.id, { pic_so_name: picSoName.trim(), adh_name: adhName.trim(), branch_head_name: branchHeadName.trim() })
     await loadItems(res.data)
   })
 
-  // Load assignment panel data
-  const loadSessionDetails = async (sessionId) => {
-    try {
-      const locRes = await api.getShowroomOpnameLocations(sessionId)
-      setSessionLocations(locRes.data || [])
-      const usersRes = await api.getUsers()
-      const picUsersList = (usersRes.data || []).filter((u) => u.role === 'PIC Stock opname')
-      setPicUsers(picUsersList)
-    } catch { /* ignore */ }
-  }
-
-  const loadNotifications = async () => {
-    try {
-      const res = await api.getShowroomOpnameNotifications({ is_read: 'false' })
-      setNotifications(res.data || [])
-    } catch { /* ignore */ }
-  }
+  const createSession = () => runAction(async () => {
+    const res = await api.createShowroomOpnameSession({ opname_type: type })
+    await loadSessions({ autoResume: false })
+    await loadItems(res.data)
+  })
 
   const saveAssignments = async () => {
     setActionLoading(true)
@@ -353,14 +351,24 @@ export default function ShowroomOpname({ type = 'unit' }) {
   }
 
   const removeSession = async (session) => {
-    if (!canOperate || !confirm('Hapus sesi opname showroom ini?')) return
-    await api.deleteShowroomOpnameSession(session.id)
-    if (activeSession?.id === session.id) {
-      setActiveSession(null)
-      setItems([])
-      setSummary(null)
+    if (!canOperate) return
+    const confirmed = confirm(`Hapus sesi ${session.session_code}?\n\nTindakan ini akan menghapus semua data scan dan assignment terkait. Data ini tidak dapat dikembalikan.`)
+    if (!confirmed) return
+    setActionLoading(true)
+    setError('')
+    try {
+      await api.deleteShowroomOpnameSession(session.id)
+      if (activeSession?.id === session.id) {
+        setActiveSession(null)
+        setItems([])
+        setSummary(null)
+      }
+      await loadSessions({ autoResume: false })
+    } catch (err) {
+      setError(err.message || 'Gagal menghapus sesi opname')
+    } finally {
+      setActionLoading(false)
     }
-    await loadSessions({ autoResume: false })
   }
 
   const query = search.trim().toLowerCase()

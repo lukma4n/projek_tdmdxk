@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { API_BASE, api } from '../services/api'
-import { BatteryCharging, Bike, Download, Loader2, MapPin, Package, RefreshCw, Search, Timer } from 'lucide-react'
+import { BatteryCharging, Bike, Download, Loader2, MapPin, Package, Printer, RefreshCw, Search, Timer } from 'lucide-react'
+import StockUnitBarcodeLabel from '../components/common/StockUnitBarcodeLabel'
 
 function formatCurrency(value) {
   return `Rp ${(value || 0).toLocaleString('id-ID')}`
@@ -96,6 +97,23 @@ const emptyKsuForm = {
   notes: '',
 }
 
+function chunkItems(items, size) {
+  const chunks = []
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size))
+  }
+  return chunks
+}
+
+function escapeHtml(value) {
+  return String(value ?? '-')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export default function ShowroomStockUnit() {
   const [units, setUnits] = useState([])
   const [summary, setSummary] = useState(null)
@@ -113,6 +131,9 @@ export default function ShowroomStockUnit() {
   const [ksuModal, setKsuModal] = useState(null)
   const [ksuForm, setKsuForm] = useState(emptyKsuForm)
   const [ksuSaving, setKsuSaving] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [selectedMap, setSelectedMap] = useState(new Map())
+  const [printingAll, setPrintingAll] = useState(false)
 
   const loadData = async () => {
     try {
@@ -221,6 +242,124 @@ export default function ShowroomStockUnit() {
     }
   }
 
+  // Batch print label
+  const printLabels = (labelItems, title = 'Print Label Stock Unit') => {
+    const printableItems = labelItems.filter((item) => item.engine_number)
+    if (!printableItems.length) return
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const pagesHtml = chunkItems(printableItems, 12).map((pageItems) => `
+      <div class="page">
+        ${pageItems.map((item) => `
+          <div class="label">
+            <div class="header">STOCK UNIT - TDM Ketapang</div>
+            <div class="series">${escapeHtml(item.series || '-')} / ${escapeHtml(item.color || '-')}</div>
+            <div class="meta">
+              <span class="label-text">No Mesin</span><span>${escapeHtml(item.engine_number)}</span>
+              <span class="label-text">No Rangka</span><span>${escapeHtml(item.chassis_number || '-')}</span>
+            </div>
+            <svg class="barcode" data-code="${escapeHtml(item.engine_number)}"></svg>
+          </div>
+        `).join('')}
+      </div>
+    `).join('')
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${escapeHtml(title)}</title>
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+        <style>
+          @page { size: A4 portrait; margin: 0; }
+          body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+          .page { display: grid; grid-template-columns: repeat(3, 64mm); grid-auto-rows: 32mm; width: 192mm; margin-left: 9mm; padding-top: 2mm; break-after: page; page-break-after: always; }
+          .page:last-child { break-after: auto; page-break-after: auto; }
+          .label { width: 64mm; height: 32mm; padding: 4.5mm 4.5mm 2mm; box-sizing: border-box; overflow: hidden; page-break-inside: avoid; }
+          .header { font-size: 8px; font-weight: bold; color: #1e40af; margin-bottom: 0.8mm; }
+          .series { font-size: 8px; font-weight: bold; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .meta { font-size: 7px; color: #374151; display: grid; grid-template-columns: 13mm 1fr; gap: 0.4mm 1mm; margin-top: 0.8mm; }
+          .label-text { color: #6b7280; }
+          svg { width: 100%; height: 12mm; margin-top: 1mm; }
+          @media print { body { -webkit-print-color-adjust: exact; } }
+        </style>
+      </head>
+      <body>
+        ${pagesHtml}
+        <script>
+          document.querySelectorAll('.barcode').forEach(svg => {
+            JsBarcode(svg, svg.dataset.code, { format: 'CODE128', width: 2, height: 42, displayValue: false, margin: 3 });
+          });
+          setTimeout(() => { window.print(); window.close(); }, 500);
+        </script>
+      </body>
+      </html>
+    `)
+    printWindow.document.close()
+  }
+
+  const handlePrintSelected = () => {
+    const selectedItems = Array.from(selectedMap.values())
+    if (!selectedItems.length) {
+      alert('Pilih minimal satu unit untuk print')
+      return
+    }
+    printLabels(selectedItems, 'Print Label Stock Unit Terpilih')
+  }
+
+  const handlePrintAll = async () => {
+    try {
+      setPrintingAll(true)
+      const total = pagination.total || summary?.total || 1000
+      const params = {
+        page: 1,
+        limit: Math.max(total, 1),
+        ...(search && { search }),
+        ...(series !== 'all' && { series }),
+        ...(state !== 'all' && { state }),
+        ...(location !== 'all' && { location }),
+        ...(agingMin !== 'all' && { aging_min: agingMin }),
+        ...(agingTag !== 'all' && { aging_tag: agingTag }),
+      }
+      const response = await api.getShowroomStockUnits(params)
+      printLabels(response.data || [], 'Print Semua Label Stock Unit')
+    } catch (err) {
+      alert('Gagal print semua label stock unit: ' + err.message)
+    } finally {
+      setPrintingAll(false)
+    }
+  }
+
+  const toggleSelect = (item) => {
+    setSelectedMap((prev) => {
+      const next = new Map(prev)
+      if (next.has(item.id)) next.delete(item.id)
+      else next.set(item.id, item)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (allPageSelected) {
+      setSelectedMap((prev) => {
+        const next = new Map(prev)
+        units.forEach((unit) => next.delete(unit.id))
+        return next
+      })
+    } else {
+      setSelectedMap((prev) => {
+        const next = new Map(prev)
+        units.forEach((unit) => next.set(unit.id, unit))
+        return next
+      })
+    }
+  }
+
+  const allPageSelected = units.length > 0 && units.every((u) => selectedMap.has(u.id))
+  const somePageSelected = units.some((u) => selectedMap.has(u.id)) && !allPageSelected
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -299,8 +438,26 @@ export default function ShowroomStockUnit() {
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <span className="text-sm font-semibold text-slate-700">Daftar Stock Unit</span>
-          <span className="text-xs text-slate-400">{(pagination.total || 0).toLocaleString('id-ID')} total data</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-slate-700">Daftar Stock Unit</span>
+            <span className="text-xs text-slate-400">{(pagination.total || 0).toLocaleString('id-ID')} total data</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePrintSelected}
+              disabled={selectedMap.size === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Printer size={13} /> Print Terpilih ({selectedMap.size})
+            </button>
+            <button
+              onClick={handlePrintAll}
+              disabled={printingAll}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-medium hover:bg-slate-50 disabled:opacity-40"
+            >
+              {printingAll ? <Loader2 className="animate-spin" size={13} /> : <Printer size={13} />} Print Semua
+            </button>
+          </div>
         </div>
         {loading ? (
           <div className="flex items-center justify-center p-12"><Loader2 className="animate-spin text-blue-600" size={24} /></div>
@@ -309,7 +466,16 @@ export default function ShowroomStockUnit() {
             <table className="w-full min-w-[980px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  {['Unit', 'Engine/Chassis', 'Lokasi', 'Aging', 'State', 'KSU', 'Tahun', 'Harga OTR'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">{h}</th>)}
+                  <th className="px-4 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={allPageSelected}
+                      ref={(el) => { if (el) el.indeterminate = somePageSelected }}
+                      onChange={toggleSelectAll}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
+                  {['Unit', 'Engine/Chassis', 'Lokasi', 'Aging', 'State', 'KSU', 'Tahun', 'Harga OTR', 'Label'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">{h}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -317,6 +483,14 @@ export default function ShowroomStockUnit() {
                   const fifoDays = getAgingFifoDays(unit)
 
                   return <tr key={unit.id} className="hover:bg-slate-50/50">
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedMap.has(unit.id)}
+                        onChange={() => toggleSelect(unit)}
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <p className="text-sm font-semibold text-slate-800">{unit.series || '-'}</p>
                       <p className="text-xs text-slate-500">{unit.product_type || '-'} / {unit.color || '-'}</p>
@@ -347,6 +521,15 @@ export default function ShowroomStockUnit() {
                     <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
                       {unit.otr_price ? formatCurrency(unit.otr_price) : <span className="text-warning-600">Belum ada OTR</span>}
                     </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setSelectedItem(unit)}
+                        className="rounded-lg bg-slate-100 p-1.5 text-slate-500 transition-colors hover:bg-blue-100 hover:text-blue-600"
+                        title="Print label barcode"
+                      >
+                        <Printer size={14} />
+                      </button>
+                    </td>
                   </tr>
                 })}
               </tbody>
@@ -354,6 +537,8 @@ export default function ShowroomStockUnit() {
           </div>
         )}
       </div>
+
+      {selectedItem && <StockUnitBarcodeLabel item={selectedItem} onClose={() => setSelectedItem(null)} />}
 
       {ksuModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">

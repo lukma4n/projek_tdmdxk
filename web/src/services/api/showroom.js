@@ -3,6 +3,22 @@ import fetchWithAuth from './fetchWithAuth.js'
 // Dashboard
 export const getShowroomDashboard = () => fetchWithAuth('/showroom/dashboard')
 
+// Sales Dashboard
+export const getSalesDashboard = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/penjualan/dashboard${query ? '?' + query : ''}`)
+}
+export const exportSalesDashboard = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/penjualan/export${query ? '?' + query : ''}`, { responseType: 'blob' })
+}
+
+// Label Buku Service
+export const getServiceBookLabels = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/label-buku-service${query ? '?' + query : ''}`)
+}
+
 // Sales Order Margins
 export const getSalesOrderMargins = (params = {}) => {
   const query = new URLSearchParams(params).toString()
@@ -146,6 +162,10 @@ export const uploadShowroomPrograms = (file) => {
   formData.append('file', file)
   return fetchWithAuth('/showroom/programs/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
 }
+export const getShowroomDiscountTable = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/programs/discount-table${query ? '?' + query : ''}`)
+}
 
 // TAC
 export const getShowroomTacSummary = () => fetchWithAuth('/showroom/tac/summary')
@@ -161,6 +181,43 @@ export const getShowroomPromoSchemes = (params = {}) => {
 export const upsertShowroomPromoScheme = (data) => fetchWithAuth('/showroom/tac/promo-schemes', { method: 'POST', body: data })
 export const getShowroomSeriesAliases = () => fetchWithAuth('/showroom/tac/series-aliases')
 export const upsertShowroomSeriesAlias = (data) => fetchWithAuth('/showroom/tac/series-aliases', { method: 'POST', body: data })
+
+// Dealer Burdens
+export const getShowroomDealerBurdens = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/dealer-burdens${query ? '?' + query : ''}`)
+}
+export const getShowroomDealerBurdenSummary = () => fetchWithAuth('/showroom/dealer-burdens/summary')
+export const upsertShowroomDealerBurden = (data) => fetchWithAuth('/showroom/dealer-burdens', { method: 'POST', body: data })
+export const previewShowroomDealerBurden = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/dealer-burdens/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const uploadShowroomDealerBurden = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/dealer-burdens/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+
+// Salespeople
+export const getShowroomSalespeople = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/salespeople${query ? '?' + query : ''}`)
+}
+export const getShowroomSalespersonSummary = () => fetchWithAuth('/showroom/salespeople/summary')
+export const upsertShowroomSalesperson = (data) => fetchWithAuth('/showroom/salespeople', { method: 'POST', body: data })
+export const deleteShowroomSalesperson = (id) => fetchWithAuth(`/showroom/salespeople/${id}`, { method: 'DELETE' })
+export const previewShowroomSalespeople = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/salespeople/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const uploadShowroomSalespeople = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/salespeople/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
 
 // Opname
 export const getShowroomOpnameSessions = (params = {}) => {
