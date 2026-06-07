@@ -183,20 +183,20 @@ async function getDocumentFollowupSnapshot() {
   stnkThreshold.setDate(stnkThreshold.getDate() - 14)
 
   const [stnkOverdue, bpkbOverdue] = await Promise.all([
-    prisma.showroom_stnks.count({
+    prisma.showroom_stnk_bpkb_tracks.count({
       where: {
         branch_code: 'DXK',
-        stnk_ready_date: { lte: stnkThreshold },
+        stnk_status: 'BELUM_DIAMBIL',
+        tgl_terima_stnk: { lte: stnkThreshold },
       },
     }),
-    prisma.showroom_bpkbs.count({
+    prisma.showroom_stnk_bpkb_tracks.count({
       where: {
         branch_code: 'DXK',
-        overdue_days: { gte: 180 },
-        OR: [
-          { finance_company: null },
-          { finance_company: '' },
-        ],
+        bpkb_status: 'BELUM_DIAMBIL',
+        // overdue_days adalah computed field; pakai tgl_jadi_bpkb < (now - 180 hari) untuk estimasi
+        tgl_jadi_bpkb: { lte: new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000) },
+        finance_company: null,
       },
     }),
   ])

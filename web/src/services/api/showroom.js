@@ -59,16 +59,6 @@ export const getShowroomStnks = (params = {}) => {
 }
 export const getShowroomStnkSummary = () => fetchWithAuth('/showroom/stnks/summary')
 export const getShowroomStnkFilters = () => fetchWithAuth('/showroom/stnks/filters')
-export const previewShowroomStnk = (file) => {
-  const formData = new FormData()
-  formData.append('file', file)
-  return fetchWithAuth('/showroom/stnks/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
-}
-export const uploadShowroomStnk = (file) => {
-  const formData = new FormData()
-  formData.append('file', file)
-  return fetchWithAuth('/showroom/stnks/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
-}
 
 // BPKB
 export const getShowroomBpkbs = (params = {}) => {
@@ -77,16 +67,6 @@ export const getShowroomBpkbs = (params = {}) => {
 }
 export const getShowroomBpkbSummary = () => fetchWithAuth('/showroom/bpkbs/summary')
 export const getShowroomBpkbFilters = () => fetchWithAuth('/showroom/bpkbs/filters')
-export const previewShowroomBpkb = (file) => {
-  const formData = new FormData()
-  formData.append('file', file)
-  return fetchWithAuth('/showroom/bpkbs/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
-}
-export const uploadShowroomBpkb = (file) => {
-  const formData = new FormData()
-  formData.append('file', file)
-  return fetchWithAuth('/showroom/bpkbs/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
-}
 
 // Document Followups
 export const getShowroomDocumentFollowups = (type, params = {}) => {

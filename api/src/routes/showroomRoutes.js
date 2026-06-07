@@ -45,10 +45,10 @@ import {
   getStnkBpkbTrackMonitoring, previewStnkBpkbTrack, uploadStnkBpkbTrack, exportStnkBpkbTrackExcel,
 } from '../controllers/showroomStnkBpkbTrackController.js'
 import {
-  getStnks, exportStnksExcel, getStnkSummary, getStnkFilters, previewStnk, uploadStnk,
+  getStnks, exportStnksExcel, getStnkSummary, getStnkFilters,
 } from '../controllers/showroomStnkController.js'
 import {
-  getBpkbs, exportBpkbsExcel, getBpkbSummary, getBpkbFilters, previewBpkb, uploadBpkb,
+  getBpkbs, exportBpkbsExcel, getBpkbSummary, getBpkbFilters,
 } from '../controllers/showroomBpkbController.js'
 import {
   getOtrPrices, getOtrPriceSummary, previewOtrPrices, uploadOtrPrices, previewOffPurchasePrices, uploadOffPurchasePrices,
@@ -108,15 +108,11 @@ router.get('/stnks', authenticate, documentStockAccess, getStnks)
 router.get('/stnks/export', authenticate, documentStockAccess, exportStnksExcel)
 router.get('/stnks/summary', authenticate, documentStockAccess, getStnkSummary)
 router.get('/stnks/filters', authenticate, documentStockAccess, getStnkFilters)
-router.post('/stnks/preview', authenticate, documentStockAccess, upload.single('file'), previewStnk)
-router.post('/stnks/import', authenticate, documentStockAccess, upload.single('file'), uploadStnk)
 
 router.get('/bpkbs', authenticate, documentStockAccess, getBpkbs)
 router.get('/bpkbs/export', authenticate, documentStockAccess, exportBpkbsExcel)
 router.get('/bpkbs/summary', authenticate, documentStockAccess, getBpkbSummary)
 router.get('/bpkbs/filters', authenticate, documentStockAccess, getBpkbFilters)
-router.post('/bpkbs/preview', authenticate, documentStockAccess, upload.single('file'), previewBpkb)
-router.post('/bpkbs/import', authenticate, documentStockAccess, upload.single('file'), uploadBpkb)
 
 router.get('/otr-prices', authenticate, showroomAccess, getOtrPrices)
 router.get('/otr-prices/summary', authenticate, showroomAccess, getOtrPriceSummary)

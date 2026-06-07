@@ -719,61 +719,6 @@ model showroom_sales_order_margins {
   @@index([margin_status])
 }
 
-model showroom_stnks {
-  id                 Int      @id @default(autoincrement())
-  branch_code        String
-  branch_name        String
-  stnk_name          String?
-  customer_code      String?
-  customer_address   String?
-  sale_order_number  String?
-  receipt_number     String?
-  receipt_date       DateTime?
-  stnk_location      String?
-  engine_number      String   @unique
-  stnk_ready_date    DateTime?
-  stnk_expired_date  DateTime?
-  police_number      String?
-  mobile             String?
-  applicant_name     String?
-  age_raw            String?
-  salesman           String?
-  finance_company    String?
-  synced_at          DateTime @default(now())
-
-  @@index([stnk_location])
-  @@index([stnk_ready_date])
-  @@index([stnk_expired_date])
-  @@index([age_raw])
-}
-
-model showroom_bpkbs {
-  id                    Int      @id @default(autoincrement())
-  branch_code           String
-  branch_name           String
-  stnk_name             String?
-  applicant_name        String?
-  customer_address      String?
-  receipt_number        String?
-  receipt_date          DateTime?
-  bpkb_location         String?
-  engine_number         String   @unique
-  bpkb_number           String?
-  bpkb_ready_date       DateTime?
-  finance_company       String?
-  invoice_number        String?
-  customer_phone        String?
-  salesman              String?
-  requestor_name        String?
-  age_raw               String?
-  overdue_days          Int      @default(0)
-  synced_at             DateTime @default(now())
-
-  @@index([bpkb_location])
-  @@index([bpkb_ready_date])
-  @@index([overdue_days])
-}
-
 model showroom_user_locations {
   id            Int    @id @default(autoincrement())
   user_id       Int
@@ -858,6 +803,12 @@ model showroom_stnk_bpkb_tracks {
   tgl_jadi_bpkb         DateTime?
   lt_terima_bpkb        Int?
 
+  // v2 fields (lokasi, no polisi)
+  no_polisi             String?
+  lokasi_stnk           String?
+  lokasi_bpkb           String?
+  lokasi_stock          String?
+
   // Penyerahan
   tgl_penyerahan_notice DateTime?
   lt_penyerahan_notice  Int?
@@ -896,4 +847,6 @@ model showroom_stnk_bpkb_tracks {
   @@index([tahun])
   @@index([area])
   @@index([finance_company])
+  @@index([lokasi_stnk])
+  @@index([lokasi_bpkb])
 }

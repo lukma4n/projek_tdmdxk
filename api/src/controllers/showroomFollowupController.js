@@ -3,7 +3,7 @@ import { rmSync } from 'fs'
 import path from 'path'
 import os from 'os'
 import { prisma } from '../config/db.js'
-import { buildStnkWhere, buildBpkbWhere, DOCUMENT_FOLLOWUP_STATUSES, cleanupUpload } from './showroomUtils.js'
+import { DOCUMENT_FOLLOWUP_STATUSES } from './showroomUtils.js'
 import { formatForExcel } from '../utils/excelUtils.js'
 
 function documentFollowupStatusLabel(status) {
@@ -17,8 +17,32 @@ function documentFollowupStatusLabel(status) {
   return labels[status] || 'Belum Dihubungi'
 }
 
-function buildDocumentWhere(documentType, query) {
-  return documentType === 'STNK' ? buildStnkWhere(query) : buildBpkbWhere(query)
+function buildDocumentTrackWhere(documentType, query) {
+  const where = { branch_code: 'DXK' }
+  if (documentType === 'STNK') {
+    // STNK follow-up: STNK sudah jadi (ada tgl_terima_stnk) — bisa BELUM_DIAMBIL atau SUDAH_DIAMBIL
+    where.stnk_status = { in: ['BELUM_DIAMBIL', 'SUDAH_DIAMBIL'] }
+    where.lokasi_stnk = { not: null }
+  } else {
+    // BPKB follow-up: BPKB yang sudah jadi (BELUM_DIAMBIL) — finance_company kosong = cash customer
+    where.bpkb_status = 'BELUM_DIAMBIL'
+    where.finance_company = null
+  }
+  if (query.search) {
+    const q = String(query.search).trim()
+    where.OR = [
+      { engine_number: { contains: q } },
+      { no_polisi: { contains: q } },
+      { no_bpkb: { contains: q } },
+      { stnk_name: { contains: q } },
+      { no_so: { contains: q } },
+    ]
+  }
+  if (query.location && query.location !== 'all') {
+    if (documentType === 'STNK') where.lokasi_stnk = String(query.location)
+    else where.lokasi_bpkb = String(query.location)
+  }
+  return where
 }
 
 async function getLatestDocumentFollowups(documentType, engineNumbers) {
@@ -36,6 +60,40 @@ async function getLatestDocumentFollowups(documentType, engineNumbers) {
   return latest
 }
 
+function trackToFollowupRow(documentType, item) {
+  const today = new Date()
+  const overdueDays = item.tgl_jadi_bpkb
+    ? Math.floor((today - new Date(item.tgl_jadi_bpkb)) / (24 * 60 * 60 * 1000))
+    : 0
+  if (documentType === 'STNK') {
+    return {
+      engine_number: item.engine_number,
+      stnk_name: item.stnk_name,
+      applicant_name: item.stnk_name,
+      stnk_location: item.lokasi_stnk,
+      stnk_ready_date: item.tgl_terima_stnk,
+      stnk_expired_date: item.tgl_jtp_stnk,
+      police_number: item.no_polisi,
+      mobile: item.mobile,
+      salesman: null,
+      finance_company: item.finance_company,
+    }
+  }
+  return {
+    engine_number: item.engine_number,
+    stnk_name: item.stnk_name,
+    applicant_name: item.stnk_name,
+    requestor_name: item.stnk_name,
+    bpkb_location: item.lokasi_bpkb,
+    bpkb_number: item.no_bpkb,
+    bpkb_ready_date: item.tgl_jadi_bpkb,
+    overdue_days: overdueDays,
+    customer_phone: item.mobile,
+    salesman: null,
+    finance_company: item.finance_company,
+  }
+}
+
 function attachDocumentFollowups(documentType, rows, followups) {
   return rows.map((item) => ({
     ...item,
@@ -45,18 +103,15 @@ function attachDocumentFollowups(documentType, rows, followups) {
 }
 
 async function buildDocumentFollowupData(documentType, query) {
-  const where = buildDocumentWhere(documentType, query)
-  if (documentType === 'BPKB') {
-    const searchOr = where.OR
-    delete where.OR
-    where.AND = [
-      ...(searchOr ? [{ OR: searchOr }] : []),
-      { OR: [{ finance_company: null }, { finance_company: '' }] },
-    ]
-  }
-  const rows = documentType === 'STNK'
-    ? await prisma.showroom_stnks.findMany({ where, orderBy: { receipt_date: 'desc' } })
-    : await prisma.showroom_bpkbs.findMany({ where, orderBy: { overdue_days: 'desc' } })
+  const where = buildDocumentTrackWhere(documentType, query)
+  const orderField = documentType === 'STNK' ? 'tgl_terima_stnk' : 'tgl_jadi_bpkb'
+  const orderDir = documentType === 'STNK' ? 'desc' : 'asc'
+
+  const tracks = await prisma.showroom_stnk_bpkb_tracks.findMany({
+    where,
+    orderBy: { [orderField]: orderDir },
+  })
+  const rows = tracks.map((t) => trackToFollowupRow(documentType, t))
   const latest = await getLatestDocumentFollowups(documentType, rows.map((item) => item.engine_number))
   const data = attachDocumentFollowups(documentType, rows, latest)
 
@@ -109,9 +164,8 @@ export async function createDocumentFollowup(req, res, next) {
     if (!engineNumber) return res.status(400).json({ error: 'Nomor mesin wajib diisi' })
     if (!DOCUMENT_FOLLOWUP_STATUSES.includes(status)) return res.status(400).json({ error: 'Status follow-up tidak valid' })
 
-    const exists = documentType === 'STNK'
-      ? await prisma.showroom_stnks.findUnique({ where: { engine_number: engineNumber } })
-      : await prisma.showroom_bpkbs.findUnique({ where: { engine_number: engineNumber } })
+    // Validasi engine_number ada di Track
+    const exists = await prisma.showroom_stnk_bpkb_tracks.findUnique({ where: { engine_number: engineNumber } })
     if (!exists) return res.status(404).json({ error: 'Dokumen tidak ditemukan' })
 
     const followup = await prisma.showroom_document_followups.create({

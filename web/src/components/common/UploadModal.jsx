@@ -9,8 +9,6 @@ const modules = [
   { key: 'workshop', label: 'Workshop Tahun Berjalan', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Frondesk', 'Service Advisor', 'Kepala Bengkel'] },
   { key: 'sales', label: 'Data Konsumen', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Service Advisor', 'Kepala Bengkel', 'Admin', 'Kepala Cabang'] },
   { key: 'showroom-stock-unit', label: 'Stock Unit', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin', 'Kepala Cabang'] },
-  { key: 'showroom-stnk', label: 'STNK', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin'] },
-  { key: 'showroom-bpkb', label: 'BPKB', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin'] },
   { key: 'showroom-otr-price', label: 'Harga OTR', accept: '.docx', fileType: 'Word', roles: ['Admin', 'Kepala Cabang'] },
   { key: 'showroom-off-purchase-price', label: 'Harga Off & Beli', accept: '.docx', fileType: 'Word', roles: ['Admin', 'Kepala Cabang'] },
   { key: 'showroom-bbn', label: 'Master BBN', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin', 'Kepala Cabang'] },
@@ -25,7 +23,7 @@ const previewMessages = {
   'showroom-program': 'Import Program akan update/tambah data MD/AHM/Dealer.',
   'showroom-off-purchase-price': 'Import Harga Off & Beli akan upsert berdasarkan kode produk.',
   'showroom-otr-price': 'Import Harga OTR akan upsert berdasarkan kode produk.',
-  'showroom-stnk-bpkb-track': 'Import Track STNK & BPKB akan replace snapshot aktif. Header file di baris 6 (5 baris judul di atasnya).',
+  'showroom-stnk-bpkb-track': 'Import Track STNK & BPKB akan replace snapshot aktif. Mendukung format v1 (58 kolom, header row 6) dan v2 (62 kolom, header row 4 dengan kolom Lokasi STNK/BPKB/Stock dan No Polisi). Otomatis ter-detect.',
 }
 
 export default function UploadModal({ onClose }) {
@@ -73,12 +71,6 @@ export default function UploadModal({ onClose }) {
       switch (activeModule) {
         case 'showroom-stock-unit':
           response = await api.previewShowroomStockUnit(file)
-          break
-        case 'showroom-stnk':
-          response = await api.previewShowroomStnk(file)
-          break
-        case 'showroom-bpkb':
-          response = await api.previewShowroomBpkb(file)
           break
         case 'showroom-otr-price':
           response = await api.previewShowroomOtrPrice(file)
@@ -131,12 +123,6 @@ export default function UploadModal({ onClose }) {
           break
         case 'showroom-stock-unit':
           response = await api.uploadShowroomStockUnit(file)
-          break
-        case 'showroom-stnk':
-          response = await api.uploadShowroomStnk(file)
-          break
-        case 'showroom-bpkb':
-          response = await api.uploadShowroomBpkb(file)
           break
         case 'showroom-otr-price':
           response = await api.uploadShowroomOtrPrice(file)

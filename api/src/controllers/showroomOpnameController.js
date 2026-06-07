@@ -72,20 +72,24 @@ async function getSnapshotRows(type) {
     }))
   }
   if (type === 'stnk') {
-    const rows = await prisma.showroom_stnks.findMany({ where: { branch_code: 'DXK' } })
+    const rows = await prisma.showroom_stnk_bpkb_tracks.findMany({
+      where: { branch_code: 'DXK', stnk_status: 'BELUM_DIAMBIL' },
+    })
     return rows.map((row) => ({
       reference_key: row.engine_number,
-      secondary_key: row.police_number,
-      display_name: row.stnk_name || row.applicant_name,
-      system_location: row.stnk_location,
+      secondary_key: row.no_polisi,
+      display_name: row.stnk_name,
+      system_location: row.lokasi_stnk,
     }))
   }
-  const rows = await prisma.showroom_bpkbs.findMany({ where: { branch_code: 'DXK' } })
+  const rows = await prisma.showroom_stnk_bpkb_tracks.findMany({
+    where: { branch_code: 'DXK', bpkb_status: 'BELUM_DIAMBIL' },
+  })
   return rows.map((row) => ({
     reference_key: row.engine_number,
-    secondary_key: row.bpkb_number,
-    display_name: row.stnk_name || row.applicant_name || row.requestor_name,
-    system_location: row.bpkb_location,
+    secondary_key: row.no_bpkb,
+    display_name: row.stnk_name,
+    system_location: row.lokasi_bpkb,
   }))
 }
 
@@ -99,13 +103,13 @@ async function findReference(type, input) {
     return row && { reference_key: row.engine_number, secondary_key: row.chassis_number, display_name: [row.series, row.product_type, row.color].filter(Boolean).join(' / '), system_location: row.location }
   }
   if (type === 'stnk') {
-    where.OR = [{ engine_number: value }, { police_number: value }, { stnk_name: { contains: value } }, { applicant_name: { contains: value } }, { sale_order_number: value }]
-    const row = await prisma.showroom_stnks.findFirst({ where })
-    return row && { reference_key: row.engine_number, secondary_key: row.police_number, display_name: row.stnk_name || row.applicant_name, system_location: row.stnk_location }
+    where.OR = [{ engine_number: value }, { no_polisi: value }, { stnk_name: { contains: value } }, { no_so: value }]
+    const row = await prisma.showroom_stnk_bpkb_tracks.findFirst({ where: { ...where, stnk_status: 'BELUM_DIAMBIL' } })
+    return row && { reference_key: row.engine_number, secondary_key: row.no_polisi, display_name: row.stnk_name, system_location: row.lokasi_stnk }
   }
-  where.OR = [{ engine_number: value }, { bpkb_number: value }, { stnk_name: { contains: value } }, { applicant_name: { contains: value } }, { invoice_number: value }]
-  const row = await prisma.showroom_bpkbs.findFirst({ where })
-  return row && { reference_key: row.engine_number, secondary_key: row.bpkb_number, display_name: row.stnk_name || row.applicant_name || row.requestor_name, system_location: row.bpkb_location }
+  where.OR = [{ engine_number: value }, { no_bpkb: value }, { stnk_name: { contains: value } }]
+  const row = await prisma.showroom_stnk_bpkb_tracks.findFirst({ where: { ...where, bpkb_status: 'BELUM_DIAMBIL' } })
+  return row && { reference_key: row.engine_number, secondary_key: row.no_bpkb, display_name: row.stnk_name, system_location: row.lokasi_bpkb }
 }
 
 async function findReferences(type, input) {
@@ -124,21 +128,19 @@ async function findReferences(type, input) {
   if (type === 'stnk') {
     where.OR = [
       { engine_number: { contains: value } },
-      { police_number: { contains: value } },
+      { no_polisi: { contains: value } },
       { stnk_name: { contains: value } },
-      { applicant_name: { contains: value } },
     ]
-    const rows = await prisma.showroom_stnks.findMany({ where, take: 20, orderBy: { engine_number: 'asc' } })
-    return rows.map((row) => ({ reference_key: row.engine_number, secondary_key: row.police_number, display_name: row.stnk_name || row.applicant_name, system_location: row.stnk_location }))
+    const rows = await prisma.showroom_stnk_bpkb_tracks.findMany({ where: { ...where, stnk_status: 'BELUM_DIAMBIL' }, take: 20, orderBy: { engine_number: 'asc' } })
+    return rows.map((row) => ({ reference_key: row.engine_number, secondary_key: row.no_polisi, display_name: row.stnk_name, system_location: row.lokasi_stnk }))
   }
   where.OR = [
     { engine_number: { contains: value } },
-    { bpkb_number: { contains: value } },
+    { no_bpkb: { contains: value } },
     { stnk_name: { contains: value } },
-    { applicant_name: { contains: value } },
   ]
-  const rows = await prisma.showroom_bpkbs.findMany({ where, take: 20, orderBy: { engine_number: 'asc' } })
-  return rows.map((row) => ({ reference_key: row.engine_number, secondary_key: row.bpkb_number, display_name: row.stnk_name || row.applicant_name || row.requestor_name, system_location: row.bpkb_location }))
+  const rows = await prisma.showroom_stnk_bpkb_tracks.findMany({ where: { ...where, bpkb_status: 'BELUM_DIAMBIL' }, take: 20, orderBy: { engine_number: 'asc' } })
+  return rows.map((row) => ({ reference_key: row.engine_number, secondary_key: row.no_bpkb, display_name: row.stnk_name, system_location: row.lokasi_bpkb }))
 }
 
 function summarize(items) {

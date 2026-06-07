@@ -238,37 +238,15 @@ export function buildStockUnitWhere(query) {
 }
 
 export function buildStnkWhere(query) {
-  const { search, location } = query
-  const where = { branch_code: 'DXK' }
-
-  if (search) {
-    where.OR = [
-      { engine_number: { contains: search } },
-      { police_number: { contains: search } },
-      { stnk_name: { contains: search } },
-      { sale_order_number: { contains: search } },
-    ]
-  }
-  if (location && location !== 'all') where.stnk_location = location
-
-  return where
+  // DEPRECATED: showroom_stnks sudah dihapus. Gunakan buildStnkStockWhere
+  // di showroomStnkController.js atau query showroom_stnk_bpkb_tracks langsung.
+  return { branch_code: 'DXK' }
 }
 
 export function buildBpkbWhere(query) {
-  const { search, location } = query
-  const where = { branch_code: 'DXK' }
-
-  if (search) {
-    where.OR = [
-      { engine_number: { contains: search } },
-      { bpkb_number: { contains: search } },
-      { stnk_name: { contains: search } },
-      { invoice_number: { contains: search } },
-    ]
-  }
-  if (location && location !== 'all') where.bpkb_location = location
-
-  return where
+  // DEPRECATED: showroom_bpkbs sudah dihapus. Gunakan buildBpkbStockWhere
+  // di showroomBpkbController.js atau query showroom_stnk_bpkb_tracks langsung.
+  return { branch_code: 'DXK' }
 }
 
 export const DOCUMENT_FOLLOWUP_STATUSES = ['belum_dihubungi', 'sudah_dihubungi', 'diambil', 'pending', 'batal']

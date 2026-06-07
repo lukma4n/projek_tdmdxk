@@ -121,20 +121,8 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
 
     const engineList = filtered.map((t) => t.engine_number).filter(Boolean)
 
-    // Parallel: cross-reference to showroom_stnks, showroom_bpkbs, followups
-    const [stnks, bpkbs, stnkFollowups, bpkbFollowups] = await Promise.all([
-      engineList.length
-        ? prisma.showroom_stnks.findMany({
-            where: { engine_number: { in: engineList } },
-            select: { engine_number: true, stnk_ready_date: true, stnk_location: true, stnk_name: true, mobile: true, applicant_name: true, police_number: true },
-          })
-        : Promise.resolve([]),
-      engineList.length
-        ? prisma.showroom_bpkbs.findMany({
-            where: { engine_number: { in: engineList } },
-            select: { engine_number: true, bpkb_number: true, bpkb_ready_date: true, bpkb_location: true, applicant_name: true },
-          })
-        : Promise.resolve([]),
+    // Parallel: cross-reference ke followups (sumber: showroom_stnk_bpkb_tracks sudah single source of truth)
+    const [stnkFollowups, bpkbFollowups] = await Promise.all([
       engineList.length
         ? prisma.showroom_document_followups.findMany({
             where: { document_type: 'STNK', engine_number: { in: engineList } },
@@ -151,8 +139,6 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
         : Promise.resolve([]),
     ])
 
-    const stnkMap = new Map(stnks.map((s) => [s.engine_number, s]))
-    const bpkbMap = new Map(bpkbs.map((b) => [b.engine_number, b]))
     const stnkFollowupMap = new Map()
     for (const f of stnkFollowups) if (!stnkFollowupMap.has(f.engine_number)) stnkFollowupMap.set(f.engine_number, f)
     const bpkbFollowupMap = new Map()
@@ -237,7 +223,6 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
         tgl_proses_stnk: t.tgl_proses_stnk,
         birojasa: t.birojasa,
         no_so: t.no_so,
-        in_showroom_stnks: stnkMap.has(t.engine_number),
       }))
 
     const stnkSudahJadiBelumDiambil = filtered
@@ -274,16 +259,6 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
         days_overdue: Math.floor((today - new Date(t.tgl_jadi_bpkb)) / (24 * 60 * 60 * 1000)),
         no_so: t.no_so,
         followup: bpkbFollowupMap.get(t.engine_number) || null,
-      }))
-
-    const trackTidakAdaDiStnkTable = filtered
-      .filter((t) => t.stnk_status === 'SUDAH_DIAMBIL' && !stnkMap.has(t.engine_number))
-      .slice(0, 30)
-      .map((t) => ({
-        engine_number: t.engine_number,
-        stnk_name: t.stnk_name,
-        series: t.series,
-        tgl_terima_stnk: t.tgl_terima_stnk,
       }))
 
     // Top pending BPKB (oldest tgl_mohon_faktur)
@@ -333,7 +308,6 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
         stnkBelumJadiBelumFollowup: { count: filtered.filter((t) => t.stnk_status === 'BELUM_JADI' && !stnkFollowupMap.has(t.engine_number)).length, rows: stnkBelumJadiBelumFollowup },
         stnkSudahJadiBelumDiambil: { count: filtered.filter((t) => t.stnk_status === 'BELUM_DIAMBIL' && (!stnkFollowupMap.has(t.engine_number) || stnkFollowupMap.get(t.engine_number).status !== 'diambil')).length, rows: stnkSudahJadiBelumDiambil },
         bpkbOverdue: { count: bpkbOverdueList.length, rows: bpkbOverdueList },
-        trackTidakAdaDiStnkTable: { count: filtered.filter((t) => t.stnk_status === 'SUDAH_DIAMBIL' && !stnkMap.has(t.engine_number)).length, rows: trackTidakAdaDiStnkTable },
       },
       topPendingBpkb: { count: filtered.filter((t) => t.bpkb_status === 'BELUM_JADI' && t.tgl_mohon_faktur).length, rows: topPendingBpkb },
       facets,
