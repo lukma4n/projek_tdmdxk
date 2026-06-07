@@ -752,22 +752,6 @@ export default function ShowroomStnkBpkbMonitoring() {
         )}
       </SectionCard>
 
-      {/* Tahun breakdown */}
-      <SectionCard title="Distribusi per Tahun (STNK/BPKB Belum Jadi)" icon={Clock}>
-        {(data?.byTahun || []).length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {data.byTahun.map((item) => (
-              <div key={item.name} className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center hover:bg-blue-50 hover:border-blue-200 transition-colors">
-                <p className="text-xs font-semibold text-slate-500 uppercase">{item.name}</p>
-                <p className="text-2xl font-black text-slate-800 tabular-nums mt-1">{item.count}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-slate-400 py-4 text-center">Belum ada data tahun.</p>
-        )}
-      </SectionCard>
-
       {/* Anomali Section */}
       <SectionCard
         title="Anomali & Tindak Lanjut"
