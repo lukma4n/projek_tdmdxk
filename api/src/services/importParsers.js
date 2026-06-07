@@ -691,7 +691,7 @@ export function parseStnkBpkbTrackFile(filePath, options = {}) {
           nama_penerima_bpkb: null,
           tanggal_bayar_prbj: null,
           category_name: stringOrNull(row[59]),
-          series: stringOrNull(row[60]),
+          series: stringOrNull(row[59]),
           stnk_status: stnkStatus,
           bpkb_status: bpkbStatus,
           // v2 fields
