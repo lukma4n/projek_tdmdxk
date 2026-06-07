@@ -452,3 +452,123 @@ export function parseImportFile(module, filePath) {
       throw new Error('Modul import tidak dikenal')
   }
 }
+
+/**
+ * Parse Report Track STNK & BPKB (Report Tracking HDksi).
+ * Header di row 6 (5 baris pertama: PT, Report title, Tanggal, Periode, empty).
+ * Filter branch_code='DXK'. Dedup by engine_number.
+ * Computes stnk_status & bpkb_status dari kolom tanggal.
+ */
+export function parseStnkBpkbTrackFile(filePath, options = {}) {
+  const { branchFilter = 'DXK' } = options
+  const workbook = xlsx.readFile(filePath)
+  const sheet = workbook.Sheets[workbook.SheetNames[0]]
+  const rows = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: null, blankrows: false }).slice(6)
+  const records = []
+  const errors = []
+  const seen = new Set()
+  const stringOrNull = (v) => (v === null || v === undefined || v === '' ? null : String(v).trim())
+  const parseIntOrZero = (v) => {
+    const n = parseInt(v)
+    return Number.isFinite(n) ? n : 0
+  }
+
+  for (const row of rows) {
+    if (!row || !row[5]) continue  // engine_number required
+    try {
+      const branchCode = String(row[1] || '').trim()
+      if (branchCode !== branchFilter) continue
+      const engineNumber = String(row[5]).trim()
+      if (seen.has(engineNumber)) continue
+      seen.add(engineNumber)
+
+      const tglTerimaStnk = excelDateToJSDate(row[27])
+      const tglPenyerahanStnk = excelDateToJSDate(row[41])
+      const tglJadiBpkb = excelDateToJSDate(row[36])
+      const tglPenyerahanBpkb = excelDateToJSDate(row[45])
+
+      let stnkStatus = null
+      if (!tglTerimaStnk) stnkStatus = 'BELUM_JADI'
+      else if (!tglPenyerahanStnk) stnkStatus = 'BELUM_DIAMBIL'
+      else stnkStatus = 'SUDAH_DIAMBIL'
+
+      let bpkbStatus = null
+      if (!tglJadiBpkb) bpkbStatus = 'BELUM_JADI'
+      else if (!tglPenyerahanBpkb) bpkbStatus = 'BELUM_DIAMBIL'
+      else bpkbStatus = 'SUDAH_DIAMBIL'
+
+      records.push({
+        branch_code: branchCode,
+        branch_name: String(row[2] || ''),
+        area: stringOrNull(row[3]),
+        area_kecamatan: stringOrNull(row[4]),
+        engine_number: engineNumber,
+        chassis_number: stringOrNull(row[6]),
+        partner_code: stringOrNull(row[7]),
+        partner_name: stringOrNull(row[8]),
+        partner_address: stringOrNull(row[9]),
+        stnk_name: stringOrNull(row[11]),
+        // Faktur
+        tgl_mohon_faktur: excelDateToJSDate(row[12]),
+        lt_mohon_faktur: parseIntOrZero(row[13]),
+        tgl_terima_faktur: excelDateToJSDate(row[14]),
+        tgl_cetak_faktur: excelDateToJSDate(row[15]),
+        no_faktur: stringOrNull(row[16]),
+        lt_terima_faktur: parseIntOrZero(row[17]),
+        // STNK
+        tgl_proses_stnk: excelDateToJSDate(row[18]),
+        birojasa: stringOrNull(row[19]),
+        lt_proses_stnk: parseIntOrZero(row[20]),
+        tgl_tagihan_birojasa: excelDateToJSDate(row[21]),
+        lt_tagihan_birojasa: parseIntOrZero(row[22]),
+        // Notice
+        tgl_terima_notice: excelDateToJSDate(row[23]),
+        no_notice: stringOrNull(row[24]),
+        tgl_jtp_notice: excelDateToJSDate(row[25]),
+        lt_terima_notice: parseIntOrZero(row[26]),
+        // STNK jadi
+        tgl_terima_stnk: tglTerimaStnk,
+        no_stnk: stringOrNull(row[28]),
+        tgl_jtp_stnk: excelDateToJSDate(row[29]),
+        lt_terima_stnk: parseIntOrZero(row[30]),
+        // Plat
+        tgl_terima_plat: excelDateToJSDate(row[31]),
+        no_plat: stringOrNull(row[32]),
+        lt_terima_plat: parseIntOrZero(row[33]),
+        // BPKB
+        tgl_terima_bpkb: excelDateToJSDate(row[34]),
+        no_bpkb: stringOrNull(row[35]),
+        tgl_jadi_bpkb: tglJadiBpkb,
+        lt_terima_bpkb: parseIntOrZero(row[38]),
+        // Penyerahan
+        tgl_penyerahan_notice: excelDateToJSDate(row[39]),
+        lt_penyerahan_notice: parseIntOrZero(row[40]),
+        tgl_penyerahan_stnk: tglPenyerahanStnk,
+        lt_penyerahan_stnk: parseIntOrZero(row[42]),
+        tgl_penyerahan_plat: excelDateToJSDate(row[43]),
+        lt_penyerahan_plat: parseIntOrZero(row[44]),
+        tgl_penyerahan_bpkb: tglPenyerahanBpkb,
+        lt_penyerahan_bpkb: parseIntOrZero(row[46]),
+        // Sales
+        tgl_so: excelDateToJSDate(row[47]),
+        no_so: stringOrNull(row[48]),
+        mobile: stringOrNull(row[49]),
+        bulan: parseIntOrZero(row[50]),
+        tahun: parseIntOrZero(row[51]),
+        main_dealer: stringOrNull(row[52]),
+        finance_company: stringOrNull(row[53]),
+        nama_penerima_bpkb: stringOrNull(row[54]),
+        tanggal_bayar_prbj: excelDateToJSDate(row[55]),
+        category_name: stringOrNull(row[56]),
+        series: stringOrNull(row[57]),
+        stnk_status: stnkStatus,
+        bpkb_status: bpkbStatus,
+        synced_at: new Date(),
+      })
+    } catch (err) {
+      errors.push({ row: row[0], error: err.message })
+    }
+  }
+
+  return { records, errors }
+}

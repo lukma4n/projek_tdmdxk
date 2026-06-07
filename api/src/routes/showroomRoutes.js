@@ -42,6 +42,9 @@ import {
   getSalespeople, upsertSalesperson, getSalespersonSummary, previewSalespeopleImport, uploadSalespeopleImport, deleteSalesperson,
 } from '../controllers/showroomSalespeopleController.js'
 import {
+  getStnkBpkbTrackMonitoring, previewStnkBpkbTrack, uploadStnkBpkbTrack, exportStnkBpkbTrackExcel,
+} from '../controllers/showroomStnkBpkbTrackController.js'
+import {
   getStnks, exportStnksExcel, getStnkSummary, getStnkFilters, previewStnk, uploadStnk,
 } from '../controllers/showroomStnkController.js'
 import {
@@ -201,5 +204,13 @@ router.post('/salespeople', authenticate, showroomAccess, upsertSalesperson)
 router.post('/salespeople/preview', authenticate, showroomAccess, upload.single('file'), previewSalespeopleImport)
 router.post('/salespeople/import', authenticate, showroomAccess, upload.single('file'), uploadSalespeopleImport)
 router.delete('/salespeople/:id', authenticate, showroomAccess, deleteSalesperson)
+
+// STNK & BPKB Track Monitoring
+const stnkBpkbTrackAdminAccess = authorize('Admin')
+const stnkBpkbTrackReadAccess = authorize('Admin', 'CRM', 'Kepala Cabang')
+router.get('/stnk-bpkb-tracks/monitoring', authenticate, stnkBpkbTrackReadAccess, getStnkBpkbTrackMonitoring)
+router.get('/stnk-bpkb-tracks/export', authenticate, stnkBpkbTrackReadAccess, exportStnkBpkbTrackExcel)
+router.post('/stnk-bpkb-tracks/preview', authenticate, stnkBpkbTrackAdminAccess, upload.single('file'), previewStnkBpkbTrack)
+router.post('/stnk-bpkb-tracks/import', authenticate, stnkBpkbTrackAdminAccess, upload.single('file'), uploadStnkBpkbTrack)
 
 export default router

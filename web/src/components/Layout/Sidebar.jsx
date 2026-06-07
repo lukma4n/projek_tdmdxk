@@ -21,7 +21,8 @@ import {
   BatteryCharging,
   TrendingUp,
   BookOpen,
-  Table2
+  Table2,
+  ClipboardList
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useThemeStore } from '../../stores/themeStore'
@@ -55,6 +56,7 @@ const navItems = [
   { path: '/showroom/pic-users', label: 'PIC Opname Users', icon: Users, group: 'Showroom', roles: ['Lead PIC Stock opname'] },
   { path: '/showroom/stnk', label: 'Stock STNK', icon: FileText, group: 'Showroom', roles: ['Admin', 'Lead PIC Stock opname'] },
   { path: '/showroom/bpkb', label: 'Stock BPKB', icon: FileBadge, group: 'Showroom', roles: ['Admin', 'Lead PIC Stock opname'] },
+  { path: '/showroom/stnk-bpkb-monitoring', label: 'Monitoring STNK & BPKB', icon: ClipboardList, group: 'Showroom', roles: ['Admin', 'CRM', 'Kepala Cabang'] },
   { path: '/mechanics', label: 'Performa Mekanik', icon: Award, group: 'Bengkel', roles: ['Kepala Bengkel'] },
   { path: '/opname', label: 'Stock Opname', icon: ScanBarcode, group: 'Bengkel', roles: ['Partman', 'Kepala Bengkel', 'Kepala Cabang'] },
   { path: '/users', label: 'Manajemen User', icon: Users, group: 'Administrasi', roles: ['Kepala Bengkel', 'Kepala Cabang'] },

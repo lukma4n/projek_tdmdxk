@@ -21,6 +21,7 @@ const ShowroomDashboard = lazy(() => import('./pages/ShowroomDashboard'))
 const ShowroomStockUnit = lazy(() => import('./pages/ShowroomStockUnit'))
 const ShowroomStnk = lazy(() => import('./pages/ShowroomStnk'))
 const ShowroomBpkb = lazy(() => import('./pages/ShowroomBpkb'))
+const ShowroomStnkBpkbMonitoring = lazy(() => import('./pages/ShowroomStnkBpkbMonitoring'))
 const ShowroomOtrPrice = lazy(() => import('./pages/ShowroomOtrPrice'))
 const ShowroomBbnPrice = lazy(() => import('./pages/ShowroomBbnPrice'))
 const ShowroomProgram = lazy(() => import('./pages/ShowroomProgram'))
@@ -207,6 +208,14 @@ function App() {
           element={
             <RoleGuard allowedRoles={SHOWROOM_DOCUMENT_STOCK_ROLES}>
               <LazyPage><ShowroomBpkb /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="showroom/stnk-bpkb-monitoring"
+          element={
+            <RoleGuard allowedRoles={['Admin', 'CRM', 'Kepala Cabang']}>
+              <LazyPage><ShowroomStnkBpkbMonitoring /></LazyPage>
             </RoleGuard>
           }
         />

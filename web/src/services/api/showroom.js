@@ -255,3 +255,23 @@ export const getShowroomOpnameNotifications = (params = {}) => {
   return fetchWithAuth(`/showroom/opname/notifications${query ? '?' + query : ''}`)
 }
 export const markShowroomOpnameNotificationRead = (id) => fetchWithAuth(`/showroom/opname/notifications/${id}/read`, { method: 'PATCH' })
+
+// STNK & BPKB Track Monitoring
+export const getShowroomStnkBpkbTrackMonitoring = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/stnk-bpkb-tracks/monitoring${query ? '?' + query : ''}`)
+}
+export const exportShowroomStnkBpkbTrack = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/stnk-bpkb-tracks/export${query ? '?' + query : ''}`, { responseType: 'blob' })
+}
+export const previewShowroomStnkBpkbTrack = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/stnk-bpkb-tracks/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const uploadShowroomStnkBpkbTrack = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/stnk-bpkb-tracks/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}

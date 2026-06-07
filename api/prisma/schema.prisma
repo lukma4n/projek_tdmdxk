@@ -806,3 +806,94 @@ model showroom_salespeople {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 }
+
+model showroom_stnk_bpkb_tracks {
+  id                    Int       @id @default(autoincrement())
+  branch_code           String
+  branch_name           String
+  area                  String?
+  area_kecamatan        String?
+  engine_number         String    @unique
+  chassis_number        String?
+  partner_code          String?
+  partner_name          String?
+  partner_address       String?
+  stnk_name             String?
+
+  // Faktur
+  tgl_mohon_faktur      DateTime?
+  lt_mohon_faktur       Int?
+  tgl_terima_faktur     DateTime?
+  tgl_cetak_faktur      DateTime?
+  no_faktur             String?
+  lt_terima_faktur      Int?
+
+  // STNK
+  tgl_proses_stnk       DateTime?
+  birojasa              String?
+  lt_proses_stnk        Int?
+  tgl_tagihan_birojasa  DateTime?
+  lt_tagihan_birojasa   Int?
+
+  // Notice
+  tgl_terima_notice     DateTime?
+  no_notice             String?
+  tgl_jtp_notice        DateTime?
+  lt_terima_notice      Int?
+
+  // STNK jadi
+  tgl_terima_stnk       DateTime?
+  no_stnk               String?
+  tgl_jtp_stnk          DateTime?
+  lt_terima_stnk        Int?
+
+  // Plat
+  tgl_terima_plat       DateTime?
+  no_plat               String?
+  lt_terima_plat        Int?
+
+  // BPKB
+  tgl_terima_bpkb       DateTime?
+  no_bpkb               String?
+  tgl_jadi_bpkb         DateTime?
+  lt_terima_bpkb        Int?
+
+  // Penyerahan
+  tgl_penyerahan_notice DateTime?
+  lt_penyerahan_notice  Int?
+  tgl_penyerahan_stnk   DateTime?
+  lt_penyerahan_stnk    Int?
+  tgl_penyerahan_plat   DateTime?
+  lt_penyerahan_plat    Int?
+  tgl_penyerahan_bpkb   DateTime?
+  lt_penyerahan_bpkb    Int?
+
+  // Sales
+  tgl_so                DateTime?
+  no_so                 String?
+  mobile                String?
+  bulan                 Int?
+  tahun                 Int?
+  main_dealer           String?
+  finance_company       String?
+  nama_penerima_bpkb    String?
+  tanggal_bayar_prbj    DateTime?
+  category_name         String?
+  series                String?
+
+  // Computed status (parsed at import)
+  stnk_status           String?
+  bpkb_status           String?
+
+  source_file           String?
+  synced_at             DateTime  @default(now())
+
+  @@index([branch_code, stnk_status])
+  @@index([branch_code, bpkb_status])
+  @@index([tgl_jadi_bpkb])
+  @@index([tgl_terima_stnk])
+  @@index([series])
+  @@index([tahun])
+  @@index([area])
+  @@index([finance_company])
+}

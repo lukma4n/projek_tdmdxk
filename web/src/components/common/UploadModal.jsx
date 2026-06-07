@@ -15,6 +15,7 @@ const modules = [
   { key: 'showroom-off-purchase-price', label: 'Harga Off & Beli', accept: '.docx', fileType: 'Word', roles: ['Admin', 'Kepala Cabang'] },
   { key: 'showroom-bbn', label: 'Master BBN', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin', 'Kepala Cabang'] },
   { key: 'showroom-program', label: 'Program MD/AHM/Dealer', accept: '.xlsx,.xls,.pdf', fileType: 'Excel/PDF', roles: ['Admin', 'Kepala Cabang'] },
+  { key: 'showroom-stnk-bpkb-track', label: 'Track STNK & BPKB', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin'] },
 ]
 
 const previewMessages = {
@@ -24,6 +25,7 @@ const previewMessages = {
   'showroom-program': 'Import Program akan update/tambah data MD/AHM/Dealer.',
   'showroom-off-purchase-price': 'Import Harga Off & Beli akan upsert berdasarkan kode produk.',
   'showroom-otr-price': 'Import Harga OTR akan upsert berdasarkan kode produk.',
+  'showroom-stnk-bpkb-track': 'Import Track STNK & BPKB akan replace snapshot aktif. Header file di baris 6 (5 baris judul di atasnya).',
 }
 
 export default function UploadModal({ onClose }) {
@@ -90,6 +92,9 @@ export default function UploadModal({ onClose }) {
         case 'showroom-program':
           response = await api.previewShowroomPrograms(file)
           break
+        case 'showroom-stnk-bpkb-track':
+          response = await api.previewShowroomStnkBpkbTrack(file)
+          break
         default:
           response = await api.previewImport(activeModule, file)
       }
@@ -144,6 +149,9 @@ export default function UploadModal({ onClose }) {
           break
         case 'showroom-program':
           response = await api.uploadShowroomPrograms(file)
+          break
+        case 'showroom-stnk-bpkb-track':
+          response = await api.uploadShowroomStnkBpkbTrack(file)
           break
         default:
           throw new Error('Modul tidak dikenal')
