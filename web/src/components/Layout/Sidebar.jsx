@@ -1,14 +1,13 @@
 import { Link, useLocation } from 'react-router-dom'
-import { 
-  LayoutDashboard, 
-  Phone, 
-  Package, 
-  Wrench, 
+import {
+  LayoutDashboard,
+  Phone,
+  Package,
+  Wrench,
   Award,
   Users,
-  ScanBarcode, 
+  ScanBarcode,
   LogOut,
-  ChevronRight,
   ShieldCheck,
   Contact,
   DatabaseBackup,
@@ -22,12 +21,26 @@ import {
   TrendingUp,
   BookOpen,
   Table2,
-  ClipboardList
+  ClipboardList,
+  Receipt,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useThemeStore } from '../../stores/themeStore'
 
+// Skydash Admin design tokens (from DESIGN.md / Skydash spec)
+const C = {
+  primary: '#4B49AC',
+  primaryLight: '#B9B8EE',
+  textPrimary: '#1F1F1F',
+  textSecondary: '#6C7383',
+  textTertiary: '#A3A4A5',
+  border: '#CED4DA',
+  surface: '#F8F9FA',
+  card: '#FFFFFF',
+}
+
 const navItems = [
+  // Bengkel
   { path: '/', label: 'Dashboard Bengkel', icon: LayoutDashboard, group: 'Bengkel', roles: ['Kepala Cabang', 'Frondesk', 'Service Advisor', 'Kepala Bengkel', 'Partman'] },
   { path: '/hotline', label: 'Part Hotline', icon: Phone, group: 'Bengkel', roles: ['Service Advisor', 'Kepala Bengkel', 'Partman'] },
   { path: '/stock', label: 'Stok Sparepart', icon: Package, group: 'Bengkel', roles: ['Service Advisor', 'Kepala Bengkel', 'Partman'] },
@@ -37,28 +50,41 @@ const navItems = [
   { path: '/follow-up-kpb', label: 'Follow-up KPB', icon: MessageCircle, group: 'Bengkel', roles: ['CRM', 'Frondesk', 'Service Advisor', 'Kepala Bengkel'] },
   { path: '/follow-up-stnk', label: 'Follow-up STNK', icon: FileText, group: 'Bengkel', roles: ['CRM'] },
   { path: '/follow-up-bpkb', label: 'Follow-up BPKB', icon: FileBadge, group: 'Bengkel', roles: ['CRM'] },
-  { path: '/showroom/dashboard', label: 'Dashboard Unit', icon: Bike, group: 'Showroom', roles: ['Admin', 'Kepala Cabang', 'Lead PIC Stock opname'] },
-  { path: '/showroom/dashboard-penjualan', label: 'Dashboard Penjualan', icon: TrendingUp, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
-  { path: '/showroom/label-buku-service', label: 'Label Buku Service', icon: BookOpen, group: 'Showroom', roles: ['Admin'] },
-  { path: '/showroom/stock-unit', label: 'Stock Unit Showroom', icon: Bike, group: 'Showroom', roles: ['Admin', 'Kepala Cabang', 'Lead PIC Stock opname'] },
-  { path: '/showroom/harga-otr', label: 'Master Harga', icon: BadgeDollarSign, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
-  { path: '/showroom/bbn', label: 'Master BBN', icon: FileText, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
-  { path: '/showroom/program', label: 'Master Program', icon: BadgeDollarSign, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
-  { path: '/showroom/tabel-diskon', label: 'Tabel Diskon', icon: Table2, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
-  { path: '/showroom/tac-leasing', label: 'Master TAC Leasing', icon: BadgeDollarSign, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
-  { path: '/showroom/dealer-burden', label: 'Master Beban Dealer', icon: BadgeDollarSign, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
-  { path: '/showroom/salespeople', label: 'Master Sales', icon: Users, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
-  { path: '/showroom/ksu', label: 'Master KSU', icon: BatteryCharging, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
-  { path: '/showroom/sales-order-margin', label: 'Kalkulator Margin', icon: Calculator, group: 'Showroom', roles: ['Admin', 'Kepala Cabang'] },
-  { path: '/showroom/opname-unit', label: 'Opname Unit', icon: ScanBarcode, group: 'Showroom', roles: ['Lead PIC Stock opname', 'ADH', 'Kepala Cabang'] },
-  { path: '/showroom/opname-stnk', label: 'Opname STNK', icon: FileText, group: 'Showroom', roles: ['Lead PIC Stock opname', 'ADH', 'Kepala Cabang'] },
-  { path: '/showroom/opname-bpkb', label: 'Opname BPKB', icon: FileBadge, group: 'Showroom', roles: ['Lead PIC Stock opname', 'ADH', 'Kepala Cabang'] },
-  { path: '/showroom/pic-users', label: 'PIC Opname Users', icon: Users, group: 'Showroom', roles: ['Lead PIC Stock opname'] },
-  { path: '/showroom/stnk', label: 'Stock STNK', icon: FileText, group: 'Showroom', roles: ['Admin', 'Lead PIC Stock opname'] },
-  { path: '/showroom/bpkb', label: 'Stock BPKB', icon: FileBadge, group: 'Showroom', roles: ['Admin', 'Lead PIC Stock opname'] },
-  { path: '/showroom/stnk-bpkb-monitoring', label: 'Monitoring STNK & BPKB', icon: ClipboardList, group: 'Showroom', roles: ['Admin', 'CRM', 'Kepala Cabang'] },
   { path: '/mechanics', label: 'Performa Mekanik', icon: Award, group: 'Bengkel', roles: ['Kepala Bengkel'] },
   { path: '/opname', label: 'Stock Opname', icon: ScanBarcode, group: 'Bengkel', roles: ['Partman', 'Kepala Bengkel', 'Kepala Cabang'] },
+
+  // Penjualan (Showroom sub-group)
+  { path: '/showroom/dashboard-penjualan', label: 'Laporan Analisis Penjualan', icon: TrendingUp, group: 'Penjualan', roles: ['Admin', 'Kepala Cabang'] },
+  { path: '/showroom/closing-harian', label: 'Laporan Closing Harian', icon: Receipt, group: 'Penjualan', roles: ['Admin', 'Kepala Cabang'] },
+
+  // Marketing (Showroom sub-group)
+  { path: '/showroom/tabel-diskon', label: 'Tabel Diskon', icon: Table2, group: 'Marketing', roles: ['Admin', 'Kepala Cabang'] },
+  { path: '/showroom/tac-leasing', label: 'Master TAC', icon: BadgeDollarSign, group: 'Marketing', roles: ['Admin', 'Kepala Cabang'] },
+  { path: '/showroom/sales-order-margin', label: 'Kalkulator Margin', icon: Calculator, group: 'Marketing', roles: ['Admin', 'Kepala Cabang'] },
+  { path: '/showroom/harga-otr', label: 'Master Harga', icon: BadgeDollarSign, group: 'Marketing', roles: ['Admin', 'Kepala Cabang'] },
+  { path: '/showroom/salespeople', label: 'Master Sales', icon: Users, group: 'Marketing', roles: ['Admin', 'Kepala Cabang'] },
+  { path: '/showroom/dealer-burden', label: 'Master Beban Dealer', icon: BadgeDollarSign, group: 'Marketing', roles: ['Admin', 'Kepala Cabang'] },
+  { path: '/showroom/program', label: 'Master Program', icon: BadgeDollarSign, group: 'Marketing', roles: ['Admin', 'Kepala Cabang'] },
+  { path: '/showroom/bbn', label: 'Master BBN', icon: FileText, group: 'Marketing', roles: ['Admin', 'Kepala Cabang'] },
+
+  // Unit (Showroom sub-group)
+  { path: '/showroom/dashboard', label: 'Dashboard Unit', icon: Bike, group: 'Unit', roles: ['Admin', 'Kepala Cabang', 'Lead PIC Stock opname'] },
+  { path: '/showroom/stock-unit', label: 'Stock Unit', icon: Bike, group: 'Unit', roles: ['Admin', 'Kepala Cabang', 'Lead PIC Stock opname'] },
+  { path: '/showroom/ksu', label: 'Master KSU', icon: BatteryCharging, group: 'Unit', roles: ['Admin', 'Kepala Cabang'] },
+
+  // STNK & BPKB (Showroom sub-group)
+  { path: '/showroom/stnk', label: 'Stock STNK', icon: FileText, group: 'STNK & BPKB', roles: ['Admin', 'Lead PIC Stock opname'] },
+  { path: '/showroom/bpkb', label: 'Stock BPKB', icon: FileBadge, group: 'STNK & BPKB', roles: ['Admin', 'Lead PIC Stock opname'] },
+  { path: '/showroom/stnk-bpkb-monitoring', label: 'Monitoring STNK & BPKB', icon: ClipboardList, group: 'STNK & BPKB', roles: ['Admin', 'CRM', 'Kepala Cabang'] },
+  { path: '/showroom/label-buku-service', label: 'Label Buku Service', icon: BookOpen, group: 'STNK & BPKB', roles: ['Admin'] },
+
+  // Opname (Showroom sub-group, role-focused Lead PIC/ADH)
+  { path: '/showroom/opname-unit', label: 'Opname Unit', icon: ScanBarcode, group: 'Opname', roles: ['Lead PIC Stock opname', 'ADH', 'Kepala Cabang'] },
+  { path: '/showroom/opname-stnk', label: 'Opname STNK', icon: FileText, group: 'Opname', roles: ['Lead PIC Stock opname', 'ADH', 'Kepala Cabang'] },
+  { path: '/showroom/opname-bpkb', label: 'Opname BPKB', icon: FileBadge, group: 'Opname', roles: ['Lead PIC Stock opname', 'ADH', 'Kepala Cabang'] },
+  { path: '/showroom/pic-users', label: 'PIC Opname Users', icon: Users, group: 'Opname', roles: ['Lead PIC Stock opname'] },
+
+  // Administrasi
   { path: '/users', label: 'Manajemen User', icon: Users, group: 'Administrasi', roles: ['Kepala Bengkel', 'Kepala Cabang'] },
   { path: '/backups', label: 'Backup & Restore', icon: DatabaseBackup, group: 'Administrasi', roles: ['Kepala Bengkel', 'Kepala Cabang'] },
 ]
@@ -120,20 +146,39 @@ export default function Sidebar() {
             const showGroup = groupLabel !== (visibleItems[index - 1] ? getGroupLabel(visibleItems[index - 1]) : null)
             return (
               <div key={item.path}>
-                {showGroup && <p className={`px-3 pb-1 pt-4 text-[10px] font-black uppercase tracking-[0.18em] first:pt-0 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{groupLabel}</p>}
+                {showGroup && (
+                  <p
+                    className={`px-3 pb-1.5 pt-4 text-[10px] font-black uppercase tracking-[0.18em] first:pt-0 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}
+                    style={!isDark && groupLabel !== 'Bengkel' && groupLabel !== 'Administrasi' ? { borderTop: `1px solid ${C.border}`, marginTop: '8px' } : undefined}
+                  >
+                    {groupLabel}
+                  </p>
+                )}
+                {/* Skydash active style: 3px left border primary + tinted bg surface */}
                 <Link
                   to={item.path}
-                  className={`group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                  className={`relative flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
                     isActive
-                      ? isDark ? 'bg-white text-slate-950 shadow-xl shadow-blue-950/20' : 'bg-blue-50 text-blue-700 ring-1 ring-blue-100'
-                      : isDark ? 'text-slate-300 hover:bg-white/10 hover:text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                      ? isDark ? 'bg-white/10 text-white' : 'text-[#4B49AC]'
+                      : isDark ? 'text-slate-300 hover:bg-white/5 hover:text-white' : 'text-slate-600 hover:bg-[#F8F9FA] hover:text-[#1F1F1F]'
                   }`}
+                  style={{
+                    borderRadius: '4px',
+                    backgroundColor: isActive && !isDark ? C.surface : undefined,
+                    borderLeft: isActive ? `3px solid ${isDark ? '#FFFFFF' : C.primary}` : '3px solid transparent',
+                    paddingLeft: '12px', // offset 3px border
+                  }}
                 >
-                  <span className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors ${isActive ? 'bg-blue-600 text-white' : isDark ? 'bg-white/5 text-slate-400 group-hover:bg-white/10 group-hover:text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-white group-hover:text-slate-900'}`}>
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-xl transition-colors ${
+                      isActive
+                        ? isDark ? 'bg-white/20 text-white' : 'bg-[#4B49AC] text-white'
+                        : isDark ? 'bg-white/5 text-slate-400 group-hover:bg-white/10 group-hover:text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-white group-hover:text-slate-900'
+                    }`}
+                  >
                     <Icon size={17} />
                   </span>
                   <span className="flex-1">{item.label}</span>
-                  {isActive && <ChevronRight size={14} className={isDark ? 'text-slate-400' : 'text-blue-500'} />}
                 </Link>
               </div>
             )

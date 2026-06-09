@@ -32,7 +32,8 @@ const ShowroomSalespeople = lazy(() => import('./pages/ShowroomSalespeople'))
 const ShowroomKsuMaster = lazy(() => import('./pages/ShowroomKsuMaster'))
 const ShowroomOpname = lazy(() => import('./pages/ShowroomOpname'))
 const SalesOrderMargin = lazy(() => import('./pages/SalesOrderMargin'))
-const ShowroomSalesDashboard = lazy(() => import('./pages/ShowroomSalesDashboard'))
+const ShowroomSalesAnalysis = lazy(() => import('./pages/ShowroomSalesAnalysis'))
+const ShowroomClosingDaily = lazy(() => import('./pages/ShowroomClosingDaily'))
 const ShowroomLabelBukuService = lazy(() => import('./pages/ShowroomLabelBukuService'))
 const ShowroomDocumentFollowup = lazy(() => import('./pages/ShowroomDocumentFollowup'))
 import {
@@ -295,7 +296,15 @@ function App() {
           path="showroom/dashboard-penjualan"
           element={
             <RoleGuard allowedRoles={SHOWROOM_ROLES}>
-              <LazyPage><ShowroomSalesDashboard /></LazyPage>
+              <LazyPage><ShowroomSalesAnalysis /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="showroom/closing-harian"
+          element={
+            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+              <LazyPage><ShowroomClosingDaily /></LazyPage>
             </RoleGuard>
           }
         />
