@@ -18,7 +18,8 @@ export default function ShowroomSalespeople() {
   const [previewData, setPreviewData] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
   const [pendingFile, setPendingFile] = useState(null)
-  const [form, setForm] = useState({ no: '', name: '', team_leader: '' })
+  const [form, setForm] = useState({ name: '', team_leader: '' })
+  const [teamLeaders, setTeamLeaders] = useState([])
 
   const loadData = async () => {
     setLoading(true)
@@ -43,6 +44,13 @@ export default function ShowroomSalespeople() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search])
 
+  // Fetch team leader options untuk dropdown
+  useEffect(() => {
+    api.getShowroomTeamLeaders({ all: true })
+      .then(res => setTeamLeaders(res.data || []))
+      .catch(() => {})
+  }, [])
+
   const saveItem = async (event) => {
     event.preventDefault()
     setSaving(true)
@@ -50,12 +58,11 @@ export default function ShowroomSalespeople() {
     setError('')
     try {
       const res = await api.upsertShowroomSalesperson({
-        no: parseInt(form.no) || null,
         name: clean(form.name),
         team_leader: clean(form.team_leader),
       })
       setMessage(res.message)
-      setForm({ no: '', name: '', team_leader: '' })
+      setForm({ name: '', team_leader: '' })
       await loadData()
     } catch (err) {
       setError(err.message || 'Gagal simpan data Sales')
@@ -188,25 +195,26 @@ export default function ShowroomSalespeople() {
       {/* Form tambah */}
       <form onSubmit={saveItem} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
         <h2 className="font-semibold text-slate-800">Tambah / Edit Sales</h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">No</label>
-            <input type="number" value={form.no} onChange={(e) => setForm({ ...form, no: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Contoh: 1" />
-          </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1">Nama Sales *</label>
             <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Contoh: GUNAWAN" />
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1">Team Leader</label>
-            <input value={form.team_leader} onChange={(e) => setForm({ ...form, team_leader: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Contoh: ANDRI YANI SUSANTO" />
+            <select value={form.team_leader} onChange={(e) => setForm({ ...form, team_leader: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+              <option value="">-- Pilih Team Leader --</option>
+              {teamLeaders.map((tl) => (
+                <option key={tl.id} value={tl.name}>{tl.name}</option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="flex gap-2">
           <button type="submit" disabled={saving} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
             {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Simpan
           </button>
-          <button type="button" onClick={() => setForm({ no: '', name: '', team_leader: '' })} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Reset</button>
+          <button type="button" onClick={() => setForm({ name: '', team_leader: '' })} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Reset</button>
         </div>
       </form>
 
@@ -239,7 +247,7 @@ export default function ShowroomSalespeople() {
                     <td className="px-4 py-3 text-sm text-slate-600">{item.team_leader || '-'}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        <button onClick={() => setForm({ no: String(item.no || ''), name: item.name, team_leader: item.team_leader || '' })} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">Edit</button>
+                        <button onClick={() => setForm({ name: item.name, team_leader: item.team_leader || '' })} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">Edit</button>
                         <button onClick={() => handleDelete(item.id)} className="rounded-lg border border-danger-200 bg-danger-50 px-3 py-1.5 text-xs text-danger-600 hover:bg-danger-100"><Trash2 size={14} /></button>
                       </div>
                     </td>

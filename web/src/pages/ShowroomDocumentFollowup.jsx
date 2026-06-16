@@ -155,14 +155,13 @@ export default function ShowroomDocumentFollowup({ type }) {
   const handleExport = async () => {
     try {
       setExporting(true)
-      const token = localStorage.getItem('token')
       const params = new URLSearchParams({
         ...(search && { search }),
         ...(status !== 'all' && { status }),
         ...(!isStnk && overdueMin !== 'all' && { overdue_min: overdueMin }),
       }).toString()
       const response = await fetch(`${API_BASE}/showroom/document-followups/${type}/export${params ? '?' + params : ''}`, {
-        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+        credentials: 'include',
       })
       if (!response.ok) {
         const exportError = await response.json().catch(() => ({ error: 'Export gagal' }))

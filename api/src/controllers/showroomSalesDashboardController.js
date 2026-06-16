@@ -1,6 +1,7 @@
 import { prisma } from '../config/db.js'
 import xlsx from 'xlsx'
 import { formatForExcel } from '../utils/excelUtils.js'
+import { buildTeamPerformanceFromMaster } from '../utils/salesPerformance.js'
 
 function startOfMonth(date) {
   const d = new Date(date)
@@ -48,59 +49,6 @@ function prevMonthRange(from, to) {
 }
 
 const LEASING_TYPES = ['FIF', 'OTO', 'ADIRA', 'IMFI']
-
-async function buildTeamPerformanceFromMaster(dateWhere, preFetchedMaster) {
-  const master = preFetchedMaster || await prisma.showroom_salespeople.findMany({
-    where: { is_active: true },
-    orderBy: { name: 'asc' },
-  })
-
-  if (master.length === 0) {
-    return { byTeam: [], totalActiveSales: 0, salesWithClosing: 0 }
-  }
-
-  const teamMap = new Map()
-  for (const s of master) {
-    const tl = s.team_leader || 'Tidak diketahui'
-    if (!teamMap.has(tl)) teamMap.set(tl, [])
-    teamMap.get(tl).push(s)
-  }
-
-  const customerRecords = await prisma.customers.findMany({
-    where: { ...dateWhere, salesman: { not: null } },
-    select: { salesman: true },
-  })
-
-  const countMap = new Map()
-  for (const c of customerRecords) {
-    const key = c.salesman.trim().toUpperCase()
-    countMap.set(key, (countMap.get(key) || 0) + 1)
-  }
-
-  const byTeam = []
-  for (const [teamLeader, salesmen] of teamMap) {
-    const teamSalesmen = []
-    let teamTotal = 0
-
-    for (const s of salesmen) {
-      const key = s.name.trim().toUpperCase()
-      const count = countMap.get(key) || 0
-      teamTotal += count
-      teamSalesmen.push({ name: s.name, count })
-    }
-
-    teamSalesmen.sort((a, b) => b.count - a.count)
-    byTeam.push({ team: teamLeader, total: teamTotal, salesmen: teamSalesmen })
-  }
-
-  byTeam.sort((a, b) => b.total - a.total)
-
-  return {
-    byTeam,
-    totalActiveSales: master.length,
-    salesWithClosing: [...new Set(byTeam.flatMap((t) => t.salesmen.filter((s) => s.count > 0).map((s) => s.name)))].length,
-  }
-}
 
 export async function getShowroomSalesDashboard(req, res, next) {
   try {
@@ -159,7 +107,7 @@ export async function getShowroomSalesDashboard(req, res, next) {
     const activeSalesCount = masterSalespeople.length
 
     // Kumulatif dari awal bulan s/d tanggal filter
-    const teamResult = await buildTeamPerformanceFromMaster(monthBaseWhere, masterSalespeople)
+    const teamResult = await buildTeamPerformanceFromMaster(prisma, { dateWhere: monthBaseWhere, preFetchedMaster: masterSalespeople })
 
     // Total penjualan bulan ini untuk hitung persentase
     const totalMonthCount = await prisma.customers.count({ where: monthBaseWhere })
@@ -230,7 +178,7 @@ export async function getShowroomSalesDashboard(req, res, next) {
         : false
 
     // Always compute period data separately since date ranges differ
-    const teamPeriodResult = await buildTeamPerformanceFromMaster(baseWhere, masterSalespeople)
+    const teamPeriodResult = await buildTeamPerformanceFromMaster(prisma, { dateWhere: baseWhere, preFetchedMaster: masterSalespeople })
     const byLeasingPeriod = await buildLeasingBreakdown(baseWhere, creditCount)
 
     // Top Model untuk periode yang dipilih saja

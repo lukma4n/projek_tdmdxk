@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../config/db.js'
 
-const JWT_COOKIE_NAME = 'dxk_token'
+const JWT_COOKIE_NAME = 'token'
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h'
 
 function isSecureCookie(req) {
@@ -68,7 +68,6 @@ export async function login(req, res, next) {
     })
 
     res.json({
-      token,
       user: {
         id: user.id,
         username: user.username,

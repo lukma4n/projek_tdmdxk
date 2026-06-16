@@ -380,8 +380,8 @@ export default function ShowroomClosingDaily() {
                     <tr key={tx.so_number} className="hover:bg-slate-50">
                       <td className="py-1.5 px-2 font-mono text-slate-700">{tx.so_number}</td>
                       <td className="py-1.5 px-2 text-slate-600">{formatTanggalIndo(tx.so_date)}</td>
-                      <td className="py-1.5 px-2 text-slate-600 text-[10px]">{tx.sales_coord_name || '-'}</td>
-                      <td className="py-1.5 px-2 font-medium text-slate-700">{tx.salesman || '-'}</td>
+                      <td className="py-1.5 px-2 text-slate-600 text-[10px]">{(tx.sales_coord_name || '-').toUpperCase()}</td>
+                      <td className="py-1.5 px-2 font-medium text-slate-700">{(tx.salesman || '-').toUpperCase()}</td>
                       <td className="py-1.5 px-2 text-slate-600">{tx.customer_name || '-'}</td>
                       <td className="py-1.5 px-2 text-slate-600">{tx.type || '-'}</td>
                       <td className="py-1.5 px-2 text-slate-600">{tx.model || '-'}</td>

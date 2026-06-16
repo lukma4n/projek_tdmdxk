@@ -48,7 +48,6 @@ export default function ShowroomStnk() {
   const handleExport = async () => {
     try {
       setExporting(true)
-      const token = localStorage.getItem('token')
       const params = new URLSearchParams({
         ...(search && { search }),
         ...(location !== 'all' && { location }),
@@ -56,7 +55,7 @@ export default function ShowroomStnk() {
       }).toString()
 
       const response = await fetch(`${API_BASE}/showroom/stnks/export${params ? '?' + params : ''}`, {
-        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+        credentials: 'include',
       })
 
       if (!response.ok) {

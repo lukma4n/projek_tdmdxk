@@ -374,7 +374,9 @@ export async function exportStnkBpkbTrackExcel(req, res, next) {
       Tgl_Jadi_BPKB: formatForExcel(t.tgl_jadi_bpkb),
       No_BPKB: t.no_bpkb || '-',
       Tgl_Penyerahan_STNK: formatForExcel(t.tgl_penyerahan_stnk),
+      Nama_Penerima_BPKB: t.nama_penerima_bpkb || '-',
       Tgl_Penyerahan_BPKB: formatForExcel(t.tgl_penyerahan_bpkb),
+      Tgl_Penyerahan_Plat: formatForExcel(t.tgl_penyerahan_plat),
       STNK_Status: t.stnk_status || '-',
       BPKB_Status: t.bpkb_status || '-',
       No_SO: t.no_so || '-',
@@ -385,9 +387,9 @@ export async function exportStnkBpkbTrackExcel(req, res, next) {
     const ws = xlsx.utils.json_to_sheet(exportData)
     ws['!cols'] = [
       { wch: 5 }, { wch: 18 }, { wch: 18 }, { wch: 25 }, { wch: 14 }, { wch: 28 }, { wch: 18 },
-      { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 20 }, { wch: 12 }, { wch: 16 },
-      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 14 },
-      { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 14 }, { wch: 14 },
+      { wch: 14 }, { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 20 }, { wch: 14 }, { wch: 16 },
+      { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 14 }, { wch: 20 },
+      { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 16 },
     ]
     xlsx.utils.book_append_sheet(wb, ws, 'Track STNK BPKB')
 

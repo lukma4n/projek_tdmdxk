@@ -16,12 +16,13 @@ import {
   Activity,
   Target,
   Zap,
+  Calendar,
 } from 'lucide-react'
 import {
-  getTodayStr,
-  getYesterdayStr,
   LEASING_COLORS,
   dashboardStatCards,
+  DATE_PRESETS,
+  getDateRangePreset,
 } from '../components/showroom/ShowroomSalesUtils'
 import {
   CountBar,
@@ -35,9 +36,10 @@ export default function ShowroomSalesAnalysis() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [exporting, setExporting] = useState(false)
-  const today = getTodayStr()
-  const [from, setFrom] = useState(today)
-  const [to, setTo] = useState(today)
+  const initialRange = getDateRangePreset('mtd')
+  const [from, setFrom] = useState(initialRange.from)
+  const [to, setTo] = useState(initialRange.to)
+  const [activePreset, setActivePreset] = useState('mtd')
   const [target, setTarget] = useState('')
 
   const loadData = useCallback(async () => {
@@ -58,22 +60,11 @@ export default function ShowroomSalesAnalysis() {
     void loadData()
   }, [loadData])
 
-  const handleShortcut = (type) => {
-    let f, toDate
-    if (type === 'today') {
-      f = getTodayStr()
-      toDate = f
-    } else if (type === 'yesterday') {
-      f = getYesterdayStr()
-      toDate = f
-    } else if (type === 'month') {
-      const d = new Date()
-      d.setDate(1)
-      f = d.toISOString().split('T')[0]
-      toDate = getTodayStr()
-    }
-    setFrom(f)
-    setTo(toDate)
+  const handlePreset = (presetKey) => {
+    const range = getDateRangePreset(presetKey)
+    setFrom(range.from)
+    setTo(range.to)
+    setActivePreset(presetKey)
   }
 
   const handleExport = async () => {
@@ -155,7 +146,10 @@ export default function ShowroomSalesAnalysis() {
             type="date"
             value={from}
             max={to}
-            onChange={(e) => setFrom(e.target.value)}
+            onChange={(e) => {
+              setFrom(e.target.value)
+              setActivePreset('')
+            }}
             className="px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
           />
           <span className="text-slate-400 text-sm font-medium">s/d</span>
@@ -163,18 +157,36 @@ export default function ShowroomSalesAnalysis() {
             type="date"
             value={to}
             min={from}
-            onChange={(e) => setTo(e.target.value)}
+            onChange={(e) => {
+              setTo(e.target.value)
+              setActivePreset('')
+            }}
             className="px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
           />
-          <button onClick={() => handleShortcut('today')} className="px-3 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            Hari Ini
-          </button>
-          <button onClick={() => handleShortcut('yesterday')} className="px-3 py-2 text-xs font-semibold bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
-            Kemarin
-          </button>
-          <button onClick={() => handleShortcut('month')} className="px-3 py-2 text-xs font-semibold bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
-            Bulan Ini
-          </button>
+          <div className="flex items-center gap-2">
+            <Calendar size={16} className="text-slate-400" />
+            <label htmlFor="sales-period-preset" className="text-xs font-semibold text-slate-500">Periode</label>
+            <select
+              id="sales-period-preset"
+              value={activePreset || 'custom'}
+              onChange={(e) => {
+                const value = e.target.value
+                if (value === 'custom') {
+                  setActivePreset('')
+                } else {
+                  handlePreset(value)
+                }
+              }}
+              className="min-w-[180px] px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
+            >
+              {DATE_PRESETS.map((preset) => (
+                <option key={preset.key} value={preset.key}>
+                  {preset.label}
+                </option>
+              ))}
+              <option value="custom">Custom</option>
+            </select>
+          </div>
           <div className="flex items-center gap-2">
             <Target size={16} className="text-blue-600" />
             <input

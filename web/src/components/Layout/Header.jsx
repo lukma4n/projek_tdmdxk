@@ -6,8 +6,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useThemeStore } from '../../stores/themeStore'
 import UploadModal from '../common/UploadModal'
 import { api } from '../../services/api'
-
-const IMPORT_ROLES = ['Admin', 'Kepala Cabang', 'Frondesk', 'Service Advisor', 'Kepala Bengkel', 'Partman']
+import { IMPORT_ROLES, displayRole } from '../../config/roles'
 
 export default function Header() {
   const navigate = useNavigate()
@@ -24,13 +23,6 @@ export default function Header() {
 
   const criticalCount = alerts?.critical?.length || 0
   const attentionCount = alerts?.attention?.length || 0
-  const displayRole = (role) => {
-    if (role === 'Admin') return 'Admin Showroom'
-    if (role === 'ADH') return 'ADH'
-    if (role === 'CRM') return 'Admin CRM'
-    if (role === 'PIC Stock opname') return 'PIC Stock Opname'
-    return role || 'User'
-  }
 
   useEffect(() => {
     let mounted = true

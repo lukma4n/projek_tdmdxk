@@ -12,6 +12,10 @@ export async function getSummary(req, res, next) {
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const twoDaysAgo = new Date(today)
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
 
     const [totalWO, totalHotline, criticalStock, openWO, attentionStock, syncLogs, moduleCounts] = await Promise.all([
       prisma.work_orders.count({
@@ -48,13 +52,28 @@ export async function getSummary(req, res, next) {
       ]),
     ])
 
-    const revenue = await prisma.work_orders.aggregate({
-      where: {
-        date_confirm: { gte: today },
-        state: 'done',
-      },
-      _sum: { total: true },
-    })
+    const [revenue, yesterdayRevenueAgg, yesterdayWO] = await Promise.all([
+      prisma.work_orders.aggregate({
+        where: {
+          date_confirm: { gte: today },
+          state: 'done',
+        },
+        _sum: { total: true },
+      }),
+      prisma.work_orders.aggregate({
+        where: {
+          date_confirm: { gte: yesterday, lt: today },
+          state: 'done',
+        },
+        _sum: { total: true },
+      }),
+      prisma.work_orders.count({
+        where: {
+          date_confirm: { gte: yesterday, lt: today },
+          state: 'done',
+        },
+      }),
+    ])
 
     const moduleLabels = {
       hotline: 'Hotline',
@@ -80,6 +99,18 @@ export async function getSummary(req, res, next) {
       openWO,
       attentionStock,
       revenue: revenue._sum.total || 0,
+      trend: {
+        totalWO: {
+          current: totalWO,
+          previous: yesterdayWO,
+          delta: totalWO - yesterdayWO,
+        },
+        revenue: {
+          current: revenue._sum.total || 0,
+          previous: yesterdayRevenueAgg._sum.total || 0,
+          delta: (revenue._sum.total || 0) - (yesterdayRevenueAgg._sum.total || 0),
+        },
+      },
       alerts: {
         critical: [
           ...(criticalStock > 0 ? [{ type: 'stock', message: `${criticalStock} part aging > 365 hari`, path: '/stock' }] : []),

@@ -2,28 +2,23 @@ import { useState, useEffect } from 'react'
 import { api } from '../services/api'
 import { useAuthStore } from '../stores/authStore'
 import { Plus, Trash2, KeyRound, Pencil, X, Check, Loader2 } from 'lucide-react'
-
-const ALL_ROLES = ['Admin', 'ADH', 'Kepala Cabang', 'CRM', 'Frondesk', 'Service Advisor', 'Kepala Bengkel', 'Partman', 'PIC Stock opname']
-
-function displayRole(role) {
-  if (role === 'Admin') return 'Admin Showroom'
-  if (role === 'ADH') return 'ADH'
-  if (role === 'CRM') return 'Admin CRM'
-  if (role === 'PIC Stock opname') return 'PIC Stock Opname'
-  return role
-}
+import {
+  ALL_ROLES,
+  ROLES as ROLE_VALUES,
+  displayRole,
+} from '../config/roles'
 
 export default function UsersPage() {
   const { user: currentUser } = useAuthStore()
-  const isPicOpname = currentUser?.role === 'PIC Stock opname'
-  const isAdminManager = ['Kepala Cabang', 'Kepala Bengkel'].includes(currentUser?.role)
+  const isPicOpname = currentUser?.role === ROLE_VALUES.PIC_STOCK_OPNAME
+  const isAdminManager = [ROLE_VALUES.KEPALA_CABANG, ROLE_VALUES.KEPALA_BENGKEL].includes(currentUser?.role)
 
   // Filter roles: PIC hanya bisa lihat/buat PIC Stock opname
   // Admin manager tidak boleh lihat PIC Stock opname (PIC mengelola sendiri)
   const ROLES = isPicOpname
-    ? ['PIC Stock opname']
+    ? [ROLE_VALUES.PIC_STOCK_OPNAME]
     : isAdminManager
-      ? ALL_ROLES.filter((r) => r !== 'PIC Stock opname')
+      ? ALL_ROLES.filter((r) => r !== ROLE_VALUES.PIC_STOCK_OPNAME)
       : ALL_ROLES
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)

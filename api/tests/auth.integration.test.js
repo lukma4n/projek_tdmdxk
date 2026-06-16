@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 // Must set test DB before importing app (top-level Prisma initialization)
-process.env.DATABASE_URL = 'file:./test.db'
+process.env.DATABASE_URL = 'file:./prisma/test.db'
 
 import { request, app } from './helpers.js'
 import { prismaTest, seedKnownUsers } from './helpers.js'

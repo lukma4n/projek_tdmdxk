@@ -39,8 +39,14 @@ import {
   getDealerBurdens, getDealerBurdenSummary, upsertDealerBurden, previewDealerBurdenImport, uploadDealerBurdenImport,
 } from '../controllers/showroomBurdenController.js'
 import {
+  listMarketingTargets, getMarketingTargetSummary, upsertMarketingTarget, deleteMarketingTarget,
+} from '../controllers/showroomMarketingTargetController.js'
+import {
   getSalespeople, upsertSalesperson, getSalespersonSummary, previewSalespeopleImport, uploadSalespeopleImport, deleteSalesperson,
 } from '../controllers/showroomSalespeopleController.js'
+import {
+  getTeamLeaders, upsertTeamLeader, getTeamLeaderSummary, previewTeamLeadersImport, uploadTeamLeadersImport, deleteTeamLeader,
+} from '../controllers/showroomTeamLeaderController.js'
 import {
   getStnkBpkbTrackMonitoring, previewStnkBpkbTrack, uploadStnkBpkbTrack, exportStnkBpkbTrackExcel,
 } from '../controllers/showroomStnkBpkbTrackController.js'
@@ -149,6 +155,9 @@ router.patch('/ksu-standards/:productType', authenticate, showroomAccess, update
 
 router.get('/opname', authenticate, showroomOpnameReadAccess, getShowroomOpnameSessions)
 router.post('/opname', authenticate, showroomOpnameWriteAccess, validate(schemas.createOpnameSession), createShowroomOpnameSession)
+router.get('/opname/search-unit', authenticate, showroomOpnameWriteAccess, searchAndValidateUnit)
+router.get('/opname/notifications', authenticate, showroomOpnameReadAccess, getNotifications)
+router.patch('/opname/notifications/:id/read', authenticate, showroomOpnameReadAccess, markNotificationRead)
 router.get('/opname/:id/items', authenticate, showroomOpnameReadAccess, getShowroomOpnameItems)
 router.get('/opname/:id/report', authenticate, showroomOpnameReadAccess, getShowroomOpnameReport)
 router.get('/opname/:id/export', authenticate, showroomOpnameReadAccess, exportShowroomOpnameReport)
@@ -176,11 +185,6 @@ router.get('/stock-units/search', authenticate, showroomStockUnitFilterAccess, s
 // Session assignment & validation
 router.get('/opname/:id/locations', authenticate, showroomOpnameReadAccess, getSessionLocations)
 router.post('/opname/:id/assignments', authenticate, showroomOpnameWriteAccess, assignSessionLocations)
-router.get('/opname/search-unit', authenticate, showroomOpnameWriteAccess, searchAndValidateUnit)
-
-// Notifications
-router.get('/opname/notifications', authenticate, showroomOpnameReadAccess, getNotifications)
-router.patch('/opname/notifications/:id/read', authenticate, showroomOpnameReadAccess, markNotificationRead)
 
 router.get('/document-followups/:type', authenticate, documentFollowupAccess, getDocumentFollowups)
 router.get('/document-followups/:type/export', authenticate, documentFollowupAccess, exportDocumentFollowupsExcel)
@@ -201,6 +205,14 @@ router.post('/salespeople/preview', authenticate, showroomAccess, upload.single(
 router.post('/salespeople/import', authenticate, showroomAccess, upload.single('file'), uploadSalespeopleImport)
 router.delete('/salespeople/:id', authenticate, showroomAccess, deleteSalesperson)
 
+// Team Leaders
+router.get('/team-leaders', authenticate, showroomAccess, getTeamLeaders)
+router.get('/team-leaders/summary', authenticate, showroomAccess, getTeamLeaderSummary)
+router.post('/team-leaders', authenticate, showroomAccess, upsertTeamLeader)
+router.post('/team-leaders/preview', authenticate, showroomAccess, upload.single('file'), previewTeamLeadersImport)
+router.post('/team-leaders/import', authenticate, showroomAccess, upload.single('file'), uploadTeamLeadersImport)
+router.delete('/team-leaders/:id', authenticate, showroomAccess, deleteTeamLeader)
+
 // STNK & BPKB Track Monitoring
 const stnkBpkbTrackAdminAccess = authorize('Admin')
 const stnkBpkbTrackReadAccess = authorize('Admin', 'CRM', 'Kepala Cabang')
@@ -208,5 +220,14 @@ router.get('/stnk-bpkb-tracks/monitoring', authenticate, stnkBpkbTrackReadAccess
 router.get('/stnk-bpkb-tracks/export', authenticate, stnkBpkbTrackReadAccess, exportStnkBpkbTrackExcel)
 router.post('/stnk-bpkb-tracks/preview', authenticate, stnkBpkbTrackAdminAccess, upload.single('file'), previewStnkBpkbTrack)
 router.post('/stnk-bpkb-tracks/import', authenticate, stnkBpkbTrackAdminAccess, upload.single('file'), uploadStnkBpkbTrack)
+
+// Marketing Target (per Team Leader, bulanan)
+const marketingTargetReadAccess = authorize('Admin', 'Kepala Cabang')
+const marketingTargetWriteAccess = authorize('Kepala Cabang')
+router.get('/marketing-targets', authenticate, marketingTargetReadAccess, listMarketingTargets)
+router.get('/marketing-targets/summary', authenticate, marketingTargetReadAccess, getMarketingTargetSummary)
+router.post('/marketing-targets', authenticate, marketingTargetWriteAccess, upsertMarketingTarget)
+router.patch('/marketing-targets/:id', authenticate, marketingTargetWriteAccess, upsertMarketingTarget)
+router.delete('/marketing-targets/:id', authenticate, marketingTargetWriteAccess, deleteMarketingTarget)
 
 export default router

@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   getShowroomStnkBpkbTrackMonitoring,
   exportShowroomStnkBpkbTrack,
 } from '../services/api/showroom'
-import { financeShortName, customerType } from '../data/financeCompanyMap'
+import { financeShortName } from '../data/financeCompanyMap'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend,
 } from 'recharts'
@@ -16,11 +16,9 @@ import {
   FileText,
   FileBadge,
   AlertCircle,
-  CheckCircle2,
   Clock,
   TrendingUp,
   Phone,
-  X,
   ChevronDown,
   ChevronUp,
   Briefcase,
@@ -89,16 +87,6 @@ function SectionCard({ title, icon: Icon, children, action }) {
       {children}
     </div>
   )
-}
-
-function StatusBadge({ status }) {
-  const config = {
-    BELUM_JADI: { label: 'Belum Jadi', color: 'bg-red-100 text-red-700' },
-    BELUM_DIAMBIL: { label: 'Belum Diambil', color: 'bg-amber-100 text-amber-700' },
-    SUDAH_DIAMBIL: { label: 'Sudah Diambil', color: 'bg-emerald-100 text-emerald-700' },
-  }
-  const c = config[status] || { label: status || '-', color: 'bg-slate-100 text-slate-600' }
-  return <span className={`inline-flex px-2 py-0.5 rounded text-xs font-semibold ${c.color}`}>{c.label}</span>
 }
 
 function AnomalyTable({ rows, columns, emptyMessage }) {
@@ -274,7 +262,7 @@ export default function ShowroomStnkBpkbMonitoring() {
   }, [buildParams])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-effect-deps
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

@@ -752,6 +752,38 @@ model showroom_salespeople {
   updated_at  DateTime @updatedAt
 }
 
+model showroom_team_leaders {
+  id          Int      @id @default(autoincrement())
+  no          Int?
+  name        String   @unique
+  is_active   Boolean  @default(true)
+  source_file String?
+  synced_at   DateTime @default(now())
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  marketing_targets showroom_marketing_targets[]
+}
+
+model showroom_marketing_targets {
+  id           Int      @id @default(autoincrement())
+  period_year  Int
+  period_month Int
+  team_leader  String
+  target_unit  Int      @default(0)
+  notes        String?
+  is_active    Boolean  @default(true)
+  created_by   Int?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  team_leader_ref showroom_team_leaders @relation(fields: [team_leader], references: [name])
+
+  @@unique([period_year, period_month, team_leader])
+  @@index([period_year, period_month])
+  @@index([team_leader])
+}
+
 model showroom_stnk_bpkb_tracks {
   id                    Int       @id @default(autoincrement())
   branch_code           String
@@ -818,7 +850,6 @@ model showroom_stnk_bpkb_tracks {
   lt_penyerahan_plat    Int?
   tgl_penyerahan_bpkb   DateTime?
   lt_penyerahan_bpkb    Int?
-
   // Sales
   tgl_so                DateTime?
   no_so                 String?

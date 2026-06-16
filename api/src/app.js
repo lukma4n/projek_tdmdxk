@@ -58,6 +58,7 @@ const apiLimiter = rateLimit({
 })
 app.use('/api/auth/login', authLimiter)
 app.use('/api/sync/', importLimiter)
+app.use('/api/', apiLimiter)
 
 // Middleware
 const allowedOrigins = [

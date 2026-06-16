@@ -2,7 +2,8 @@ import fs from 'fs'
 import path from 'path'
 import xlsx from 'xlsx'
 import { PDFParse } from 'pdf-parse'
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js'
+const { getDocument } = pdfjsLib
 import { prisma } from '../config/db.js'
 import { withImportLock } from '../services/importLockService.js'
 

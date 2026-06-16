@@ -112,7 +112,7 @@ export function TeamCard({ team, total, salesmen, collapsible = true }) {
             collapsible ? (
               <div key={s.name} className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">{s.name}</span>
+                  <span className="text-slate-600">{s.name.toUpperCase()}</span>
                   <span className="font-bold text-slate-800 tabular-nums">{s.count} unit</span>
                 </div>
                 <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
@@ -124,7 +124,7 @@ export function TeamCard({ team, total, salesmen, collapsible = true }) {
               </div>
             ) : (
               <div key={s.name} className="flex items-center justify-between text-xs">
-                <span className="text-slate-600">{s.name}</span>
+                <span className="text-slate-600">{s.name.toUpperCase()}</span>
                 <span className="font-bold text-slate-800 tabular-nums">{s.count} unit</span>
               </div>
             )

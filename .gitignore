@@ -1,6 +1,7 @@
 node_modules/
 api/node_modules/
 web/node_modules/
+mobile/node_modules/
 
 .env
 *.env
@@ -14,13 +15,8 @@ yarn-error.log*
 
 api/prisma/dev.db
 api/prisma/dev.db-journal
-api/prisma/prisma/dev.db
-api/prisma/prisma/dev.db-journal
-api/prisma/backups/*.db*
-api/prisma/backups/*.sqlite*
-api/prisma/backups/*.backup.*
+api/prisma/backups/
 api/prisma/*.db*
-api/database.sqlite
 api/uploads/
 
 dist/
@@ -29,19 +25,11 @@ coverage/
 
 .DS_Store
 
-# DXK runtime state (auth, browser, pids, screenshots)
-.dxk-auth.json
-.dxk-browser-state.json
-.dxk-pids/
-.dxk-screenshots/
+# Runtime artifacts (PID regenerate otomatis)
+.dxk/
 
-# Temporary analysis scripts (one-off PDF exploration)
-api/analyze-lmc136.mjs
-api/extract-pdf.mjs
+# Kilo IDE internal folder (konfigurasi, plans, node_modules Kilo)
+.kilo/
 
-# Local sample data (PDF LMC, sales report, etc.)
-file/
-
-# Claude Code local
-.claude/settings.local.json
-.claude/skills/
+# AI Coding Assistant local cache
+.understand-anything/

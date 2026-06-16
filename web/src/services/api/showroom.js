@@ -199,6 +199,25 @@ export const uploadShowroomSalespeople = (file) => {
   return fetchWithAuth('/showroom/salespeople/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
 }
 
+// Team Leaders
+export const getShowroomTeamLeaders = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/team-leaders${query ? '?' + query : ''}`)
+}
+export const getShowroomTeamLeaderSummary = () => fetchWithAuth('/showroom/team-leaders/summary')
+export const upsertShowroomTeamLeader = (data) => fetchWithAuth('/showroom/team-leaders', { method: 'POST', body: data })
+export const deleteShowroomTeamLeader = (id) => fetchWithAuth(`/showroom/team-leaders/${id}`, { method: 'DELETE' })
+export const previewShowroomTeamLeaders = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/team-leaders/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const uploadShowroomTeamLeaders = (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchWithAuth('/showroom/team-leaders/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+
 // Opname
 export const getShowroomOpnameSessions = (params = {}) => {
   const query = new URLSearchParams(params).toString()
@@ -255,3 +274,15 @@ export const uploadShowroomStnkBpkbTrack = (file) => {
   formData.append('file', file)
   return fetchWithAuth('/showroom/stnk-bpkb-tracks/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
 }
+
+// Marketing Targets (per Team Leader, bulanan)
+export const getShowroomMarketingTargets = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/marketing-targets${query ? '?' + query : ''}`)
+}
+export const getShowroomMarketingTargetSummary = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/marketing-targets/summary${query ? '?' + query : ''}`)
+}
+export const upsertShowroomMarketingTarget = (data) => fetchWithAuth('/showroom/marketing-targets', { method: 'POST', body: data })
+export const deleteShowroomMarketingTarget = (id) => fetchWithAuth(`/showroom/marketing-targets/${id}`, { method: 'DELETE' })

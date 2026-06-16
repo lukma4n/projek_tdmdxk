@@ -11,7 +11,7 @@ function upper(value = '') {
 
 export async function getSalespeople(req, res, next) {
   try {
-    const { search } = req.query
+    const { search, is_active } = req.query
     const where = {}
     if (search) {
       where.OR = [
@@ -19,11 +19,23 @@ export async function getSalespeople(req, res, next) {
         { team_leader: { contains: upper(search) } }
       ]
     }
+    if (is_active !== undefined) {
+      where.is_active = String(is_active) === 'true'
+    }
     const rows = await prisma.showroom_salespeople.findMany({
       where,
-      orderBy: { name: 'asc' },
+      orderBy: { no: 'asc' },
     })
-    res.json({ data: rows })
+
+    const items = rows.map((row) => ({
+      id: row.id,
+      no: row.no,
+      name: row.name,
+      team_leader: row.team_leader,
+      is_active: row.is_active,
+    }))
+
+    res.json({ data: items, items })
   } catch (error) {
     next(error)
   }
@@ -36,10 +48,17 @@ export async function upsertSalesperson(req, res, next) {
     const no = parseInt(req.body.no) || null
     if (!name) return res.status(400).json({ error: 'Nama wajib diisi' })
 
+    // Auto-assign no untuk record baru jika tidak diberikan
+    let createNo = no
+    if (!createNo) {
+      const maxNo = await prisma.showroom_salespeople.aggregate({ _max: { no: true } })
+      createNo = (maxNo._max.no || 0) + 1
+    }
+
     const row = await prisma.showroom_salespeople.upsert({
       where: { name: name },
       create: {
-        no,
+        no: createNo,
         name,
         team_leader: teamLeader,
         is_active: req.body.is_active ?? true,
@@ -47,7 +66,8 @@ export async function upsertSalesperson(req, res, next) {
         synced_at: new Date(),
       },
       update: {
-        no,
+        // hanya update no jika dikirim eksplisit (agar tidak menimpa no existing)
+        ...(no ? { no } : {}),
         team_leader: teamLeader,
         is_active: req.body.is_active ?? true,
         source_file: clean(req.body.source_file) || 'MANUAL',

@@ -6,12 +6,12 @@
 PROJECT_DIR="/Users/lukma4n/Documents/projek_tdmdxk"
 API_DIR="$PROJECT_DIR/api"
 WEB_DIR="$PROJECT_DIR/web"
-PID_DIR="$PROJECT_DIR/.dxk-pids"
+PID_DIR="$PROJECT_DIR/.dxk"
 
 BACKEND_PID_FILE="$PID_DIR/backend.pid"
 FRONTEND_PID_FILE="$PID_DIR/frontend.pid"
-BACKEND_LOG="$API_DIR/backend.log"
-FRONTEND_LOG="$WEB_DIR/frontend.log"
+BACKEND_LOG="$API_DIR/logs/backend.log"
+FRONTEND_LOG="$WEB_DIR/logs/frontend.log"
 
 mkdir -p "$PID_DIR"
 

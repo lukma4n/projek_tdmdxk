@@ -3,7 +3,7 @@ import { app } from '../src/app.js'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
-const TEST_DB_URL = 'file:./test.db'
+const TEST_DB_URL = 'file:./prisma/test.db'
 
 // Helper to point Prisma to test DB
 // Note: Prisma caches the env var, so we patch process.env before tests run

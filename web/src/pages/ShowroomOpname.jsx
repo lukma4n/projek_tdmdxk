@@ -304,8 +304,7 @@ export default function ShowroomOpname({ type = 'unit' }) {
     if (['approved_kacab'].includes(session.status)) {
       await api.markShowroomOpnameBasoPrinted(session.id).catch(() => null)
     }
-    const token = localStorage.getItem('token')
-    const response = await fetch(`${API_BASE}/showroom/opname/${session.id}/export`, { headers: { ...(token && { Authorization: `Bearer ${token}` }) } })
+    const response = await fetch(`${API_BASE}/showroom/opname/${session.id}/export`, { credentials: 'include' })
     if (!response.ok) throw new Error('Export gagal')
     const blob = await response.blob()
     const url = window.URL.createObjectURL(blob)
@@ -328,9 +327,8 @@ export default function ShowroomOpname({ type = 'unit' }) {
   })
 
   const viewUploadedBaso = async (session) => {
-    const token = localStorage.getItem('token')
     const res = await fetch(`${API_BASE}/showroom/opname/${session.id}/baso-file`, {
-      headers: { Authorization: `Bearer ${token}` }
+      credentials: 'include'
     })
     if (!res.ok) throw new Error('Gagal membuka file BASO')
     const blob = await res.blob()

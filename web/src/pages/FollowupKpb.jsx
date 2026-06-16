@@ -166,7 +166,6 @@ export default function FollowupKpb() {
   const handleExport = async () => {
     try {
       setExporting(true)
-      const token = localStorage.getItem('token')
       const params = new URLSearchParams({
         days,
         status,
@@ -174,7 +173,7 @@ export default function FollowupKpb() {
       }).toString()
 
       const response = await fetch(`${API_BASE}/customers/followups/export?${params}`, {
-        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+        credentials: 'include',
       })
 
       if (!response.ok) {

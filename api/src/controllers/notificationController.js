@@ -275,9 +275,10 @@ export async function getOpnameNotifications(req, res, next) {
     }
 
     if (role === 'Partman') {
-      const sessions = await prisma.opname_sessions.findMany({ where: { status: { in: ['approved_kacab', 'rejected'] } }, orderBy: { created_at: 'asc' } })
-      tasks.push(...sessions.map((session) => mapPartTask(session, session.status === 'approved_kacab' ? 'Upload BASO signed' : 'Perbaiki hasil opname', session.status === 'rejected' ? 'high' : 'normal')))
+      const sessions = await prisma.opname_sessions.findMany({ where: { status: { in: ['active', 'rejected'] } }, orderBy: { created_at: 'asc' } })
+      tasks.push(...sessions.map((session) => mapPartTask(session, session.status === 'active' ? 'Selesaikan opname' : 'Perbaiki hasil opname', session.status === 'rejected' ? 'high' : 'normal')))
     }
+
 
     const [syncTasks, followupTasks] = await Promise.all([
       getSyncTasksForManagement(role),

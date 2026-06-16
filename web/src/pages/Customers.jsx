@@ -149,7 +149,6 @@ export default function Customers() {
   const handleExportExcel = async () => {
     try {
       setExporting(true)
-      const token = localStorage.getItem('token')
       const params = new URLSearchParams({
         ...(filterKpb !== 'all' && { kpb_status: filterKpb }),
         ...(filterYear && { kpb_year: filterYear }),
@@ -159,7 +158,7 @@ export default function Customers() {
       }).toString()
 
       const response = await fetch(`${API_BASE}/customers/export?${params}`, {
-        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+        credentials: 'include',
       })
 
       if (!response.ok) {

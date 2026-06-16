@@ -76,7 +76,6 @@ export default function ShowroomBpkb() {
   const handleExport = async () => {
     try {
       setExporting(true)
-      const token = localStorage.getItem('token')
       const params = new URLSearchParams({
         ...(search && { search }),
         ...(location !== 'all' && { location }),
@@ -84,7 +83,7 @@ export default function ShowroomBpkb() {
       }).toString()
 
       const response = await fetch(`${API_BASE}/showroom/bpkbs/export${params ? '?' + params : ''}`, {
-        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+        credentials: 'include',
       })
 
       if (!response.ok) {

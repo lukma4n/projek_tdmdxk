@@ -29,11 +29,13 @@ const ShowroomDiscountTable = lazy(() => import('./pages/ShowroomDiscountTable')
 const ShowroomTacLeasing = lazy(() => import('./pages/ShowroomTacLeasing'))
 const ShowroomDealerBurden = lazy(() => import('./pages/ShowroomDealerBurden'))
 const ShowroomSalespeople = lazy(() => import('./pages/ShowroomSalespeople'))
+const ShowroomTeamLeader = lazy(() => import('./pages/ShowroomTeamLeader'))
 const ShowroomKsuMaster = lazy(() => import('./pages/ShowroomKsuMaster'))
 const ShowroomOpname = lazy(() => import('./pages/ShowroomOpname'))
 const SalesOrderMargin = lazy(() => import('./pages/SalesOrderMargin'))
 const ShowroomSalesAnalysis = lazy(() => import('./pages/ShowroomSalesAnalysis'))
 const ShowroomClosingDaily = lazy(() => import('./pages/ShowroomClosingDaily'))
+const ShowroomMarketingTarget = lazy(() => import('./pages/ShowroomMarketingTarget'))
 const ShowroomLabelBukuService = lazy(() => import('./pages/ShowroomLabelBukuService'))
 const ShowroomDocumentFollowup = lazy(() => import('./pages/ShowroomDocumentFollowup'))
 import {
@@ -51,6 +53,9 @@ import {
   SHOWROOM_SALES_ORDER_ROLES,
   SHOWROOM_OPNAME_ROLES,
   SHOWROOM_DOCUMENT_STOCK_ROLES,
+  SHOWROOM_LABEL_BUKU_SERVICE_ROLES,
+  SHOWROOM_STNK_BPKB_MONITORING_ROLES,
+  SHOWROOM_PIC_USERS_ROLES,
   DOCUMENT_FOLLOWUP_ROLES,
   ROLES,
 } from './config/roles'
@@ -215,7 +220,7 @@ function App() {
         <Route
           path="showroom/stnk-bpkb-monitoring"
           element={
-            <RoleGuard allowedRoles={['Admin', 'CRM', 'Kepala Cabang']}>
+              <RoleGuard allowedRoles={SHOWROOM_STNK_BPKB_MONITORING_ROLES}>
               <LazyPage><ShowroomStnkBpkbMonitoring /></LazyPage>
             </RoleGuard>
           }
@@ -277,6 +282,14 @@ function App() {
           }
         />
         <Route
+          path="showroom/team-leader"
+          element={
+            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+              <LazyPage><ShowroomTeamLeader /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
           path="showroom/ksu"
           element={
             <RoleGuard allowedRoles={SHOWROOM_ROLES}>
@@ -309,9 +322,17 @@ function App() {
           }
         />
         <Route
+          path="showroom/marketing-target"
+          element={
+            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+              <LazyPage><ShowroomMarketingTarget /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
           path="showroom/label-buku-service"
           element={
-            <RoleGuard allowedRoles={['Admin']}>
+              <RoleGuard allowedRoles={SHOWROOM_LABEL_BUKU_SERVICE_ROLES}>
               <LazyPage><ShowroomLabelBukuService /></LazyPage>
             </RoleGuard>
           }
@@ -343,7 +364,7 @@ function App() {
         <Route
           path="showroom/pic-users"
           element={
-            <RoleGuard allowedRoles={['Lead PIC Stock opname']}>
+              <RoleGuard allowedRoles={SHOWROOM_PIC_USERS_ROLES}>
               <LazyPage><Users /></LazyPage>
             </RoleGuard>
           }

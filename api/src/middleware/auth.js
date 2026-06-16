@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { prisma } from '../config/db.js'
 
-const JWT_COOKIE_NAME = 'dxk_token'
+const JWT_COOKIE_NAME = 'token'
 
 export async function authenticate(req, res, next) {
   // Prefer cookie (httpOnly), fallback to Authorization header for compatibility

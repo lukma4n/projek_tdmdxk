@@ -173,7 +173,6 @@ export default function ShowroomStockUnit() {
   const handleExport = async () => {
     try {
       setExporting(true)
-      const token = localStorage.getItem('token')
       const params = new URLSearchParams({
         ...(search && { search }),
         ...(series !== 'all' && { series }),
@@ -184,7 +183,7 @@ export default function ShowroomStockUnit() {
       }).toString()
 
       const response = await fetch(`${API_BASE}/showroom/stock-units/export${params ? '?' + params : ''}`, {
-        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+        credentials: 'include',
       })
 
       if (!response.ok) {

@@ -203,8 +203,24 @@ export async function previewImport(req, res, next) {
   try {
     if (!req.file?.path) return res.status(400).json({ error: 'File wajib diupload' })
     const result = parseImportFile(req.params.module, req.file.path)
+    const preview = { ...result.preview }
+
+    if (req.params.module === 'sales') {
+      const soNumbers = result.records.map((record) => record.so_number)
+      const existingCustomers = await prisma.customers.findMany({
+        where: { so_number: { in: soNumbers } },
+        select: { so_number: true },
+      })
+      const existingSoNumbers = new Set(existingCustomers.map((c) => c.so_number))
+      const existingCount = soNumbers.filter((so) => existingSoNumbers.has(so)).length
+      const newCount = result.records.length - existingCount
+      preview.existingCount = existingCount
+      preview.newCount = newCount
+      preview.soNumbersSample = result.records.slice(0, 5).map((r) => r.so_number)
+    }
+
     await cleanupUpload(req)
-    res.json({ message: 'Preview import berhasil', ...result.preview })
+    res.json({ message: 'Preview import berhasil', ...preview })
   } catch (error) {
     await cleanupUpload(req)
     next(error)

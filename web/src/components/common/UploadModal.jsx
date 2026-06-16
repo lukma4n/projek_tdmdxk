@@ -7,7 +7,7 @@ const modules = [
   { key: 'hotline', label: 'Part Hotline', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Service Advisor', 'Partman', 'Kepala Bengkel'] },
   { key: 'stock', label: 'Stok Sparepart', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Partman', 'Kepala Bengkel'] },
   { key: 'workshop', label: 'Workshop Tahun Berjalan', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Frondesk', 'Service Advisor', 'Kepala Bengkel'] },
-  { key: 'sales', label: 'Data Konsumen', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Service Advisor', 'Kepala Bengkel', 'Admin', 'Kepala Cabang'] },
+  { key: 'sales', label: 'Report Penjualan', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Service Advisor', 'Kepala Bengkel', 'Admin', 'Kepala Cabang'] },
   { key: 'showroom-stock-unit', label: 'Stock Unit', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin', 'Kepala Cabang'] },
   { key: 'showroom-otr-price', label: 'Harga OTR', accept: '.docx', fileType: 'Word', roles: ['Admin', 'Kepala Cabang'] },
   { key: 'showroom-off-purchase-price', label: 'Harga Off & Beli', accept: '.docx', fileType: 'Word', roles: ['Admin', 'Kepala Cabang'] },
@@ -18,7 +18,7 @@ const modules = [
 
 const previewMessages = {
   workshop: 'Import akan mengganti snapshot WO tahun berjalan. Gunakan file dari 1 Januari sampai hari ini.',
-  sales: 'Import Data Konsumen akan update/tambah data tanpa menghapus follow-up.',
+  sales: 'Import Report Penjualan akan update/tambah data tanpa menghapus follow-up.',
   'showroom-bbn': 'Import BBN akan update/tambah data. Nilai 0 dari file tidak menimpa data manual.',
   'showroom-program': 'Import Program akan update/tambah data MD/AHM/Dealer.',
   'showroom-off-purchase-price': 'Import Harga Off & Beli akan upsert berdasarkan kode produk.',
@@ -248,6 +248,43 @@ export default function UploadModal({ onClose }) {
               <div className="text-sm text-amber-700 space-y-1">
                 <p>Baris valid: {previewResult.validRows || 0}</p>
                 <p>Baris error: {previewResult.errorRows || 0}</p>
+                {activeModule === 'sales' && (
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-amber-200 mt-2">
+                    <div className="bg-amber-100/60 rounded-md p-2">
+                      <p className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold">Baris Valid</p>
+                      <p className="text-lg font-bold text-amber-900 tabular-nums">
+                        {(previewResult.validRows || 0).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <div className="bg-amber-100/60 rounded-md p-2">
+                      <p className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold">Akan Update</p>
+                      <p className="text-lg font-bold text-amber-900 tabular-nums">
+                        {(previewResult.existingCount || 0).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <div className="bg-amber-100/60 rounded-md p-2">
+                      <p className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold">Akan Insert</p>
+                      <p className="text-lg font-bold text-amber-900 tabular-nums">
+                        {(previewResult.newCount || 0).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    {previewResult.validRows > 0 && (
+                      <p className="text-xs text-amber-700 col-span-3 pt-1">
+                        Import akan <strong>update</strong> {(previewResult.existingCount || 0).toLocaleString('id-ID')} data konsumen & <strong>menambah</strong> {(previewResult.newCount || 0).toLocaleString('id-ID')} konsumen baru.
+                      </p>
+                    )}
+                    {previewResult.validRows === 0 && (
+                      <p className="col-span-3 text-xs text-amber-700 italic">
+                        File tidak memiliki baris valid untuk di-import.
+                      </p>
+                    )}
+                    {previewResult.soNumbersSample?.length > 0 && (
+                      <p className="text-xs text-amber-600 col-span-3">
+                        Contoh SO: {previewResult.soNumbersSample.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                )}
                 {previewResult.importMode === 'active_snapshot' && (
                   <>
                     <p>Data aktif saat ini: {previewResult.currentRows || 0}</p>
@@ -322,7 +359,7 @@ export default function UploadModal({ onClose }) {
             </button>
             <button
               onClick={handleUpload}
-              disabled={!file || !previewResult || uploading || previewing || !activeModule}
+              disabled={!file || !previewResult || uploading || previewing || !activeModule || (activeModule === 'sales' && previewResult.validRows === 0)}
               className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg text-sm font-medium shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2"
             >
               {uploading ? (
