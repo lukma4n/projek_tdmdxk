@@ -8,7 +8,7 @@ import { endMaintenance, startMaintenance } from '../services/maintenanceService
 import { withImportLock } from '../services/importLockService.js'
 
 async function cleanupUpload(req) {
-  if (req.file?.path) await fs.unlink(req.file.path).catch(() => {})
+  if (req.file?.path) await fs.unlink(req.file.path).catch(() => { })
 }
 
 export async function uploadHotline(req, res, next) {
@@ -18,38 +18,38 @@ export async function uploadHotline(req, res, next) {
       const { records: validRecords, errors } = parseHotlineFile(req.file.path)
       const backup = await createDatabaseBackup('pre_import_hotline')
 
-    // Replace all: delete existing, insert new (transaction = rollback kalau gagal)
-    await prisma.$transaction(async (tx) => {
-      await tx.hotlines.deleteMany()
-      if (validRecords.length > 0) {
-        await tx.hotlines.createMany({ data: validRecords })
-      }
-    }, { maxWait: 20000, timeout: 60000 })
+      // Replace all: delete existing, insert new (transaction = rollback kalau gagal)
+      await prisma.$transaction(async (tx) => {
+        await tx.hotlines.deleteMany()
+        if (validRecords.length > 0) {
+          await tx.hotlines.createMany({ data: validRecords })
+        }
+      }, { maxWait: 20000, timeout: 60000 })
 
-    await prisma.sync_logs.create({
-      data: {
-        user_id: req.user?.userId,
-        module: 'hotline',
-        filename: req.file.originalname,
-        rows_success: validRecords.length,
-        rows_error: errors.length,
-        error_detail: errors.length > 0 ? JSON.stringify(errors.slice(0, 10)) : null,
-      },
-    })
+      await prisma.sync_logs.create({
+        data: {
+          user_id: req.user?.userId,
+          module: 'hotline',
+          filename: req.file.originalname,
+          rows_success: validRecords.length,
+          rows_error: errors.length,
+          error_detail: errors.length > 0 ? JSON.stringify(errors.slice(0, 10)) : null,
+        },
+      })
 
-    await createAuditLog({
-      userId: req.user?.userId,
-      tableName: 'sync_import',
-      recordId: 'hotline',
-      fieldName: 'replace_all',
-      newValue: {
-        module: 'hotline',
-        filename: req.file.originalname,
-        rows_success: validRecords.length,
-        rows_error: errors.length,
-        backup: backup.filename,
-      },
-    })
+      await createAuditLog({
+        userId: req.user?.userId,
+        tableName: 'sync_import',
+        recordId: 'hotline',
+        fieldName: 'replace_all',
+        newValue: {
+          module: 'hotline',
+          filename: req.file.originalname,
+          rows_success: validRecords.length,
+          rows_error: errors.length,
+          backup: backup.filename,
+        },
+      })
 
       await delCache('dashboard:summary')
       await delCache('hotlines:*')
@@ -76,45 +76,45 @@ export async function uploadStock(req, res, next) {
       const { records: validRecords, locationRecords, errors } = parseStockFile(req.file.path)
       const backup = await createDatabaseBackup('pre_import_stock')
 
-    // Replace all: clear opname + delete stock + insert new (transaction = rollback kalau gagal)
-    await prisma.$transaction(async (tx) => {
-      await tx.opname_items.deleteMany()
-      await tx.opname_sessions.deleteMany()
-      await tx.stock_part_locations.deleteMany()
-      await tx.stock_parts.deleteMany()
-      if (validRecords.length > 0) {
-        await tx.stock_parts.createMany({ data: validRecords })
-      }
-      if (locationRecords.length > 0) {
-        await tx.stock_part_locations.createMany({ data: locationRecords })
-      }
-    }, { maxWait: 20000, timeout: 60000 })
+      // Replace all: clear opname + delete stock + insert new (transaction = rollback kalau gagal)
+      await prisma.$transaction(async (tx) => {
+        await tx.opname_items.deleteMany()
+        await tx.opname_sessions.deleteMany()
+        await tx.stock_part_locations.deleteMany()
+        await tx.stock_parts.deleteMany()
+        if (validRecords.length > 0) {
+          await tx.stock_parts.createMany({ data: validRecords })
+        }
+        if (locationRecords.length > 0) {
+          await tx.stock_part_locations.createMany({ data: locationRecords })
+        }
+      }, { maxWait: 20000, timeout: 60000 })
 
-    await prisma.sync_logs.create({
-      data: {
-        user_id: req.user?.userId,
-        module: 'stock',
-        filename: req.file.originalname,
-        rows_success: validRecords.length,
-        rows_error: errors.length,
-        error_detail: errors.length > 0 ? JSON.stringify(errors.slice(0, 10)) : null,
-      },
-    })
+      await prisma.sync_logs.create({
+        data: {
+          user_id: req.user?.userId,
+          module: 'stock',
+          filename: req.file.originalname,
+          rows_success: validRecords.length,
+          rows_error: errors.length,
+          error_detail: errors.length > 0 ? JSON.stringify(errors.slice(0, 10)) : null,
+        },
+      })
 
-    await createAuditLog({
-      userId: req.user?.userId,
-      tableName: 'sync_import',
-      recordId: 'stock',
-      fieldName: 'replace_all',
-      newValue: {
-        module: 'stock',
-        filename: req.file.originalname,
-        rows_success: validRecords.length,
-        rows_error: errors.length,
-        backup: backup.filename,
-        cascade: 'opname_sessions_and_items_deleted',
-      },
-    })
+      await createAuditLog({
+        userId: req.user?.userId,
+        tableName: 'sync_import',
+        recordId: 'stock',
+        fieldName: 'replace_all',
+        newValue: {
+          module: 'stock',
+          filename: req.file.originalname,
+          rows_success: validRecords.length,
+          rows_error: errors.length,
+          backup: backup.filename,
+          cascade: 'opname_sessions_and_items_deleted',
+        },
+      })
 
       await delCache('dashboard:summary')
       await delCache('stock:*')
@@ -142,41 +142,41 @@ export async function uploadWorkshop(req, res, next) {
       const { records: finalRecords, errors, preview } = parseWorkshopFile(req.file.path)
       const backup = await createDatabaseBackup('pre_import_workshop')
 
-    // Replace all: delete existing, insert new (transaction = rollback kalau gagal)
-    await prisma.$transaction(async (tx) => {
-      await tx.work_orders.deleteMany()
-      if (finalRecords.length > 0) {
-        await tx.work_orders.createMany({ data: finalRecords })
-      }
-    }, { maxWait: 20000, timeout: 120000 })
+      // Replace all: delete existing, insert new (transaction = rollback kalau gagal)
+      await prisma.$transaction(async (tx) => {
+        await tx.work_orders.deleteMany()
+        if (finalRecords.length > 0) {
+          await tx.work_orders.createMany({ data: finalRecords })
+        }
+      }, { maxWait: 20000, timeout: 120000 })
 
-    await prisma.sync_logs.create({
-      data: {
-        user_id: req.user?.userId,
-        module: 'workshop',
-        filename: req.file.originalname,
-        rows_success: finalRecords.length,
-        rows_error: errors.length,
-        error_detail: errors.length > 0 ? JSON.stringify(errors.slice(0, 10)) : null,
-      },
-    })
+      await prisma.sync_logs.create({
+        data: {
+          user_id: req.user?.userId,
+          module: 'workshop',
+          filename: req.file.originalname,
+          rows_success: finalRecords.length,
+          rows_error: errors.length,
+          error_detail: errors.length > 0 ? JSON.stringify(errors.slice(0, 10)) : null,
+        },
+      })
 
-    await createAuditLog({
-      userId: req.user?.userId,
-      tableName: 'sync_import',
-      recordId: 'workshop',
-      fieldName: 'replace_year_to_date',
-      newValue: {
-        module: 'workshop',
-        import_mode: 'workshop_year_to_date_snapshot',
-        filename: req.file.originalname,
-        rows_success: finalRecords.length,
-        rows_error: errors.length,
-        date_range: preview.dateRange,
-        warnings: preview.warnings,
-        backup: backup.filename,
-      },
-    })
+      await createAuditLog({
+        userId: req.user?.userId,
+        tableName: 'sync_import',
+        recordId: 'workshop',
+        fieldName: 'replace_year_to_date',
+        newValue: {
+          module: 'workshop',
+          import_mode: 'workshop_year_to_date_snapshot',
+          filename: req.file.originalname,
+          rows_success: finalRecords.length,
+          rows_error: errors.length,
+          date_range: preview.dateRange,
+          warnings: preview.warnings,
+          backup: backup.filename,
+        },
+      })
 
       await delCache('dashboard:summary')
       await delCache('workshop:*')
@@ -300,7 +300,7 @@ export async function restoreBackup(req, res, next) {
     })
     res.json({ message: 'Restore database berhasil', data: { ...result, integrity_check: integrityValue } })
   } catch (error) {
-    await prisma.$connect().catch(() => {})
+    await prisma.$connect().catch(() => { })
     next(error)
   } finally {
     if (maintenanceStarted) endMaintenance()

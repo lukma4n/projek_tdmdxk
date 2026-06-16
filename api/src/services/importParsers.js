@@ -48,31 +48,19 @@ function summarizeWorkshopYearToDate(records) {
 
   if (dates.length === 0) {
     return {
-      importMode: 'workshop_year_to_date_snapshot',
+      importMode: 'workshop_upsert_by_wo',
       dateRange: { min: null, max: null },
       byState,
-      warnings: ['File workshop tidak memiliki tanggal confirm valid untuk validasi rentang tahun berjalan.'],
+      warnings: ['File workshop tidak memiliki tanggal confirm valid.'],
     }
   }
 
   const minDate = new Date(Math.min(...dates.map((date) => date.getTime())))
   const maxDate = new Date(Math.max(...dates.map((date) => date.getTime())))
-  const now = new Date()
-  const startOfYear = new Date(Date.UTC(now.getUTCFullYear(), 0, 1))
   const warnings = []
 
-  if (minDate.getUTCFullYear() !== now.getUTCFullYear() || minDate.getTime() > startOfYear.getTime() + 7 * 24 * 60 * 60 * 1000) {
-    warnings.push('Tanggal WO paling awal bukan awal tahun berjalan. Pastikan file ditarik dari 1 Januari sampai hari ini.')
-  }
-  if (maxDate.getTime() > now.getTime() + 24 * 60 * 60 * 1000) {
-    warnings.push('Tanggal WO paling akhir berada di masa depan. Periksa kembali filter tanggal file.')
-  }
-  if ((maxDate.getTime() - minDate.getTime()) <= 3 * 24 * 60 * 60 * 1000 && records.length > 0) {
-    warnings.push('Rentang tanggal file terlihat sangat pendek. File mungkin hanya harian, bukan year-to-date.')
-  }
-
   return {
-    importMode: 'workshop_year_to_date_snapshot',
+    importMode: 'workshop_upsert_by_wo',
     dateRange: { min: dateOnly(minDate), max: dateOnly(maxDate) },
     byState,
     warnings,
