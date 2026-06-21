@@ -4,9 +4,6 @@ import bcrypt from 'bcryptjs'
 export async function getUsers(req, res, next) {
   try {
     const where = {}
-    if (req.user.role === 'Lead PIC Stock opname') {
-      where.role = 'PIC Stock opname'
-    }
     const users = await prisma.users.findMany({
       where,
       select: {
@@ -14,6 +11,7 @@ export async function getUsers(req, res, next) {
         username: true,
         name: true,
         role: true,
+        phone: true,
         created_at: true,
         showroom_user_locations: { select: { location_name: true } },
       },
@@ -41,6 +39,7 @@ export async function getUserById(req, res, next) {
         username: true,
         name: true,
         role: true,
+        phone: true,
         created_at: true,
         showroom_user_locations: { select: { location_name: true } },
       },
@@ -63,22 +62,21 @@ export async function getUserById(req, res, next) {
 
 export async function createUser(req, res, next) {
   try {
-    const { username, password, name, role, locations } = req.body
+    const { username, password, name, role, locations, phone } = req.body
     const normalizedUsername = String(username || '').trim().toLowerCase()
     const normalizedName = String(name || '').trim()
+    const normalizedPhone = phone ? String(phone).trim() : null
 
     if (!normalizedUsername || !password || !normalizedName || !role) {
       return res.status(400).json({ error: 'Semua field wajib diisi' })
     }
 
-    const validRoles = ['Admin', 'ADH', 'Kepala Cabang', 'CRM', 'Frondesk', 'Service Advisor', 'Kepala Bengkel', 'Partman', 'PIC Stock opname', 'Lead PIC Stock opname']
+    const validRoles = ['Admin', 'ADH', 'Kepala Cabang', 'CRM', 'Frondesk', 'Service Advisor', 'Kepala Bengkel', 'Partman', 'PIC Stock opname', 'Salesman', 'IT Master']
     if (!validRoles.includes(role)) {
       return res.status(400).json({ error: 'Role tidak valid' })
     }
 
-    if (req.user.role === 'Lead PIC Stock opname' && role !== 'PIC Stock opname') {
-      return res.status(403).json({ error: 'Lead PIC hanya bisa membuat user PIC Stock opname' })
-    }
+
 
     // Check if username exists (case-insensitive for SQLite)
     const existing = await prisma.$queryRaw`
@@ -100,12 +98,14 @@ export async function createUser(req, res, next) {
         password_hash,
         name: normalizedName,
         role,
+        phone: normalizedPhone,
       },
       select: {
         id: true,
         username: true,
         name: true,
         role: true,
+        phone: true,
         created_at: true,
       },
     })
@@ -139,10 +139,11 @@ export async function createUser(req, res, next) {
 export async function updateUser(req, res, next) {
   try {
     const { id } = req.params
-    const { name, role, locations } = req.body
+    const { name, role, locations, phone } = req.body
     const userId = parseInt(id)
+    const normalizedPhone = phone ? String(phone).trim() : null
 
-    const validRoles = ['Admin', 'ADH', 'Kepala Cabang', 'CRM', 'Frondesk', 'Service Advisor', 'Kepala Bengkel', 'Partman', 'PIC Stock opname', 'Lead PIC Stock opname']
+    const validRoles = ['Admin', 'ADH', 'Kepala Cabang', 'CRM', 'Frondesk', 'Service Advisor', 'Kepala Bengkel', 'Partman', 'PIC Stock opname', 'Salesman', 'IT Master']
     if (role && !validRoles.includes(role)) {
       return res.status(400).json({ error: 'Role tidak valid' })
     }
@@ -152,12 +153,14 @@ export async function updateUser(req, res, next) {
       data: {
         ...(name && { name }),
         ...(role && { role }),
+        ...(phone !== undefined && { phone: normalizedPhone }),
       },
       select: {
         id: true,
         username: true,
         name: true,
         role: true,
+        phone: true,
         created_at: true,
       },
     })
@@ -194,17 +197,61 @@ export async function updateUser(req, res, next) {
 export async function deleteUser(req, res, next) {
   try {
     const { id } = req.params
+    const userId = parseInt(id)
 
     // Don't allow deleting yourself
-    if (req.user.userId === parseInt(id)) {
+    if (req.user.userId === userId) {
       return res.status(400).json({ error: 'Tidak bisa menghapus diri sendiri' })
     }
 
-    await prisma.users.delete({
-      where: { id: parseInt(id) },
+    // Cek target user, blokir hapus IT Master
+    const targetUser = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { role: true, username: true },
+    })
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User tidak ditemukan' })
+    }
+    if (targetUser.role === 'IT Master') {
+      return res.status(403).json({ error: 'User IT Master tidak dapat dihapus' })
+    }
+
+    // Paksa hapus berantai
+    await prisma.$transaction(async (tx) => {
+      // 1. SET NULL untuk FK optional
+      await tx.sync_logs.updateMany({ where: { user_id: userId }, data: { user_id: null } })
+      await tx.hotlines.updateMany({ where: { state_updated_by: userId }, data: { state_updated_by: null } })
+      await tx.showroom_unit_ksu_checks.updateMany({ where: { checked_by: userId }, data: { checked_by: null } })
+      await tx.showroom_unit_ksu_checks.updateMany({ where: { handed_over_by: userId }, data: { handed_over_by: null } })
+      await tx.showroom_opname_items.updateMany({ where: { scanned_by: userId }, data: { scanned_by: null } })
+      await tx.showroom_notifications.updateMany({ where: { user_id: userId }, data: { user_id: null } })
+      await tx.showroom_opname_sessions.updateMany({ where: { reviewed_by: userId }, data: { reviewed_by: null } })
+      await tx.showroom_ksu_standards.updateMany({ where: { updated_by: userId }, data: { updated_by: null } })
+
+      // 2. DELETE untuk FK required
+      // Hapus child items dulu sebelum session
+      await tx.opname_items.deleteMany({ where: { scanned_by: userId } })
+      await tx.opname_sessions.deleteMany({ where: { created_by: userId } })
+      
+      await tx.showroom_user_locations.deleteMany({ where: { user_id: userId } })
+      await tx.audit_logs.deleteMany({ where: { user_id: userId } })
+      await tx.kpb_followups.deleteMany({ where: { created_by: userId } })
+      await tx.showroom_document_followups.deleteMany({ where: { created_by: userId } })
+      await tx.showroom_opname_sessions.deleteMany({ where: { created_by: userId } })
+      await tx.showroom_sales_order_margins.deleteMany({ where: { created_by: userId } })
+      await tx.showroom_opname_assignments.deleteMany({ where: { user_id: userId } })
+
+      // document_handovers/_steps: FK required (created_by/performed_by) tanpa onDelete.
+      // Hapus step yang dikerjakan user dulu, lalu handover yang dibuat user
+      // (steps di bawah handover tsb ikut terhapus via FK Cascade handover_id).
+      await tx.document_handover_steps.deleteMany({ where: { performed_by: userId } })
+      await tx.document_handovers.deleteMany({ where: { created_by: userId } })
+
+      // 3. Delete user
+      await tx.users.delete({ where: { id: userId } })
     })
 
-    res.json({ message: 'User berhasil dihapus' })
+    res.json({ message: 'User berhasil dihapus secara paksa beserta seluruh riwayatnya' })
   } catch (error) {
     next(error)
   }
@@ -215,8 +262,11 @@ export async function resetPassword(req, res, next) {
     const { id } = req.params
     const { password } = req.body
 
-    if (!password || password.length < 6) {
-      return res.status(400).json({ error: 'Password minimal 6 karakter' })
+    if (!password || password.length < 8) {
+      return res.status(400).json({ error: 'Password minimal 8 karakter' })
+    }
+    if (password.length > 128) {
+      return res.status(400).json({ error: 'Password terlalu panjang' })
     }
 
     const password_hash = await bcrypt.hash(password, 10)

@@ -4,20 +4,20 @@ import { useAuthStore } from '../../stores/authStore'
 import { Upload, X, FileSpreadsheet, CheckCircle, AlertTriangle, Loader2, ChevronDown } from 'lucide-react'
 
 const modules = [
-  { key: 'hotline', label: 'Part Hotline', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Service Advisor', 'Partman', 'Kepala Bengkel'] },
-  { key: 'stock', label: 'Stok Sparepart', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Partman', 'Kepala Bengkel'] },
-  { key: 'workshop', label: 'Workshop Tahun Berjalan', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Frondesk', 'Service Advisor', 'Kepala Bengkel'] },
-  { key: 'sales', label: 'Report Penjualan', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Service Advisor', 'Kepala Bengkel', 'Admin', 'Kepala Cabang'] },
-  { key: 'showroom-stock-unit', label: 'Stock Unit', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin', 'Kepala Cabang'] },
-  { key: 'showroom-otr-price', label: 'Harga OTR', accept: '.docx', fileType: 'Word', roles: ['Admin', 'Kepala Cabang'] },
-  { key: 'showroom-off-purchase-price', label: 'Harga Off & Beli', accept: '.docx', fileType: 'Word', roles: ['Admin', 'Kepala Cabang'] },
-  { key: 'showroom-bbn', label: 'Master BBN', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin', 'Kepala Cabang'] },
-  { key: 'showroom-program', label: 'Program MD/AHM/Dealer', accept: '.xlsx,.xls,.pdf', fileType: 'Excel/PDF', roles: ['Admin', 'Kepala Cabang'] },
-  { key: 'showroom-stnk-bpkb-track', label: 'Track STNK & BPKB', accept: '.xlsx,.xls', fileType: 'Excel', roles: ['Admin'] },
+  { key: 'hotline', menuKey: 'IMPORT_HOTLINE', label: 'Part Hotline', accept: '.xlsx,.xls', fileType: 'Excel' },
+  { key: 'stock', menuKey: 'IMPORT_STOCK', label: 'Stok Sparepart', accept: '.xlsx,.xls', fileType: 'Excel' },
+  { key: 'workshop', menuKey: 'IMPORT_WORKSHOP', label: 'Workshop Tahun Berjalan', accept: '.xlsx,.xls', fileType: 'Excel' },
+  { key: 'sales', menuKey: 'IMPORT_SALES', label: 'Report Penjualan', accept: '.xlsx,.xls', fileType: 'Excel' },
+  { key: 'showroom-stock-unit', menuKey: 'IMPORT_SHOWROOM_STOCK_UNIT', label: 'Stock Unit', accept: '.xlsx,.xls', fileType: 'Excel' },
+  { key: 'showroom-otr-price', menuKey: 'IMPORT_SHOWROOM_OTR_PRICE', label: 'Harga OTR', accept: '.docx', fileType: 'Word' },
+  { key: 'showroom-off-purchase-price', menuKey: 'IMPORT_SHOWROOM_OFF_PURCHASE_PRICE', label: 'Harga Off & Beli', accept: '.docx', fileType: 'Word' },
+  { key: 'showroom-bbn', menuKey: 'IMPORT_SHOWROOM_BBN', label: 'Master BBN', accept: '.xlsx,.xls', fileType: 'Excel' },
+  { key: 'showroom-program', menuKey: 'IMPORT_SHOWROOM_PROGRAM', label: 'Program MD/AHM/Dealer', accept: '.xlsx,.xls,.pdf', fileType: 'Excel/PDF' },
+  { key: 'showroom-stnk-bpkb-track', menuKey: 'IMPORT_SHOWROOM_STNK_BPKB_TRACK', label: 'Track STNK & BPKB', accept: '.xlsx,.xls', fileType: 'Excel' },
 ]
 
 const previewMessages = {
-  workshop: 'Import akan mengganti snapshot WO tahun berjalan. Gunakan file dari 1 Januari sampai hari ini.',
+  workshop: 'Import Workshop akan update/tambah data secara harian (incremental) berdasarkan nomor WO.',
   sales: 'Import Report Penjualan akan update/tambah data tanpa menghapus follow-up.',
   'showroom-bbn': 'Import BBN akan update/tambah data. Nilai 0 dari file tidak menimpa data manual.',
   'showroom-program': 'Import Program akan update/tambah data MD/AHM/Dealer.',
@@ -26,9 +26,13 @@ const previewMessages = {
   'showroom-stnk-bpkb-track': 'Import Track STNK & BPKB akan replace snapshot aktif. Mendukung format v1 (58 kolom, header row 6) dan v2 (62 kolom, header row 4 dengan kolom Lokasi STNK/BPKB/Stock dan No Polisi). Otomatis ter-detect.',
 }
 
+import { ROLES } from '../../config/roles'
+
 export default function UploadModal({ onClose }) {
-  const { user } = useAuthStore()
-  const allowedModules = modules.filter((mod) => mod.roles.includes(user?.role))
+  const { user, permissions } = useAuthStore()
+  const allowedModules = modules.filter((mod) => 
+    user?.role === ROLES.MASTER_IT || (permissions[mod.menuKey] || []).includes(user?.role)
+  )
   const [selectedModule, setSelectedModule] = useState(allowedModules[0]?.key || '')
   const [file, setFile] = useState(null)
   const [previewing, setPreviewing] = useState(false)
@@ -186,7 +190,7 @@ export default function UploadModal({ onClose }) {
             </div>
             {activeModuleConfig && (
               <p className="mt-1 text-xs text-slate-500">
-                Format file: {activeModuleConfig.accept} • Akses: {activeModuleConfig.roles.join(', ')}
+                Format file: {activeModuleConfig.accept} • Akses: {[...new Set(['IT Master', ...(permissions[activeModuleConfig.menuKey] || [])])].join(', ')}
               </p>
             )}
           </div>
@@ -285,6 +289,43 @@ export default function UploadModal({ onClose }) {
                     )}
                   </div>
                 )}
+                {activeModule === 'workshop' && (
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-amber-200 mt-2">
+                    <div className="bg-amber-100/60 rounded-md p-2">
+                      <p className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold">Baris Valid</p>
+                      <p className="text-lg font-bold text-amber-900 tabular-nums">
+                        {(previewResult.validRows || 0).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <div className="bg-amber-100/60 rounded-md p-2">
+                      <p className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold">Akan Update</p>
+                      <p className="text-lg font-bold text-amber-900 tabular-nums">
+                        {(previewResult.existingCount || 0).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <div className="bg-amber-100/60 rounded-md p-2">
+                      <p className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold">Akan Insert</p>
+                      <p className="text-lg font-bold text-amber-900 tabular-nums">
+                        {(previewResult.newCount || 0).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    {previewResult.validRows > 0 && (
+                      <p className="text-xs text-amber-700 col-span-3 pt-1">
+                        Import akan <strong>update</strong> {(previewResult.existingCount || 0).toLocaleString('id-ID')} data WO & <strong>menambah</strong> {(previewResult.newCount || 0).toLocaleString('id-ID')} WO baru secara incremental harian.
+                      </p>
+                    )}
+                    {previewResult.validRows === 0 && (
+                      <p className="col-span-3 text-xs text-amber-700 italic">
+                        File tidak memiliki baris valid untuk di-import.
+                      </p>
+                    )}
+                    {previewResult.woNumbersSample?.length > 0 && (
+                      <p className="text-xs text-amber-600 col-span-3">
+                        Contoh WO: {previewResult.woNumbersSample.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                )}
                 {previewResult.importMode === 'active_snapshot' && (
                   <>
                     <p>Data aktif saat ini: {previewResult.currentRows || 0}</p>
@@ -359,7 +400,7 @@ export default function UploadModal({ onClose }) {
             </button>
             <button
               onClick={handleUpload}
-              disabled={!file || !previewResult || uploading || previewing || !activeModule || (activeModule === 'sales' && previewResult.validRows === 0)}
+              disabled={!file || !previewResult || uploading || previewing || !activeModule || ((activeModule === 'sales' || activeModule === 'workshop') && previewResult.validRows === 0)}
               className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg text-sm font-medium shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2"
             >
               {uploading ? (

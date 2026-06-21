@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import xlsx from 'xlsx'
 import { PDFParse } from 'pdf-parse'
+import { clampLimit } from '../utils/pagination.js'
 import pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js'
 const { getDocument } = pdfjsLib
 import { prisma } from '../config/db.js'
@@ -322,7 +323,7 @@ export async function getLeasingPrograms(req, res, next) {
   try {
     const { page = 1, limit = 100, search, leasing, tenor } = req.query
     const pageInt = parseInt(page)
-    const limitInt = parseInt(limit)
+    const limitInt = clampLimit(limit, 100)
     const where = {}
     if (leasing) where.leasing = upper(leasing)
     if (tenor) where.tenor = parseInt(tenor)
@@ -345,7 +346,7 @@ export async function getMdPrograms(req, res, next) {
   try {
     const { page = 1, limit = 100, search, sale_type } = req.query
     const pageInt = parseInt(page)
-    const limitInt = parseInt(limit)
+    const limitInt = clampLimit(limit, 100)
     const where = { is_active: true }
     if (sale_type) where.sale_type = upper(sale_type)
     if (search) where.product_code = { contains: upper(search) }
@@ -512,7 +513,7 @@ export async function previewPrograms(req, res, next) {
   try {
     if (!req.file) return res.status(400).json({ error: 'File wajib diupload' })
     const rows = await parseProgramFile(req.file)
-    fs.unlinkSync(req.file.path)
+    if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {})
     res.json({ leasingTotal: rows.leasing.length, mdTotal: rows.md.length, leasingSample: rows.leasing.slice(0, 5), mdSample: rows.md.slice(0, 5) })
   } catch (error) { next(error) }
 }
@@ -521,7 +522,7 @@ export async function uploadPrograms(req, res, next) {
   try {
     if (!req.file) return res.status(400).json({ error: 'File wajib diupload' })
     const rows = await parseProgramFile(req.file)
-    fs.unlinkSync(req.file.path)
+    if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {})
     const result = await withImportLock('showroom:program', async () => {
     let leasingCreated = 0
     let leasingUpdated = 0

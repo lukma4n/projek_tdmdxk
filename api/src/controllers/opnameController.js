@@ -2,6 +2,16 @@ import { prisma } from '../config/db.js'
 import path from 'path'
 import { existsSync } from 'fs'
 
+export const OPEN_IMPORT_BLOCK_STATUSES = ['active', 'submitted', 'approved_kabeng', 'sent_to_kacab', 'approved_kacab', 'rejected']
+
+export async function ensureNoActiveOpname() {
+  const active = await prisma.opname_sessions.findFirst({ where: { status: { in: OPEN_IMPORT_BLOCK_STATUSES } } })
+  if (active) {
+    const err = new Error(`Import ditolak: Ada sesi opname sparepart (${active.session_name}) yang belum Selesai.`)
+    err.status = 400
+    throw err
+  }
+}
 export async function getSessions(req, res, next) {
   try {
     const sessions = await prisma.opname_sessions.findMany({
@@ -383,7 +393,11 @@ export async function viewBasoSigned(req, res, next) {
     const session = await prisma.opname_sessions.findUnique({ where: { id } })
     if (!session) return res.status(404).json({ error: 'Sesi opname tidak ditemukan' })
     if (!session.baso_signed_file) return res.status(404).json({ error: 'BASO signed belum diupload' })
+    const uploadDir = path.resolve(process.cwd(), 'uploads')
     const filePath = path.resolve(session.baso_signed_file)
+    if (!filePath.startsWith(uploadDir + path.sep) && !filePath.startsWith(uploadDir + '/')) {
+      return res.status(403).json({ error: 'Akses file ditolak' })
+    }
     if (!existsSync(filePath)) return res.status(404).json({ error: 'File BASO tidak ditemukan' })
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', `inline; filename="BASO_PART_${session.session_name.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf"`)

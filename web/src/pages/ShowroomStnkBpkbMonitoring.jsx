@@ -5,7 +5,7 @@ import {
 } from '../services/api/showroom'
 import { financeShortName } from '../data/financeCompanyMap'
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend,
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts'
 import {
   Loader2,
@@ -18,7 +18,7 @@ import {
   AlertCircle,
   Clock,
   TrendingUp,
-  Phone,
+
   ChevronDown,
   ChevronUp,
   Briefcase,
@@ -35,6 +35,7 @@ function formatTanggalLengkap(dateStr) {
   const d = new Date(dateStr)
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
 }
+
 
 function CountBar({ label, value, total, color = 'bg-blue-500' }) {
   const width = total ? Math.max((value / total) * 100, 4) : 0
@@ -129,24 +130,6 @@ const STNK_COLUMNS = [
   { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company_short || <span className="text-slate-400">CASH</span> },
   { key: 'tgl_mohon_faktur', label: 'Tgl Mohon Faktur', render: (r) => formatTanggalIndo(r.tgl_mohon_faktur) },
   { key: 'birojasa', label: 'Birojasa', render: (r) => r.birojasa || '-' },
-  {
-    key: 'whatsapp',
-    label: 'Aksi',
-    render: (r) =>
-      r.mobile ? (
-        <a
-          href={`https://wa.me/${String(r.mobile).replace(/\D/g, '')}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors"
-        >
-          <Phone size={12} />
-          WhatsApp
-        </a>
-      ) : (
-        <span className="text-slate-400 text-xs">-</span>
-      ),
-  },
 ]
 
 const STNK_BELUM_DIAMBIL_COLUMNS = [
@@ -165,24 +148,7 @@ const STNK_BELUM_DIAMBIL_COLUMNS = [
       return <span className={days > 30 ? 'text-red-600' : days > 14 ? 'text-amber-600' : 'text-slate-700'}>{days} hari</span>
     },
   },
-  {
-    key: 'whatsapp',
-    label: 'Aksi',
-    render: (r) =>
-      r.mobile ? (
-        <a
-          href={`https://wa.me/${String(r.mobile).replace(/\D/g, '')}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors"
-        >
-          <Phone size={12} />
-          WhatsApp
-        </a>
-      ) : (
-        <span className="text-slate-400 text-xs">-</span>
-      ),
-  },
+
 ]
 
 const BPKB_OVERDUE_COLUMNS = [
@@ -198,24 +164,6 @@ const BPKB_OVERDUE_COLUMNS = [
     label: 'Hari Overdue',
     align: 'right',
     render: (r) => <span className="text-red-600 font-bold">{r.days_overdue} hari</span>,
-  },
-  {
-    key: 'whatsapp',
-    label: 'Aksi',
-    render: (r) =>
-      r.mobile ? (
-        <a
-          href={`https://wa.me/${String(r.mobile).replace(/\D/g, '')}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors"
-        >
-          <Phone size={12} />
-          WhatsApp
-        </a>
-      ) : (
-        <span className="text-slate-400 text-xs">-</span>
-      ),
   },
 ]
 
@@ -275,6 +223,9 @@ export default function ShowroomStnkBpkbMonitoring() {
     setFilters({ series: '', finance_company: '', birojasa: '', tahun: '', status_stnk: '', status_bpkb: '', customer_type: '', aging_min: '', aging_max: '' })
     setTimeout(() => void loadData(), 0)
   }
+
+  // Active filter count for badge indicator
+  const activeFilterCount = [filters.birojasa, filters.tahun, filters.customer_type, filters.status_stnk].filter(Boolean).length
 
   const handleExport = async () => {
     try {
@@ -431,101 +382,57 @@ export default function ShowroomStnkBpkbMonitoring() {
       </div>
 
       {/* Filter Section */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <Filter size={18} className="text-blue-600" />
-          <h3 className="font-bold text-slate-800">Filter</h3>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-3">
-          <select
-            value={filters.series}
-            onChange={(e) => setFilters({ ...filters, series: e.target.value })}
-            className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">Semua Series</option>
-            {facets.series.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <select
-            value={filters.finance_company}
-            onChange={(e) => setFilters({ ...filters, finance_company: e.target.value })}
-            className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">Semua Leasing</option>
-            {facets.financeCompanies.map((f) => <option key={f} value={f}>{financeShortName(f)}</option>)}
-          </select>
-          <select
-            value={filters.birojasa}
-            onChange={(e) => setFilters({ ...filters, birojasa: e.target.value })}
-            className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">Semua Biro Jasa</option>
-            {facets.birojasas.map((b) => <option key={b} value={b}>{b}</option>)}
-          </select>
-          <select
-            value={filters.tahun}
-            onChange={(e) => setFilters({ ...filters, tahun: e.target.value })}
-            className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">Semua Tahun</option>
-            {facets.tahun.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <select
-            value={filters.status_stnk}
-            onChange={(e) => setFilters({ ...filters, status_stnk: e.target.value })}
-            className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">STNK: Semua</option>
-            <option value="BELUM_JADI">Belum Jadi</option>
-            <option value="BELUM_DIAMBIL">Belum Diambil</option>
-            <option value="SUDAH_DIAMBIL">Sudah Diambil</option>
-          </select>
-          <select
-            value={filters.status_bpkb}
-            onChange={(e) => setFilters({ ...filters, status_bpkb: e.target.value })}
-            className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">BPKB: Semua</option>
-            <option value="BELUM_JADI">Belum Jadi</option>
-            <option value="BELUM_DIAMBIL">Belum Diambil</option>
-            <option value="SUDAH_DIAMBIL">Sudah Diambil</option>
-          </select>
-          <select
-            value={filters.customer_type}
-            onChange={(e) => setFilters({ ...filters, customer_type: e.target.value })}
-            className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 font-medium"
-          >
-            <option value="">Semua: Cash & Kredit</option>
-            <option value="CASH">💵 Cash</option>
-            <option value="KREDIT">💳 Kredit</option>
-          </select>
-          <input
-            type="number"
-            placeholder="Aging min (hari)"
-            value={filters.aging_min}
-            onChange={(e) => setFilters({ ...filters, aging_min: e.target.value })}
-            className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          />
-          <input
-            type="number"
-            placeholder="Aging max (hari)"
-            value={filters.aging_max}
-            onChange={(e) => setFilters({ ...filters, aging_max: e.target.value })}
-            className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          />
-        </div>
-        <div className="flex items-center gap-2 mt-3">
-          <button
-            onClick={handleApplyFilters}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
-          >
-            Terapkan Filter
-          </button>
-          <button
-            onClick={handleResetFilters}
-            className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors"
-          >
-            Reset
-          </button>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 animate-fadeIn">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="flex items-center gap-2 shrink-0">
+              <Filter size={18} className="text-blue-600" />
+              <h3 className="font-bold text-slate-800">Filter</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
+              <select
+                value={filters.birojasa}
+                onChange={(e) => setFilters({ ...filters, birojasa: e.target.value })}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">Semua Biro Jasa</option>
+                {facets.birojasas.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+              <select
+                value={filters.customer_type}
+                onChange={(e) => setFilters({ ...filters, customer_type: e.target.value })}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">Cash & Kredit</option>
+                <option value="CASH">Cash</option>
+                <option value="KREDIT">Kredit</option>
+              </select>
+              <select
+                value={filters.status_stnk}
+                onChange={(e) => setFilters({ ...filters, status_stnk: e.target.value })}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">Status STNK: Semua</option>
+                <option value="BELUM_JADI">Belum Jadi</option>
+                <option value="BELUM_DIAMBIL">Belum Diambil</option>
+                <option value="SUDAH_DIAMBIL">Sudah Diambil</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 ml-4 shrink-0">
+            <button
+              onClick={handleApplyFilters}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+            >
+              Terapkan
+            </button>
+            <button
+              onClick={handleResetFilters}
+              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors"
+            >
+              Reset
+            </button>
+          </div>
         </div>
       </div>
 
@@ -585,63 +492,81 @@ export default function ShowroomStnkBpkbMonitoring() {
         </SectionCard>
       </div>
 
-      {/* Breakdown Chart */}
-      <SectionCard
-        title="Top 10 Series dengan STNK/BPKB Belum Jadi"
-        icon={TrendingUp}
-        action={<span className="text-sm font-semibold text-slate-500">{(data?.bySeries || []).length} series</span>}
-      >
-        {(data?.bySeries || []).length > 0 ? (
-          <div className="h-[340px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.bySeries} layout="vertical" margin={{ left: 80 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis type="number" stroke="#94a3b8" fontSize={12} />
-                <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={12} width={75} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value) => [`${value} unit`, 'Jumlah']}
-                />
-                <Bar dataKey="count" fill="#ef4444" radius={[0, 8, 8, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p className="text-sm text-slate-400 py-4 text-center">Belum ada data series.</p>
-        )}
-      </SectionCard>
+
 
       {/* Distribusi BPKB Belum Jadi per Leasing */}
       <SectionCard title="Distribusi BPKB Belum Jadi per Leasing" icon={FileBadge}>
         {(data?.byFinance || []).length > 0 ? (
-          <div className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data.byFinance}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={110}
-                  paddingAngle={2}
-                  dataKey="count"
-                  nameKey="name"
-                  label={(entry) => entry.count > 0 ? `${financeShortName(entry.name)?.slice(0, 12) || '?'}: ${entry.count}` : ''}
-                >
-                  {data.byFinance.map((entry, idx) => (
-                    <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
-                  formatter={(value, name) => [`${value} unit`, financeShortName(name) || name]}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: 12 }}
-                  formatter={(name) => financeShortName(name) || name}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data.byFinance}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={65}
+                    outerRadius={100}
+                    paddingAngle={3}
+                    dataKey="count"
+                    nameKey="name"
+                    onClick={(data) => {
+                      if (data && data.name) {
+                        setFilters((prev) => ({ ...prev, finance_company: data.name }))
+                        setTimeout(() => void loadData(), 0)
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {data.byFinance.map((entry, idx) => (
+                      <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                    formatter={(value, name) => [`${value} unit`, financeShortName(name) || name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            
+            {/* Custom Legend Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase text-left">
+                    <th className="pb-2">Leasing</th>
+                    <th className="pb-2 text-right">Jumlah</th>
+                    <th className="pb-2 text-right">Persentase</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {(() => {
+                    const totalLeasing = data.byFinance.reduce((sum, item) => sum + item.count, 0) || 1
+                    return data.byFinance.map((row, idx) => {
+                      const pct = ((row.count / totalLeasing) * 100).toFixed(1)
+                      return (
+                        <tr
+                          key={row.name}
+                          className="hover:bg-slate-50 cursor-pointer text-slate-700 font-medium"
+                          onClick={() => {
+                            setFilters((prev) => ({ ...prev, finance_company: row.name }))
+                            setTimeout(() => void loadData(), 0)
+                          }}
+                        >
+                          <td className="py-2 flex items-center gap-2">
+                            <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: PIE_COLORS[idx % PIE_COLORS.length] }} />
+                            <span className="font-semibold">{financeShortName(row.name) || row.name}</span>
+                          </td>
+                          <td className="py-2 text-right font-bold tabular-nums">{row.count} unit</td>
+                          <td className="py-2 text-right text-slate-500 font-medium tabular-nums">{pct}%</td>
+                        </tr>
+                      )
+                    })
+                  })()}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <p className="text-sm text-slate-400 py-4 text-center">Belum ada data leasing.</p>
@@ -656,31 +581,7 @@ export default function ShowroomStnkBpkbMonitoring() {
       >
         {(data?.byBirojasa || []).length > 0 ? (
           <>
-            <div className="h-[320px] mb-5">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.byBirojasa} margin={{ top: 10, right: 20, left: 0, bottom: 60 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis
-                    dataKey="name"
-                    stroke="#94a3b8"
-                    fontSize={11}
-                    angle={-15}
-                    textAnchor="end"
-                    height={80}
-                    interval={0}
-                  />
-                  <YAxis stroke="#94a3b8" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    formatter={(value, name) => [`${value} unit`, name]}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="stnk_belum_jadi" name="STNK Belum Jadi" fill="#ef4444" radius={[4, 4, 0, 0]} stackId="a" />
-                  <Bar dataKey="plat_belum_jadi" name="Plat Belum Jadi" fill="#f59e0b" radius={[4, 4, 0, 0]} stackId="a" />
-                  <Bar dataKey="bpkb_belum_jadi" name="BPKB Belum Jadi" fill="#3b82f6" radius={[4, 4, 0, 0]} stackId="a" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -697,7 +598,14 @@ export default function ShowroomStnkBpkbMonitoring() {
                   {data.byBirojasa.map((row) => {
                     const total = row.stnk_belum_jadi + row.bpkb_belum_jadi
                     return (
-                      <tr key={row.name} className="hover:bg-slate-50">
+                      <tr
+                        key={row.name}
+                        className="hover:bg-slate-50 cursor-pointer"
+                        onClick={() => {
+                          setFilters((prev) => ({ ...prev, birojasa: row.name }))
+                          setTimeout(() => void loadData(), 0)
+                        }}
+                      >
                         <td className="px-3 py-2.5 text-slate-700 font-medium">{row.name}</td>
                         <td className="px-3 py-2.5 text-right tabular-nums">
                           {row.stnk_belum_jadi > 0 ? (
@@ -731,6 +639,24 @@ export default function ShowroomStnkBpkbMonitoring() {
                       </tr>
                     )
                   })}
+                  {/* Summary Row */}
+                  {(() => {
+                    const totalStnk = data.byBirojasa.reduce((sum, r) => sum + r.stnk_belum_jadi, 0)
+                    const totalPlat = data.byBirojasa.reduce((sum, r) => sum + r.plat_belum_jadi, 0)
+                    const totalBpkb = data.byBirojasa.reduce((sum, r) => sum + r.bpkb_belum_jadi, 0)
+                    const totalOverdue = data.byBirojasa.reduce((sum, r) => sum + r.bpkb_overdue, 0)
+                    const grandTotal = data.byBirojasa.reduce((sum, r) => sum + r.stnk_belum_jadi + r.bpkb_belum_jadi, 0)
+                    return (
+                      <tr className="bg-slate-50 font-bold border-t-2 border-slate-200">
+                        <td className="px-3 py-3 text-slate-800 uppercase tracking-wider text-xs">Total Akumulasi</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-red-700">{totalStnk.toLocaleString('id-ID')}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-amber-700">{totalPlat.toLocaleString('id-ID')}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-blue-700">{totalBpkb.toLocaleString('id-ID')}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-rose-700">{totalOverdue.toLocaleString('id-ID')}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-slate-900">{grandTotal.toLocaleString('id-ID')}</td>
+                      </tr>
+                    )
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -742,7 +668,7 @@ export default function ShowroomStnkBpkbMonitoring() {
 
       {/* Anomali Section */}
       <SectionCard
-        title="Anomali & Tindak Lanjut"
+        title="Dokumen Perlu Perhatian"
         icon={AlertTriangle}
         action={
           <button
@@ -757,9 +683,9 @@ export default function ShowroomStnkBpkbMonitoring() {
           <>
             <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-4">
               {[
-                { key: 'stnkBelumJadi', label: `STNK Belum Jadi belum Followup (${anomalies.stnkBelumJadiBelumFollowup?.count || 0})` },
-                { key: 'stnkSudahJadi', label: `STNK Sudah Jadi belum Diambil (${anomalies.stnkSudahJadiBelumDiambil?.count || 0})` },
-                { key: 'bpkbOverdue', label: `BPKB Overdue >180hr (${anomalies.bpkbOverdue?.count || 0})` },
+                { key: 'stnkBelumJadi', label: `STNK Belum Jadi (${anomalies.stnkBelumJadiBelumFollowup?.count || 0})` },
+                { key: 'stnkSudahJadi', label: `STNK Belum Diserahkan (${anomalies.stnkSudahJadiBelumDiambil?.count || 0})` },
+                { key: 'bpkbOverdue', label: `BPKB Overdue >180 Hari (${anomalies.bpkbOverdue?.count || 0})` },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -779,21 +705,21 @@ export default function ShowroomStnkBpkbMonitoring() {
               <AnomalyTable
                 rows={anomalies.stnkBelumJadiBelumFollowup?.rows || []}
                 columns={STNK_COLUMNS}
-                emptyMessage="Tidak ada STNK yang belum jadi dan belum difollowup. ✅"
+                emptyMessage="Semua STNK dalam proses sudah ditindaklanjuti. ✅"
               />
             )}
             {activeAnomalyTab === 'stnkSudahJadi' && (
               <AnomalyTable
                 rows={anomalies.stnkSudahJadiBelumDiambil?.rows || []}
                 columns={STNK_BELUM_DIAMBIL_COLUMNS}
-                emptyMessage="Tidak ada STNK yang sudah jadi dan belum diambil. ✅"
+                emptyMessage="Semua STNK yang sudah selesai telah diserahkan ke konsumen. ✅"
               />
             )}
             {activeAnomalyTab === 'bpkbOverdue' && (
               <AnomalyTable
                 rows={anomalies.bpkbOverdue?.rows || []}
                 columns={BPKB_OVERDUE_COLUMNS}
-                emptyMessage="Tidak ada BPKB yang overdue > 180 hari. ✅"
+                emptyMessage="Tidak ada BPKB yang melewati batas waktu 180 hari. ✅"
               />
             )}
           </>
@@ -802,7 +728,7 @@ export default function ShowroomStnkBpkbMonitoring() {
 
       {/* Top Pending BPKB */}
       <SectionCard
-        title={`Top 50 BPKB Pending Terlama (${topPendingBpkb.count} total)`}
+        title={`BPKB Tertunda Paling Lama (${topPendingBpkb.count} unit)`}
         icon={Clock}
       >
         <AnomalyTable
@@ -821,24 +747,7 @@ export default function ShowroomStnkBpkbMonitoring() {
               align: 'right',
               render: (r) => <span className={r.days_pending > 90 ? 'text-red-600 font-bold' : r.days_pending > 30 ? 'text-amber-600' : 'text-slate-700'}>{r.days_pending} hari</span>,
             },
-            {
-              key: 'whatsapp',
-              label: 'Aksi',
-              render: (r) =>
-                r.mobile ? (
-                  <a
-                    href={`https://wa.me/${String(r.mobile).replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors"
-                  >
-                    <Phone size={12} />
-                    WhatsApp
-                  </a>
-                ) : (
-                  <span className="text-slate-400 text-xs">-</span>
-                ),
-            },
+
           ]}
           emptyMessage="Tidak ada BPKB pending."
         />

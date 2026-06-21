@@ -1,5 +1,6 @@
 import { prisma } from '../config/db.js'
 import { createDatabaseBackup } from '../services/backupService.js'
+import { clampLimit } from '../utils/pagination.js'
 import { createAuditLog } from '../services/auditService.js'
 import { cleanupUpload, parseOtrPriceFile, parseOffPurchasePriceFile } from './showroomUtils.js'
 import { parsePrice } from '../utils/excelUtils.js'
@@ -96,7 +97,7 @@ export async function getOtrPrices(req, res, next) {
   try {
     const { page = 1, limit = 100, search } = req.query
     const pageInt = parseInt(page)
-    const limitInt = parseInt(limit)
+    const limitInt = clampLimit(limit, 100)
     const where = {}
 
     if (search) {

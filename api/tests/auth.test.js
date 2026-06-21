@@ -28,7 +28,7 @@ test('authorize returns 403 when authenticated role is not allowed', () => {
 
   assert.equal(calledNext, false)
   assert.equal(res.statusCode, 403)
-  assert.equal(res.body.error, 'Akses ditolak')
+  assert.ok(res.body.error.startsWith('Akses ditolak'))
 })
 
 test('authorize calls next when role is allowed', () => {
@@ -69,7 +69,7 @@ test('backup admin guard allows Kepala Bengkel and Kepala Cabang only', () => {
 
     assert.equal(calledNext, false)
     assert.equal(res.statusCode, 403)
-    assert.equal(res.body.error, 'Akses ditolak')
+    assert.ok(res.body.error.startsWith('Akses ditolak'))
   }
 })
 

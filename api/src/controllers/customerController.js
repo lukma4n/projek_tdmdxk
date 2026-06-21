@@ -1,6 +1,7 @@
 import xlsx from 'xlsx'
 import fs from 'fs/promises'
 import { rmSync } from 'fs'
+import { clampLimit } from '../utils/pagination.js'
 import path from 'path'
 import os from 'os'
 import { prisma } from '../config/db.js'
@@ -322,7 +323,7 @@ export async function getCustomers(req, res, next) {
   try {
     const { page = 1, limit = 50, search, kpb_status, model, from, to, kpb_year, kpb_month } = req.query
     const pageInt = parseInt(page)
-    const limitInt = parseInt(limit)
+    const limitInt = clampLimit(limit, 50)
 
     const where = { branch_code: 'DXK' }
 

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#525659;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.doc{color:#1e293b}
+.code{font-family:'JetBrains Mono',monospace}
+@media print{
+  body{background:#fff}
+  .page{box-shadow:none !important;margin:0 !important;page-break-after:always;width:100% !important;min-height:auto !important}
+  .noprint{display:none !important}
+}
+@page{size:A4;margin:0}
+</style>
+</helmet>
+
+<div class="doc" style="padding:28px 0 60px">
+
+<div class="noprint" style="max-width:794px;margin:0 auto 18px;display:flex;align-items:center;justify-content:space-between;color:#cbd5e1;font-size:12.5px;padding:0 6px">
+  <span style="font-weight:600;letter-spacing:.02em">Dokumen Implementasi — Sistem DXK</span>
+  <span style="font-family:'JetBrains Mono',monospace">11 halaman · siap cetak / PDF</span>
+</div>
+
+<!-- ===== PAGE 1 — COVER ===== -->
+<div class="page" style="width:794px;min-height:1123px;margin:0 auto;background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35);position:relative;overflow:hidden;display:flex;flex-direction:column">
+  <div style="height:8px;background:#2563eb"></div>
+  <div style="flex:1;padding:92px 72px 60px;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:auto">
+      <div style="width:50px;height:50px;border-radius:13px;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>
+      </div>
+      <div style="line-height:1.2"><div style="font-size:17px;font-weight:800;color:#0f172a;letter-spacing:-.01em">Sistem DXK</div><div style="font-size:12.5px;color:#64748b;font-weight:500">TDM Ketapang</div></div>
+    </div>
+    <div style="margin-top:40px">
+      <div style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#2563eb;margin-bottom:18px">Dokumen Implementasi Teknis</div>
+      <h1 style="margin:0;font-size:48px;line-height:1.05;font-weight:800;color:#0f172a;letter-spacing:-.025em">Panduan Membangun<br>Sistem DXK</h1>
+      <p style="margin:26px 0 0;font-size:16px;line-height:1.6;color:#475569;max-width:560px">Acuan teknis untuk tim developer / IT TDM Ketapang dalam menerjemahkan prototype desain menjadi aplikasi web internal yang berjalan penuh — arsitektur, database, API, import engine, hingga roadmap eksekusi.</p>
+    </div>
+    <div style="margin-top:48px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:600px">
+      <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px"><div style="font-size:26px;font-weight:800;color:#2563eb;font-family:'JetBrains Mono',monospace">38</div><div style="font-size:12px;color:#64748b;margin-top:3px">halaman aplikasi</div></div>
+      <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px"><div style="font-size:26px;font-weight:800;color:#2563eb;font-family:'JetBrains Mono',monospace">11</div><div style="font-size:12px;color:#64748b;margin-top:3px">role pengguna</div></div>
+      <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px"><div style="font-size:26px;font-weight:800;color:#2563eb;font-family:'JetBrains Mono',monospace">2</div><div style="font-size:12px;color:#64748b;margin-top:3px">domain operasi</div></div>
+    </div>
+    <div style="margin-top:auto;padding-top:48px;display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid #e2e8f0">
+      <div><div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Versi</div><div style="font-size:13.5px;color:#1e293b;font-weight:600;margin-top:3px">1.0 — Berbasis PRD v3.0</div></div>
+      <div style="text-align:right"><div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;font-weight:700">Tanggal</div><div style="font-size:13.5px;color:#1e293b;font-weight:600;margin-top:3px">21 Juni 2026</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE 2 — DAFTAR ISI + RINGKASAN ===== -->
+<div class="page" style="width:794px;min-height:1123px;margin:26px auto 0;background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35);padding:72px;position:relative">
+  <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2563eb;margin-bottom:7px">Pendahuluan</div>
+  <h2 style="margin:0 0 26px;font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-.02em">Daftar Isi &amp; Ringkasan</h2>
+
+  <div style="background:#eff4ff;border:1px solid #dbe5ff;border-radius:12px;padding:20px 22px;margin-bottom:32px">
+    <div style="font-size:13.5px;font-weight:700;color:#1e293b;margin-bottom:8px">Apa status sekarang?</div>
+    <p style="margin:0;font-size:13.5px;line-height:1.65;color:#475569">Prototype UI sudah selesai dibuat (file <span class="code" style="background:#fff;padding:1px 6px;border-radius:5px;border:1px solid #dbe5ff;font-size:12px">Sistem DXK.dc.html</span>) — itu menjadi <b>acuan visual</b>. Dokumen ini melengkapinya dengan lapisan teknis: bagaimana data disimpan, bagaimana frontend bicara ke backend, dan urutan pengerjaan. Dengan dua dokumen ini, developer dapat langsung mulai.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column">
+    <sc-for list="{{ toc }}" as="t" hint-placeholder-count="9">
+      <div style="display:flex;align-items:baseline;gap:14px;padding:12px 0;border-bottom:1px solid #f1f5f9">
+        <span class="code" style="font-size:13px;font-weight:600;color:#2563eb;width:30px;flex:none">{{ t.no }}</span>
+        <span style="font-size:14.5px;font-weight:600;color:#1e293b;flex:none">{{ t.title }}</span>
+        <span style="flex:1;border-bottom:1px dotted #cbd5e1;transform:translateY(-3px)"></span>
+        <span style="font-size:13px;color:#94a3b8">{{ t.sub }}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="position:absolute;left:72px;right:72px;bottom:48px;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;font-family:'JetBrains Mono',monospace"><span>Sistem DXK · Implementasi</span><span>02</span></div>
+</div>
+
+<!-- ===== PAGE 3 — ARSITEKTUR ===== -->
+<div class="page" style="width:794px;min-height:1123px;margin:26px auto 0;background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35);padding:72px;position:relative">
+  <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2563eb;margin-bottom:7px">Bagian 01</div>
+  <h2 style="margin:0 0 8px;font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-.02em">Arsitektur Sistem</h2>
+  <p style="margin:0 0 28px;font-size:14px;line-height:1.6;color:#475569">DXK adalah aplikasi internal cabang berbasis LAN. Karakter utamanya: <b>bukan sistem transaksi</b> — mayoritas data masuk lewat import snapshot berkala dari sistem induk AHM, hanya follow-up &amp; opname yang diinput manual. Ini menyederhanakan arsitektur secara signifikan.</p>
+
+  <div style="border:1px solid #e2e8f0;border-radius:14px;padding:26px;background:#f8fafc;margin-bottom:26px">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:120px;flex:none;text-align:center;background:#2563eb;color:#fff;border-radius:10px;padding:14px 8px"><div style="font-size:13px;font-weight:700">Browser Klien</div><div style="font-size:10.5px;opacity:.85;margin-top:2px">PC staf cabang</div></div>
+        <div style="flex:1;font-size:12.5px;color:#475569;line-height:1.5">Single Page App (React + Tailwind v4). Tema light/dark per user di localStorage. Desktop-first ≥1280px.</div>
+      </div>
+      <div style="display:flex;justify-content:center;color:#94a3b8"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="6 13 12 19 18 13"/></svg></div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:120px;flex:none;text-align:center;background:#0f172a;color:#fff;border-radius:10px;padding:14px 8px"><div style="font-size:13px;font-weight:700">Backend API</div><div style="font-size:10.5px;opacity:.75;margin-top:2px">REST / JSON</div></div>
+        <div style="flex:1;font-size:12.5px;color:#475569;line-height:1.5">Server tunggal di kantor cabang. Auth (session/JWT), RBAC per menu, business logic, <b>Import Engine</b> (parser Excel/DOCX/PDF), penjadwal backup.</div>
+      </div>
+      <div style="display:flex;justify-content:center;color:#94a3b8"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="6 13 12 19 18 13"/></svg></div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:120px;flex:none;text-align:center;background:#1e293b;color:#fff;border-radius:10px;padding:14px 8px"><div style="font-size:13px;font-weight:700">Database</div><div style="font-size:10.5px;opacity:.75;margin-top:2px">MySQL / PostgreSQL</div></div>
+        <div style="flex:1;font-size:12.5px;color:#475569;line-height:1.5">Penyimpanan relasional. File backup (.sql / dump) disimpan di disk lokal server; foto handover di folder storage.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div style="border:1px solid #e2e8f0;border-radius:12px;padding:18px">
+      <div style="font-size:13.5px;font-weight:700;color:#0f172a;margin-bottom:9px">Prinsip kunci</div>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#475569">
+        <li>Data master = read-only hasil import; jangan diedit manual</li>
+        <li>Setiap import destruktif wajib buat backup otomatis dulu</li>
+        <li>Akses ditentukan per <span class="code">menuKey</span> × role</li>
+        <li>Semua waktu pakai timezone server cabang (WIB)</li>
+      </ul>
+    </div>
+    <div style="border:1px solid #e2e8f0;border-radius:12px;padding:18px">
+      <div style="font-size:13.5px;font-weight:700;color:#0f172a;margin-bottom:9px">Mengapa sederhana?</div>
+      <p style="margin:0;font-size:12.5px;line-height:1.65;color:#475569">Karena tidak ada transaksi real-time multi-user yang rumit, tidak perlu message queue, microservices, atau caching layer. <b>Monolith</b> (satu backend + satu DB) sudah lebih dari cukup dan jauh lebih murah dirawat tim kecil.</p>
+    </div>
+  </div>
+
+  <div style="position:absolute;left:72px;right:72px;bottom:48px;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;font-family:'JetBrains Mono',monospace"><span>Sistem DXK · Implementasi</span><span>03</span></div>
+</div>
+
+<!-- ===== PAGE 4 — TECH STACK ===== -->
+<div class="page" style="width:794px;min-height:1123px;margin:26px auto 0;background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35);padding:72px;position:relative">
+  <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2563eb;margin-bottom:7px">Bagian 02</div>
+  <h2 style="margin:0 0 8px;font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-.02em">Rekomendasi Tech Stack</h2>
+  <p style="margin:0 0 26px;font-size:14px;line-height:1.6;color:#475569">PRD sudah mengunci frontend (React + Tailwind v4 + Lucide). Untuk backend, dua jalur paling realistis untuk tim cabang:</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:26px">
+    <div style="border:2px solid #2563eb;border-radius:13px;padding:20px;position:relative">
+      <div style="position:absolute;top:-11px;left:18px;background:#2563eb;color:#fff;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:6px;text-transform:uppercase;letter-spacing:.05em">Rekomendasi</div>
+      <div style="font-size:16px;font-weight:800;color:#0f172a;margin-bottom:4px;margin-top:4px">Laravel + Inertia</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:12px">PHP · paling umum di Indonesia</div>
+      <ul style="margin:0;padding-left:17px;font-size:12.5px;line-height:1.7;color:#475569">
+        <li>Eloquent ORM + migration bawaan</li>
+        <li><span class="code">maatwebsite/excel</span> untuk import</li>
+        <li>Auth, RBAC (spatie/permission) matang</li>
+        <li>Mudah cari developer lokal</li>
+      </ul>
+    </div>
+    <div style="border:1px solid #e2e8f0;border-radius:13px;padding:20px">
+      <div style="font-size:16px;font-weight:800;color:#0f172a;margin-bottom:4px;margin-top:4px">Node + Express/NestJS</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:12px">JS end-to-end · satu bahasa</div>
+      <ul style="margin:0;padding-left:17px;font-size:12.5px;line-height:1.7;color:#475569">
+        <li>Prisma ORM + migration</li>
+        <li><span class="code">xlsx</span> / <span class="code">exceljs</span> untuk import</li>
+        <li>Tim cukup kuasai JavaScript saja</li>
+        <li>Cocok jika frontend &amp; backend satu orang</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
+    <div style="background:#f8fafc;padding:11px 18px;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #e2e8f0">Komponen wajib &amp; pustaka pendukung</div>
+    <table style="width:100%;border-collapse:collapse">
+      <sc-for list="{{ stack }}" as="s" hint-placeholder-count="9">
+        <tr style="border-bottom:1px solid #f1f5f9">
+          <td style="padding:10px 18px;font-size:12.5px;font-weight:600;color:#1e293b;width:200px">{{ s.area }}</td>
+          <td style="padding:10px 14px;font-size:12.5px;color:#2563eb;font-family:'JetBrains Mono',monospace;width:200px">{{ s.pick }}</td>
+          <td style="padding:10px 18px 10px 14px;font-size:12px;color:#64748b">{{ s.note }}</td>
+        </tr>
+      </sc-for>
+    </table>
+  </div>
+
+  <div style="position:absolute;left:72px;right:72px;bottom:48px;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;font-family:'JetBrains Mono',monospace"><span>Sistem DXK · Implementasi</span><span>04</span></div>
+</div>
+
+<!-- ===== PAGE 5 — ERD ===== -->
+<div class="page" style="width:794px;min-height:1123px;margin:26px auto 0;background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35);padding:72px;position:relative">
+  <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2563eb;margin-bottom:7px">Bagian 03</div>
+  <h2 style="margin:0 0 8px;font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-.02em">Skema Database — Peta Relasi</h2>
+  <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#475569">Entitas dikelompokkan per domain. Garis tebal = relasi utama (foreign key). Detail kolom tiap tabel ada di halaman berikutnya.</p>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <sc-for list="{{ erdGroups }}" as="g" hint-placeholder-count="4">
+      <div style="border:1px solid #e2e8f0;border-radius:13px;overflow:hidden">
+        <div style="padding:9px 16px;font-size:12px;font-weight:700;color:#fff;background:{{ g.color }};letter-spacing:.02em">{{ g.label }}</div>
+        <div style="padding:15px;display:flex;flex-wrap:wrap;gap:9px">
+          <sc-for list="{{ g.tables }}" as="tb">
+            <div style="border:1px solid #e2e8f0;border-radius:9px;overflow:hidden;min-width:150px;background:#fff">
+              <div class="code" style="background:#f8fafc;padding:6px 11px;font-size:11.5px;font-weight:600;color:#0f172a;border-bottom:1px solid #eef2f7">{{ tb.name }}</div>
+              <div style="padding:6px 11px;font-size:10.5px;color:#64748b;line-height:1.55">{{ tb.key }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="margin-top:20px;background:#fffbeb;border:1px solid #fde68a;border-radius:11px;padding:15px 18px;display:flex;gap:12px">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <p style="margin:0;font-size:12.5px;line-height:1.6;color:#92400e"><b>Penanda baris import:</b> setiap tabel data master beri kolom <span class="code">import_batch_id</span> + <span class="code">imported_at</span>. Ini memungkinkan rollback per batch dan menampilkan "data freshness" di Dashboard Bengkel tanpa query rumit.</p>
+  </div>
+
+  <div style="position:absolute;left:72px;right:72px;bottom:48px;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;font-family:'JetBrains Mono',monospace"><span>Sistem DXK · Implementasi</span><span>05</span></div>
+</div>
+
+<!-- ===== PAGE 6 & 7 — TABEL DETAIL ===== -->
+<sc-for list="{{ tablePages }}" as="pg" hint-placeholder-count="2">
+<div class="page" style="width:794px;min-height:1123px;margin:26px auto 0;background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35);padding:72px;position:relative">
+  <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2563eb;margin-bottom:7px">Bagian 03 · Definisi Tabel {{ pg.part }}</div>
+  <h2 style="margin:0 0 22px;font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-.02em">{{ pg.title }}</h2>
+
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <sc-for list="{{ pg.tables }}" as="t" hint-placeholder-count="3">
+      <div style="border:1px solid #e2e8f0;border-radius:11px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 15px;background:#0f172a">
+          <span class="code" style="font-size:13px;font-weight:600;color:#fff">{{ t.name }}</span>
+          <span style="font-size:11px;color:#94a3b8">{{ t.desc }}</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <sc-for list="{{ t.cols }}" as="c">
+            <tr style="border-bottom:1px solid #f1f5f9">
+              <td class="code" style="padding:6px 15px;font-size:11.5px;font-weight:600;color:#1e293b;width:185px;vertical-align:top">{{ c.n }}</td>
+              <td class="code" style="padding:6px 12px;font-size:11px;color:#2563eb;width:130px;vertical-align:top">{{ c.t }}</td>
+              <td style="padding:6px 15px 6px 12px;font-size:11.5px;color:#64748b;line-height:1.45">{{ c.d }}</td>
+            </tr>
+          </sc-for>
+        </table>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="position:absolute;left:72px;right:72px;bottom:48px;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;font-family:'JetBrains Mono',monospace"><span>Sistem DXK · Implementasi</span><span>{{ pg.pageNo }}</span></div>
+</div>
+</sc-for>
+
+<!-- ===== PAGE 8 — API ===== -->
+<div class="page" style="width:794px;min-height:1123px;margin:26px auto 0;background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35);padding:72px;position:relative">
+  <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2563eb;margin-bottom:7px">Bagian 04</div>
+  <h2 style="margin:0 0 8px;font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-.02em">REST API — Endpoint Inti</h2>
+  <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#475569">Konvensi: prefix <span class="code" style="background:#f1f5f9;padding:1px 6px;border-radius:5px">/api/v1</span>, autentikasi via header <span class="code" style="background:#f1f5f9;padding:1px 6px;border-radius:5px">Authorization: Bearer</span>, respons JSON. Tabel data pakai query <span class="code">?page=&amp;search=&amp;sort=</span>.</p>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <sc-for list="{{ apiGroups }}" as="g" hint-placeholder-count="5">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:8px;display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:#2563eb"></span>{{ g.label }}</div>
+        <div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
+          <sc-for list="{{ g.routes }}" as="r">
+            <div style="display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid #f1f5f9">
+              <span style="{{ r.mStyle }}">{{ r.m }}</span>
+              <span class="code" style="font-size:11.5px;color:#1e293b;font-weight:500;flex:none;width:280px">{{ r.path }}</span>
+              <span style="font-size:11.5px;color:#64748b;flex:1">{{ r.desc }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="position:absolute;left:72px;right:72px;bottom:48px;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;font-family:'JetBrains Mono',monospace"><span>Sistem DXK · Implementasi</span><span>08</span></div>
+</div>
+
+<!-- ===== PAGE 9 — IMPORT ENGINE ===== -->
+<div class="page" style="width:794px;min-height:1123px;margin:26px auto 0;background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35);padding:72px;position:relative">
+  <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2563eb;margin-bottom:7px">Bagian 05</div>
+  <h2 style="margin:0 0 8px;font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-.02em">Import Engine</h2>
+  <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#475569">Ini jantung DXK — semua data master masuk lewat sini. Wajib aman, dapat di-preview, dan reversibel. Alur 4 tahap:</p>
+
+  <div style="display:flex;flex-direction:column;gap:11px;margin-bottom:26px">
+    <sc-for list="{{ importSteps }}" as="s" hint-placeholder-count="4">
+      <div style="display:flex;gap:15px;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px">
+        <div style="width:34px;height:34px;flex:none;border-radius:9px;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;font-family:'JetBrains Mono',monospace">{{ s.n }}</div>
+        <div><div style="font-size:14px;font-weight:700;color:#0f172a">{{ s.title }}</div><div style="font-size:12.5px;color:#64748b;line-height:1.55;margin-top:3px">{{ s.desc }}</div></div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div style="border:1px solid #e2e8f0;border-radius:12px;padding:18px">
+      <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px">Aturan keamanan import</div>
+      <ul style="margin:0;padding-left:17px;font-size:12.5px;line-height:1.7;color:#475569">
+        <li>Backup otomatis sebelum operasi destruktif (truncate/replace)</li>
+        <li>Validasi header kolom sebelum proses; tolak jika tidak cocok</li>
+        <li>Transaksi DB — semua baris sukses atau rollback total</li>
+        <li>Simpan log: <span class="code">rows_ok</span>, <span class="code">rows_err</span>, nama backup</li>
+      </ul>
+    </div>
+    <div style="border:1px solid #e2e8f0;border-radius:12px;padding:18px">
+      <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px">Format per modul</div>
+      <ul style="margin:0;padding-left:17px;font-size:12.5px;line-height:1.7;color:#475569">
+        <li><b>XLSX</b> — Workshop, Stock, Hotline, Sales, Unit, OTR, STNK/BPKB</li>
+        <li><b>DOCX</b> — Master Program</li>
+        <li><b>PDF</b> — Master BBN (parsing tabel terstruktur)</li>
+        <li>Backup retensi: tipe <span class="code">pre_import</span> boleh auto-cleanup</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="position:absolute;left:72px;right:72px;bottom:48px;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;font-family:'JetBrains Mono',monospace"><span>Sistem DXK · Implementasi</span><span>09</span></div>
+</div>
+
+<!-- ===== PAGE 10 — RBAC ===== -->
+<div class="page" style="width:794px;min-height:1123px;margin:26px auto 0;background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35);padding:72px;position:relative">
+  <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2563eb;margin-bottom:7px">Bagian 06</div>
+  <h2 style="margin:0 0 8px;font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-.02em">Autentikasi &amp; Hak Akses</h2>
+  <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#475569">RBAC berbasis <span class="code">menuKey</span>. Tabel <span class="code">permissions</span> menyimpan matriks (role × menuKey × can_access) dan dapat diubah lewat halaman Manajemen Akses. <b>IT Master</b> bypass seluruh cek.</p>
+
+  <div style="border:1px solid #e2e8f0;border-radius:11px;overflow:hidden;margin-bottom:22px">
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;background:#0f172a">
+      <div style="padding:9px 15px;font-size:12px;font-weight:700;color:#fff">Role</div>
+      <div style="padding:9px 15px;font-size:12px;font-weight:700;color:#fff">Redirect setelah login</div>
+    </div>
+    <sc-for list="{{ roleRedirects }}" as="r" hint-placeholder-count="6">
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;border-bottom:1px solid #f1f5f9">
+        <div style="padding:8px 15px;font-size:12.5px;color:#1e293b;font-weight:600">{{ r.role }}</div>
+        <div style="padding:8px 15px;font-size:12.5px;color:#64748b">{{ r.to }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div style="border:1px solid #e2e8f0;border-radius:12px;padding:18px">
+      <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px">Penegakan di 2 lapis</div>
+      <p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:#475569"><b>Frontend</b> — sembunyikan menu/route yang tak diizinkan (UX).</p>
+      <p style="margin:0;font-size:12.5px;line-height:1.6;color:#475569"><b>Backend</b> — middleware cek tiap request (keamanan nyata). Jangan andalkan frontend saja.</p>
+    </div>
+    <div style="border:1px solid #e2e8f0;border-radius:12px;padding:18px">
+      <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px">Sesi &amp; password</div>
+      <ul style="margin:0;padding-left:17px;font-size:12.5px;line-height:1.7;color:#475569">
+        <li>Hash password (bcrypt/argon2), jangan plain</li>
+        <li>Tanpa register/forgot — user dibuat admin</li>
+        <li>Reset password lewat Manajemen User</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="position:absolute;left:72px;right:72px;bottom:48px;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;font-family:'JetBrains Mono',monospace"><span>Sistem DXK · Implementasi</span><span>10</span></div>
+</div>
+
+<!-- ===== PAGE 11 — ROADMAP ===== -->
+<div class="page" style="width:794px;min-height:1123px;margin:26px auto 0;background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35);padding:72px;position:relative">
+  <div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2563eb;margin-bottom:7px">Bagian 07</div>
+  <h2 style="margin:0 0 8px;font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-.02em">Roadmap Implementasi</h2>
+  <p style="margin:0 0 26px;font-size:14px;line-height:1.6;color:#475569">Bangun bertahap. Tiap fase menghasilkan sesuatu yang bisa dipakai — jangan kerjakan 38 halaman sekaligus.</p>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <sc-for list="{{ phases }}" as="p" hint-placeholder-count="5">
+      <div style="display:flex;gap:16px">
+        <div style="display:flex;flex-direction:column;align-items:center;flex:none">
+          <div style="width:40px;height:40px;border-radius:11px;background:{{ p.color }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;font-family:'JetBrains Mono',monospace">{{ p.tag }}</div>
+          <div style="flex:1;width:2px;background:#e2e8f0;margin:4px 0"></div>
+        </div>
+        <div style="flex:1;border:1px solid #e2e8f0;border-radius:12px;padding:15px 18px;margin-bottom:2px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><div style="font-size:14.5px;font-weight:700;color:#0f172a">{{ p.title }}</div><div style="font-size:11.5px;color:#94a3b8;font-family:'JetBrains Mono',monospace;flex:none">{{ p.dur }}</div></div>
+          <div style="font-size:12.5px;color:#64748b;line-height:1.55;margin-top:5px">{{ p.desc }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="margin-top:14px;background:#eff4ff;border:1px solid #dbe5ff;border-radius:12px;padding:18px 20px">
+    <div style="font-size:13.5px;font-weight:700;color:#1e293b;margin-bottom:6px">Langkah pertama yang konkret</div>
+    <p style="margin:0;font-size:13px;line-height:1.6;color:#475569">Mulai dari <b>Fase 0 + 1</b>: setup proyek, auth, shell aplikasi (header + sidebar + tema) sesuai prototype, lalu Dashboard Bengkel + Import Engine untuk satu modul (Workshop). Begitu satu alur import→tampil bekerja, sisanya tinggal pengulangan pola yang sama.</p>
+  </div>
+
+  <div style="position:absolute;left:72px;right:72px;bottom:48px;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;font-family:'JetBrains Mono',monospace"><span>Sistem DXK · Implementasi</span><span>11</span></div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const mBadge = (c, bg) => 'font-size:10px;font-weight:700;font-family:\'JetBrains Mono\',monospace;padding:2px 7px;border-radius:5px;width:52px;text-align:center;flex:none;color:' + c + ';background:' + bg;
+    const GET = mBadge('#2563eb', '#eff4ff');
+    const POST = mBadge('#16a34a', '#effdf3');
+    const PUT = mBadge('#d97706', '#fff8ed');
+    const DEL = mBadge('#dc2626', '#fef2f2');
+
+    return {
+      toc: [
+        {no:'01', title:'Arsitektur Sistem', sub:'hal. 03'},
+        {no:'02', title:'Rekomendasi Tech Stack', sub:'hal. 04'},
+        {no:'03', title:'Skema Database (ERD + tabel)', sub:'hal. 05–07'},
+        {no:'04', title:'REST API — Endpoint Inti', sub:'hal. 08'},
+        {no:'05', title:'Import Engine', sub:'hal. 09'},
+        {no:'06', title:'Autentikasi & Hak Akses (RBAC)', sub:'hal. 10'},
+        {no:'07', title:'Roadmap Implementasi', sub:'hal. 11'},
+      ],
+      stack: [
+        {area:'Frontend (dikunci PRD)', pick:'React + Tailwind v4', note:'SPA, Lucide React untuk ikon, desktop-first'},
+        {area:'State / data fetching', pick:'TanStack Query', note:'cache tabel, refetch notif tiap 60 dtk'},
+        {area:'Backend', pick:'Laravel / NestJS', note:'pilih salah satu — lihat kartu di atas'},
+        {area:'Database', pick:'MySQL 8 / PostgreSQL', note:'relasional, satu instance di server cabang'},
+        {area:'ORM / migration', pick:'Eloquent / Prisma', note:'skema versioned, mudah reproduksi'},
+        {area:'Import Excel', pick:'maatwebsite / exceljs', note:'parsing XLSX per modul'},
+        {area:'Import DOCX / PDF', pick:'PhpWord / pdf-parse', note:'Master Program & BBN'},
+        {area:'Barcode label', pick:'CODE128 generator', note:'label 32mm × 64mm, print batch'},
+        {area:'Auth & RBAC', pick:'session/JWT + middleware', note:'cek per menuKey, IT Master bypass'},
+      ],
+      erdGroups: [
+        {label:'INTI & AKSES', color:'#0f172a', tables:[
+          {name:'users', key:'→ roles'},{name:'roles', key:'11 role'},{name:'permissions', key:'role × menuKey'},
+          {name:'import_logs', key:'riwayat import'},{name:'backups', key:'pre_import / manual'},
+        ]},
+        {label:'BENGKEL & SPAREPART', color:'#2563eb', tables:[
+          {name:'work_orders', key:'→ customers, mechanics'},{name:'spareparts', key:'stok + aging'},
+          {name:'hotlines', key:'→ hotline_items'},{name:'mechanics', key:'performa'},{name:'programs_ahm', key:'KPB/LCR'},
+        ]},
+        {label:'SHOWROOM & UNIT', color:'#0d9488', tables:[
+          {name:'units', key:'→ master_ksu'},{name:'customers', key:'data sales'},{name:'master_otr', key:'harga'},
+          {name:'master_program', key:'·'},{name:'master_bbn', key:'·'},{name:'salespeople', key:'·'},
+        ]},
+        {label:'DOKUMEN & OPNAME', color:'#7c3aed', tables:[
+          {name:'stnk_bpkb', key:'tracking'},{name:'doc_handovers', key:'→ handover_photos'},
+          {name:'follow_ups', key:'kpb/stnk/bpkb'},{name:'opname_sessions', key:'→ opname_items'},{name:'baso', key:'form selisih'},
+        ]},
+      ],
+      tablePages: [
+        {part:'(1/3)', title:'Inti, Akses & Bengkel', pageNo:'06', tables:[
+          {name:'users', desc:'pengguna sistem', cols:[
+            {n:'id', t:'PK bigint', d:'primary key'},
+            {n:'nama', t:'varchar', d:'nama lengkap'},
+            {n:'username', t:'varchar unik', d:'login'},
+            {n:'password_hash', t:'varchar', d:'bcrypt / argon2'},
+            {n:'role', t:'enum/FK', d:'salah satu dari 11 role'},
+            {n:'status', t:'enum', d:'aktif / nonaktif'},
+          ]},
+          {name:'permissions', desc:'matriks RBAC', cols:[
+            {n:'role', t:'varchar', d:'nama role'},
+            {n:'menu_key', t:'varchar', d:'identifier halaman'},
+            {n:'can_access', t:'boolean', d:'true = boleh'},
+          ]},
+          {name:'work_orders', desc:'B-02 WO list', cols:[
+            {n:'wo_no', t:'varchar unik', d:'nomor WO'},
+            {n:'tanggal', t:'date', d:'tgl masuk'},
+            {n:'customer_id', t:'FK', d:'→ customers'},
+            {n:'unit / plate', t:'varchar', d:'kendaraan & plat'},
+            {n:'mechanic_id', t:'FK', d:'→ mechanics'},
+            {n:'type', t:'enum', d:'servis / perbaikan / KPB'},
+            {n:'state', t:'enum', d:'open / done / cancel'},
+            {n:'total', t:'decimal', d:'jasa + part'},
+            {n:'import_batch_id', t:'FK', d:'penanda batch import'},
+          ]},
+          {name:'spareparts', desc:'B-04 stok', cols:[
+            {n:'kode', t:'varchar PK', d:'kode part AHM'},
+            {n:'nama', t:'varchar', d:'nama part'},
+            {n:'kategori / ranking', t:'varchar', d:'klasifikasi A/B/C'},
+            {n:'qty / qty_min', t:'int', d:'stok & batas minimum'},
+            {n:'aging', t:'enum', d:'fast / normal / slow / dead'},
+          ]},
+        ]},
+        {part:'(2/3)', title:'Showroom, Dokumen & Opname', pageNo:'07', tables:[
+          {name:'units', desc:'S-14 stock unit', cols:[
+            {n:'no_mesin', t:'varchar PK', d:'nomor mesin'},
+            {n:'no_rangka', t:'varchar', d:'nomor rangka'},
+            {n:'tipe / warna', t:'varchar', d:'varian unit'},
+            {n:'ksu_status', t:'enum', d:'OK / pending'},
+            {n:'aging_days', t:'int', d:'lama di gudang'},
+            {n:'import_batch_id', t:'FK', d:'penanda batch'},
+          ]},
+          {name:'stnk_bpkb', desc:'S-16/17/18 tracking', cols:[
+            {n:'id', t:'PK', d:'primary key'},
+            {n:'no_mesin', t:'FK', d:'→ units'},
+            {n:'jenis', t:'enum', d:'stnk / bpkb'},
+            {n:'status', t:'enum', d:'proses / selesai / overdue'},
+            {n:'tanggal_update', t:'date', d:'update terakhir'},
+          ]},
+          {name:'doc_handovers', desc:'S-20 serah terima', cols:[
+            {n:'id', t:'PK', d:'primary key'},
+            {n:'no_mesin', t:'FK', d:'→ units'},
+            {n:'customer', t:'varchar', d:'penerima'},
+            {n:'salesman_id', t:'FK', d:'→ salespeople'},
+            {n:'step', t:'int', d:'tahap saat ini (1–5)'},
+            {n:'status', t:'enum', d:'pending / selesai / overdue'},
+          ]},
+          {name:'handover_photos', desc:'foto per step', cols:[
+            {n:'handover_id', t:'FK', d:'→ doc_handovers'},
+            {n:'step', t:'int', d:'tahap foto'},
+            {n:'foto_path', t:'varchar', d:'lokasi storage'},
+          ]},
+          {name:'opname_sessions / items', desc:'O-01..04', cols:[
+            {n:'session.kode', t:'varchar', d:'OPN-YYMM-NN'},
+            {n:'session.jenis', t:'enum', d:'sparepart/unit/stnk/bpkb'},
+            {n:'session.status', t:'enum', d:'draft/submitted/reviewed/closed'},
+            {n:'item.qty_sistem', t:'int', d:'stok tercatat'},
+            {n:'item.qty_scan', t:'int', d:'hasil scan fisik'},
+            {n:'item.selisih', t:'int', d:'qty_scan − qty_sistem'},
+          ]},
+        ]},
+      ],
+      apiGroups: [
+        {label:'Auth & Akses', routes:[
+          {m:'POST', mStyle:POST, path:'/auth/login', desc:'login → token + role + redirect'},
+          {m:'GET', mStyle:GET, path:'/auth/me', desc:'profil + permission user aktif'},
+          {m:'GET', mStyle:GET, path:'/permissions', desc:'matriks RBAC (ADM-02)'},
+          {m:'PUT', mStyle:PUT, path:'/permissions', desc:'simpan perubahan akses'},
+        ]},
+        {label:'Bengkel', routes:[
+          {m:'GET', mStyle:GET, path:'/dashboard/bengkel', desc:'KPI + open WO + alert + freshness'},
+          {m:'GET', mStyle:GET, path:'/work-orders', desc:'list WO (filter, search, page)'},
+          {m:'GET', mStyle:GET, path:'/spareparts', desc:'stok (kategori, ranking, aging)'},
+          {m:'GET', mStyle:GET, path:'/hotlines', desc:'part hotline + items'},
+        ]},
+        {label:'Showroom & Dokumen', routes:[
+          {m:'GET', mStyle:GET, path:'/showroom/dashboard', desc:'KPI unit + aging + STNK/BPKB'},
+          {m:'GET', mStyle:GET, path:'/units', desc:'stock unit (tipe, KSU, aging)'},
+          {m:'GET', mStyle:GET, path:'/handovers', desc:'list document handling'},
+          {m:'POST', mStyle:POST, path:'/handovers/:id/photo', desc:'upload foto per step'},
+        ]},
+        {label:'Opname', routes:[
+          {m:'POST', mStyle:POST, path:'/opname', desc:'buat sesi opname baru'},
+          {m:'POST', mStyle:POST, path:'/opname/:id/scan', desc:'tambah hasil scan barcode'},
+          {m:'POST', mStyle:POST, path:'/opname/:id/submit', desc:'submit ke approval → BASO'},
+        ]},
+        {label:'Import & Backup', routes:[
+          {m:'POST', mStyle:POST, path:'/import/:modul/preview', desc:'upload → ringkasan + warning'},
+          {m:'POST', mStyle:POST, path:'/import/:modul/commit', desc:'import final + auto-backup'},
+          {m:'POST', mStyle:POST, path:'/backups', desc:'buat backup manual'},
+          {m:'POST', mStyle:POST, path:'/backups/:id/restore', desc:'restore (konfirmasi)'},
+        ]},
+      ],
+      importSteps: [
+        {n:'1', title:'Pilih file & modul', desc:'User buka modal Import, pilih modul sesuai aksesnya, unggah file Excel/DOCX/PDF.'},
+        {n:'2', title:'Preview & validasi', desc:'Sistem parse file, validasi header kolom, tampilkan jumlah baris + warning. Belum menyentuh database.'},
+        {n:'3', title:'Konfirmasi & backup', desc:'Jika destruktif (replace data), buat backup otomatis bertipe pre_import lebih dulu, lalu jalankan dalam transaksi.'},
+        {n:'4', title:'Hasil & log', desc:'Tampilkan rows_ok / rows_err + nama backup. Simpan ke import_logs untuk indikator freshness di dashboard.'},
+      ],
+      roleRedirects: [
+        {role:'Admin Showroom', to:'Dashboard Unit (Showroom)'},
+        {role:'Admin CRM', to:'Follow-up KPB'},
+        {role:'Salesman', to:'Document Handling'},
+        {role:'ADH · PIC Stock Opname', to:'Opname Unit Showroom'},
+        {role:'IT Master', to:'Akses penuh — bypass RBAC'},
+        {role:'Lainnya (SA, Kabeng, dll)', to:'Dashboard Bengkel'},
+      ],
+      phases: [
+        {tag:'F0', color:'#64748b', title:'Fondasi', dur:'1–2 minggu', desc:'Setup repo, DB, migration, auth + login, layout shell (header, sidebar accordion, tema light/dark) sesuai prototype.'},
+        {tag:'F1', color:'#2563eb', title:'Bengkel inti + Import Engine', dur:'2–3 minggu', desc:'Dashboard Bengkel, Workshop, Stok Sparepart, dan Import Engine untuk modul Workshop + Stock. Inilah pembuktian alur import→tampil.'},
+        {tag:'F2', color:'#2563eb', title:'Showroom & Unit', dur:'2–3 minggu', desc:'Dashboard Unit, Stock Unit, master data (OTR, program, BBN), STNK/BPKB monitoring, Document Handling.'},
+        {tag:'F3', color:'#0d9488', title:'CRM & Opname', dur:'2 minggu', desc:'Follow-up KPB/STNK/BPKB, opname sparepart + showroom (alur PIC→ADH→Kacab), BASO selisih.'},
+        {tag:'F4', color:'#7c3aed', title:'Admin, laporan & polish', dur:'1–2 minggu', desc:'Manajemen user/akses, Backup & Restore, laporan & target, performa mekanik, label barcode, uji terima.'},
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

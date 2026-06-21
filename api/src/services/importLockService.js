@@ -54,15 +54,12 @@ export async function withImportLock(key, fn, meta = {}) {
   const expiresAt = new Date(now.getTime() + ttlMs)
   const owner = randomUUID()
 
+  // Hapus expired locks terlebih dahulu (bukan untuk key aktif, hanya yang sudah expired)
   await prisma.import_locks.deleteMany({
-    where: {
-      OR: [
-        { key, expires_at: { lte: now } },
-        { expires_at: { lte: now } },
-      ],
-    },
-  })
+    where: { expires_at: { lte: now } },
+  }).catch(() => {})
 
+  // Atomic create — jika key sudah ada dan belum expired, unique constraint akan throw P2002
   try {
     await prisma.import_locks.create({
       data: {

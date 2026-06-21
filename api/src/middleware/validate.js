@@ -22,13 +22,13 @@ export function validate(schema) {
 // Common reusable schemas
 export const schemas = {
   login: z.object({
-    username: z.string().min(1, 'Username wajib diisi'),
-    password: z.string().min(1, 'Password wajib diisi'),
+    username: z.string().min(1, 'Username wajib diisi').max(100),
+    password: z.string().min(1, 'Password wajib diisi').max(128),
   }),
 
   createUser: z.object({
-    username: z.string().min(3, 'Username minimal 3 karakter'),
-    password: z.string().min(4, 'Password minimal 4 karakter'),
+    username: z.string().min(3, 'Username minimal 3 karakter').max(100),
+    password: z.string().min(8, 'Password minimal 8 karakter').max(128),
     name: z.string().min(1, 'Nama wajib diisi'),
     role: z.string().min(1, 'Role wajib diisi'),
     locations: z.array(z.string()).optional(),

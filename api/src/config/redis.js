@@ -1,4 +1,5 @@
 import { createClient } from 'redis'
+import { logger } from '../utils/logger.js'
 
 let redisConnected = false
 let redisAvailable = false
@@ -33,7 +34,8 @@ export async function getCache(key) {
   if (!redisAvailable) return null
   try {
     return await redis.get(key)
-  } catch {
+  } catch (error) {
+    logger.warn(null, 'Redis get failed', { key, error: error.message })
     return null
   }
 }
@@ -42,8 +44,8 @@ export async function setCache(key, value, ttl = 300) {
   if (!redisAvailable) return
   try {
     await redis.setEx(key, ttl, value)
-  } catch {
-    // ignore
+  } catch (error) {
+    logger.warn(null, 'Redis set failed', { key, error: error.message })
   }
 }
 
@@ -56,7 +58,7 @@ export async function delCache(key) {
     } else {
       await redis.del(key)
     }
-  } catch {
-    // ignore
+  } catch (error) {
+    logger.warn(null, 'Redis del failed', { key, error: error.message })
   }
 }

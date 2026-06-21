@@ -21,17 +21,17 @@ async function loginAs(agent, username, password) {
   return agent
 }
 
-test('RBAC: /api/users → allowed for Kepala Bengkel, forbidden for Frondesk', async () => {
+test('RBAC: /api/users → allowed for IT Master, forbidden for Kepala Bengkel', async () => {
   const agentAllowed = request.agent(app)
-  await loginAs(agentAllowed, 'test_kabeng', 'password123')
+  await loginAs(agentAllowed, 'test_itmaster', 'password123')
   const resAllowed = await agentAllowed.get('/api/users')
-  assert.equal(resAllowed.status, 200, 'Kepala Bengkel should access users list')
+  assert.equal(resAllowed.status, 200, 'IT Master should access users list')
 
   const agentDenied = request.agent(app)
-  await loginAs(agentDenied, 'test_frondesk', 'password123')
+  await loginAs(agentDenied, 'test_kabeng', 'password123')
   const resDenied = await agentDenied.get('/api/users')
-  assert.equal(resDenied.status, 403, 'Frondesk should NOT access users list')
-  assert.equal(resDenied.body.error, 'Akses ditolak')
+  assert.equal(resDenied.status, 403, 'Kepala Bengkel should NOT access users list')
+  assert.ok(resDenied.body.error.startsWith('Akses ditolak'))
 })
 
 test('RBAC: /api/sync/stock → allowed for Partman, forbidden for Service Advisor', async () => {
@@ -44,7 +44,7 @@ test('RBAC: /api/sync/stock → allowed for Partman, forbidden for Service Advis
   await loginAs(agentDenied, 'test_serviceadv', 'password123')
   const resDenied = await agentDenied.post('/api/sync/stock')
   assert.equal(resDenied.status, 403, 'Service Advisor should NOT access stock import')
-  assert.equal(resDenied.body.error, 'Akses ditolak')
+  assert.ok(resDenied.body.error.startsWith('Akses ditolak'))
 })
 
 test('RBAC: /api/showroom/stock-units → allowed for Admin, forbidden for CRM', async () => {
@@ -57,7 +57,7 @@ test('RBAC: /api/showroom/stock-units → allowed for Admin, forbidden for CRM',
   await loginAs(agentDenied, 'test_crm', 'password123')
   const resDenied = await agentDenied.get('/api/showroom/stock-units')
   assert.equal(resDenied.status, 403, 'CRM should NOT access stock units list')
-  assert.equal(resDenied.body.error, 'Akses ditolak')
+  assert.ok(resDenied.body.error.startsWith('Akses ditolak'))
 })
 
 test('RBAC: /api/auth/me → any authenticated user should pass', async () => {

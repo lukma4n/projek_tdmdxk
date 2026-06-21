@@ -126,7 +126,7 @@ export default function ShowroomTeamLeader() {
             <RefreshCw size={16} /> Refresh
           </button>
           <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-            <FileUp size={16} /> Import Excel
+            <FileUp size={16} /> Import Data
             <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileSelect} disabled={importing} />
           </label>
         </div>
@@ -211,7 +211,7 @@ export default function ShowroomTeamLeader() {
         ) : items.length === 0 ? (
           <div className="p-8 text-center text-sm text-slate-500">Tidak ada data Team Leader.</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50">

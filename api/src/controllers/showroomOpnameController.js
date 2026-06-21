@@ -417,10 +417,8 @@ export async function getShowroomOpnameItems(req, res, next) {
         return allowedLocs.includes(normalizeLocationCompare(item.system_location))
       })
     }
-    // Lead PIC Stock opname: don't filter, show all so they can validate
-    if (req.user.role === 'Lead PIC Stock opname') {
-      // no-op: show all
-    }
+
+
 
     res.json({ data: items, summary: summarize(items), session })
   } catch (error) { next(error) }

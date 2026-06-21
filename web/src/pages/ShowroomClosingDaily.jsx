@@ -13,6 +13,8 @@ import {
   Receipt,
   BarChart3,
   Bike,
+  Monitor,
+  Smartphone,
 } from 'lucide-react'
 import {
   getTodayStr,
@@ -30,9 +32,16 @@ export default function ShowroomClosingDaily() {
   const [error, setError] = useState('')
   const [exporting, setExporting] = useState(false)
   const [screenshotting, setScreenshotting] = useState(false)
+  const [screenshotFormat, setScreenshotFormat] = useState('desktop') // 'desktop' | 'mobile'
   const reportRef = useRef(null)
   const today = getTodayStr()
   const [closingDate, setClosingDate] = useState(today)
+  
+  // Filter states
+  const [filterLeasing, setFilterLeasing] = useState('all')
+  const [filterTeam, setFilterTeam] = useState('all')
+  const [filterSales, setFilterSales] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const loadData = useCallback(async () => {
     try {
@@ -54,9 +63,9 @@ export default function ShowroomClosingDaily() {
 
   const handleClosingShortcut = (type) => {
     if (type === 'today') {
-      setClosingDate(getTodayStr())
+      handleDateChange(getTodayStr())
     } else if (type === 'yesterday') {
-      setClosingDate(getYesterdayStr())
+      handleDateChange(getYesterdayStr())
     }
   }
 
@@ -81,15 +90,19 @@ export default function ShowroomClosingDaily() {
     if (!reportRef.current) return
     try {
       setScreenshotting(true)
+      // Tunggu 500ms agar DOM stabil sebelum capture
+      await new Promise(resolve => setTimeout(resolve, 500))
       const dataUrl = await toPng(reportRef.current, {
         quality: 1,
         pixelRatio: 2,
         backgroundColor: '#ffffff',
         cacheBust: true,
         skipFonts: false,
+        style: { transform: 'none' },
       })
       const link = document.createElement('a')
-      link.download = `Closing_Harian_${closingDate}.png`
+      const formatLabel = screenshotFormat === 'mobile' ? 'Mobile' : 'Desktop'
+      link.download = `Closing_Harian_${closingDate}_${formatLabel}.png`
       link.href = dataUrl
       link.click()
     } catch (err) {
@@ -128,6 +141,65 @@ export default function ShowroomClosingDaily() {
   }
 
   const summary = data?.summary || {}
+
+  // Cari team dengan total tertinggi untuk badge TOP TEAM
+  const topTeam = (data?.byTeam || []).reduce((max, team) => 
+    team.total > (max?.total || 0) ? team : max, null
+  )
+
+  // Filter transaksi
+  const filteredTransactions = (data?.transactions || []).filter(tx => {
+    // Filter by leasing
+    const txLeasing = tx.sales_type === 'Cash' ? 'Cash' : (tx.finco || tx.sales_type || '-')
+    if (filterLeasing !== 'all' && txLeasing !== filterLeasing) return false
+    
+    // Filter by team
+    if (filterTeam !== 'all' && tx.sales_coord_name !== filterTeam) return false
+    
+    // Filter by sales
+    if (filterSales !== 'all' && tx.salesman !== filterSales) return false
+    
+    // Search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      const matchSO = (tx.so_number || '').toLowerCase().includes(query)
+      const matchCustomer = (tx.customer_name || '').toLowerCase().includes(query)
+      const matchModel = (tx.model || '').toLowerCase().includes(query)
+      const matchSales = (tx.salesman || '').toLowerCase().includes(query)
+      if (!matchSO && !matchCustomer && !matchModel && !matchSales) return false
+    }
+    
+    return true
+  })
+
+  // Hitung total transaksi per leasing untuk footer tabel (dari filtered)
+  const leasingTotals = filteredTransactions.reduce((acc, tx) => {
+    const leasing = tx.sales_type === 'Cash' ? 'Cash' : (tx.finco || tx.sales_type || 'Lainnya')
+    acc[leasing] = (acc[leasing] || 0) + 1
+    return acc
+  }, {})
+  
+  // Extract unique values untuk dropdown filter
+  const uniqueLeasings = [...new Set((data?.transactions || []).map(tx => 
+    tx.sales_type === 'Cash' ? 'Cash' : (tx.finco || tx.sales_type || '-')
+  ))].filter(Boolean).sort()
+  
+  const uniqueTeams = [...new Set((data?.transactions || []).map(tx => 
+    tx.sales_coord_name
+  ))].filter(Boolean).sort()
+  
+  const uniqueSalesmen = [...new Set((data?.transactions || []).map(tx => 
+    tx.salesman
+  ))].filter(Boolean).sort()
+  
+  // Reset filters when date changes
+  const handleDateChange = (newDate) => {
+    setClosingDate(newDate)
+    setFilterLeasing('all')
+    setFilterTeam('all')
+    setFilterSales('all')
+    setSearchQuery('')
+  }
 
   // Inline stat cards (size=small) untuk report yang compact
   const stats = [
@@ -207,7 +279,7 @@ export default function ShowroomClosingDaily() {
           <input
             type="date"
             value={closingDate}
-            onChange={(e) => setClosingDate(e.target.value)}
+            onChange={(e) => handleDateChange(e.target.value)}
             className="px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
           />
           <button onClick={() => handleClosingShortcut('today')} className="px-3 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
@@ -230,6 +302,33 @@ export default function ShowroomClosingDaily() {
             <Download size={16} />
             {exporting ? 'Mengekspor...' : 'Export Excel'}
           </button>
+          
+          {/* Screenshot Format Toggle */}
+          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+            <button
+              onClick={() => setScreenshotFormat('desktop')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                screenshotFormat === 'desktop' 
+                  ? 'bg-white text-slate-900 shadow-sm' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Monitor size={14} />
+              Desktop
+            </button>
+            <button
+              onClick={() => setScreenshotFormat('mobile')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                screenshotFormat === 'mobile' 
+                  ? 'bg-white text-slate-900 shadow-sm' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Smartphone size={14} />
+              Mobile
+            </button>
+          </div>
+          
           <button
             onClick={handleScreenshot}
             disabled={screenshotting}
@@ -242,18 +341,38 @@ export default function ShowroomClosingDaily() {
       </div>
 
       {/* Report Container for Screenshot */}
-      <div ref={reportRef} className="space-y-6 bg-white p-6 rounded-2xl border border-slate-200">
+      <div 
+        ref={reportRef} 
+        className={`space-y-6 bg-white p-6 rounded-2xl border border-slate-200 transition-all ${
+          screenshotting 
+            ? screenshotFormat === 'mobile' 
+              ? 'w-[768px] min-w-[768px]' 
+              : 'w-[1200px] min-w-[1200px]'
+            : ''
+        }`}
+      >
         {/* Report Header */}
-        <div className="text-center pb-4 border-b-2 border-slate-800">
-          <h2 className="text-xl font-black text-slate-900 tracking-wide uppercase">
-            LAPORAN CLOSINGAN HARIAN
-          </h2>
-          <h3 className="text-lg font-bold text-slate-800 mt-1 uppercase">
-            CABANG KETAPANG 2026
-          </h3>
-          <p className="text-sm text-slate-500 mt-2 font-medium">
-            Tanggal: {formatTanggalIndo(data?.period?.from)}
-          </p>
+        <div className="flex items-start justify-between pb-6 border-b border-slate-200">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[10px] font-bold tracking-wider">
+                TDM KETAPANG
+              </span>
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
+              LAPORAN CLOSING HARIAN SHOWROOM
+            </h2>
+            <p className="text-sm text-slate-500 font-medium">
+              Tanggal: {formatTanggalIndo(data?.period?.from)}
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-[10px] font-bold text-slate-400 tracking-wider">STATUS LAPORAN</span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+              <span className="text-xs font-bold text-emerald-700">FINALIZED</span>
+            </div>
+          </div>
         </div>
 
         {/* Stat Cards */}
@@ -281,9 +400,14 @@ export default function ShowroomClosingDaily() {
             <h3 className="font-bold text-slate-800">Team Performance (Kumulatif Bulan Ini)</h3>
             <span className="text-xs text-slate-500 ml-auto">{data?.byTeam?.length || 0} Team</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 scrollbar-hide overflow-x-auto">
             {(data?.byTeam || []).map((team) => (
-              <TeamCard key={team.team} {...team} collapsible={false} />
+              <TeamCard 
+                key={team.team} 
+                {...team} 
+                collapsible={false}
+                isTopTeam={topTeam && team.team === topTeam.team}
+              />
             ))}
           </div>
         </div>
@@ -323,24 +447,24 @@ export default function ShowroomClosingDaily() {
           </div>
 
           {/* Right: Leasing Breakdown */}
-          <div>
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
             <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-200">
               <CreditCard size={16} className="text-blue-600" />
-              <h3 className="font-bold text-slate-800 text-sm">Leasing Breakdown</h3>
+              <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide">Leasing Breakdown</h3>
             </div>
             <div className="space-y-3">
               {(data?.byLeasing || []).map((item) => (
-                <div key={item.name} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
+                <div key={item.name} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-slate-700">{item.name}</span>
-                      <span className="text-[10px] text-slate-400">{item.percent}%</span>
+                      <span className="font-semibold text-slate-700">{item.name}</span>
+                      <span className="text-xs text-slate-500 font-medium">({item.percent}%)</span>
                     </div>
                     <span className="font-bold text-slate-800 tabular-nums">{item.count} unit</span>
                   </div>
-                  <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                  <div className="h-3.5 rounded-full bg-slate-100 overflow-hidden">
                     <div
-                      className="h-full rounded-full"
+                      className="h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${item.percent}%`,
                         backgroundColor: LEASING_COLORS[item.name] || '#94a3b8',
@@ -358,45 +482,206 @@ export default function ShowroomClosingDaily() {
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-200">
             <Receipt size={16} className="text-blue-600" />
             <h3 className="font-bold text-slate-800 text-sm">Detail Transaksi</h3>
-            <span className="text-xs text-slate-500 ml-auto">{(data?.transactions || []).length} transaksi</span>
+            <span className="text-xs text-slate-500 ml-auto">
+              {filteredTransactions.length} dari {(data?.transactions || []).length} transaksi
+            </span>
           </div>
+          
           {(data?.transactions || []).length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-left py-1.5 px-2 font-semibold text-slate-500">SO Number</th>
-                    <th className="text-left py-1.5 px-2 font-semibold text-slate-500">Tanggal</th>
-                    <th className="text-left py-1.5 px-2 font-semibold text-slate-500 whitespace-nowrap">Coordinator</th>
-                    <th className="text-left py-1.5 px-2 font-semibold text-slate-500">Sales</th>
-                    <th className="text-left py-1.5 px-2 font-semibold text-slate-500">Customer</th>
-                    <th className="text-left py-1.5 px-2 font-semibold text-slate-500">Tipe</th>
-                    <th className="text-left py-1.5 px-2 font-semibold text-slate-500">Model</th>
-                    <th className="text-left py-1.5 px-2 font-semibold text-slate-500">Leasing</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {(data?.transactions || []).map((tx) => (
-                    <tr key={tx.so_number} className="hover:bg-slate-50">
-                      <td className="py-1.5 px-2 font-mono text-slate-700">{tx.so_number}</td>
-                      <td className="py-1.5 px-2 text-slate-600">{formatTanggalIndo(tx.so_date)}</td>
-                      <td className="py-1.5 px-2 text-slate-600 text-[10px]">{(tx.sales_coord_name || '-').toUpperCase()}</td>
-                      <td className="py-1.5 px-2 font-medium text-slate-700">{(tx.salesman || '-').toUpperCase()}</td>
-                      <td className="py-1.5 px-2 text-slate-600">{tx.customer_name || '-'}</td>
-                      <td className="py-1.5 px-2 text-slate-600">{tx.type || '-'}</td>
-                      <td className="py-1.5 px-2 text-slate-600">{tx.model || '-'}</td>
-                      <td className="py-1.5 px-2">
-                        <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                          tx.sales_type === 'Cash' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                        }`}>
-                          {tx.sales_type || '-'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* Filter Controls */}
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4 space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {/* Search */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      🔍 Cari
+                    </label>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="SO, Customer, Model, Sales..."
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  
+                  {/* Filter Leasing */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      💳 Leasing
+                    </label>
+                    <select
+                      value={filterLeasing}
+                      onChange={(e) => setFilterLeasing(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="all">Semua Leasing</option>
+                      {uniqueLeasings.map(leasing => (
+                        <option key={leasing} value={leasing}>{leasing}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Filter Team */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      👥 Team Leader
+                    </label>
+                    <select
+                      value={filterTeam}
+                      onChange={(e) => setFilterTeam(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="all">Semua Team</option>
+                      {uniqueTeams.map(team => (
+                        <option key={team} value={team}>{team.toUpperCase()}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Filter Sales */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                      👤 Sales
+                    </label>
+                    <select
+                      value={filterSales}
+                      onChange={(e) => setFilterSales(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="all">Semua Sales</option>
+                      {uniqueSalesmen.map(sales => (
+                        <option key={sales} value={sales}>{sales.toUpperCase()}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                {/* Reset Filter Button */}
+                {(filterLeasing !== 'all' || filterTeam !== 'all' || filterSales !== 'all' || searchQuery) && (
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                    <span className="text-xs text-slate-500">
+                      Filter aktif: <strong>{filteredTransactions.length}</strong> transaksi ditampilkan
+                    </span>
+                    <button
+                      onClick={() => {
+                        setFilterLeasing('all')
+                        setFilterTeam('all')
+                        setFilterSales('all')
+                        setSearchQuery('')
+                      }}
+                      className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                    >
+                      Reset Filter
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {/* Tabel atau Empty State */}
+              {filteredTransactions.length === 0 ? (
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-8 text-center">
+                  <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+                    <Receipt className="text-slate-400" size={28} />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-600 mb-1">Tidak ada transaksi ditemukan</p>
+                  <p className="text-xs text-slate-500">
+                    Coba ubah filter atau kata kunci pencarian
+                  </p>
+                </div>
+              ) : (
+              <div className="overflow-x-auto -mx-2 px-2 scrollbar-hide mb-4">
+                <div className="inline-block min-w-full align-middle">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b-2 border-slate-200 bg-slate-50">
+                        <th className="text-left py-2 px-2 font-semibold text-slate-600 whitespace-nowrap">No.</th>
+                        <th className="text-left py-2 px-2 font-semibold text-slate-600 whitespace-nowrap">SO Number</th>
+                        <th className="text-left py-2 px-2 font-semibold text-slate-600 whitespace-nowrap">Tanggal</th>
+                        <th className="text-left py-2 px-2 font-semibold text-slate-600 whitespace-nowrap">Coordinator</th>
+                        <th className="text-left py-2 px-2 font-semibold text-slate-600 whitespace-nowrap">Sales</th>
+                        <th className="text-left py-2 px-2 font-semibold text-slate-600 whitespace-nowrap">Customer</th>
+                        <th className="text-left py-2 px-2 font-semibold text-slate-600 whitespace-nowrap">Tipe</th>
+                        <th className="text-left py-2 px-2 font-semibold text-slate-600 whitespace-nowrap">Model</th>
+                        <th className="text-left py-2 px-2 font-semibold text-slate-600 whitespace-nowrap">Leasing</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredTransactions.map((tx, idx) => {
+                        const leasingLabel = tx.sales_type === 'Cash' ? 'Cash' : (tx.finco || tx.sales_type || '-')
+                        const leasingPillClass = leasingLabel === 'Cash'
+                          ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                          : leasingLabel === 'FIF' ? 'bg-blue-100 text-blue-700 border-blue-200'
+                          : leasingLabel === 'OTO' ? 'bg-amber-100 text-amber-700 border-amber-200'
+                          : leasingLabel === 'ADIRA' ? 'bg-teal-100 text-teal-700 border-teal-200'
+                          : leasingLabel === 'IMFI' ? 'bg-purple-100 text-purple-700 border-purple-200'
+                          : 'bg-slate-100 text-slate-700 border-slate-200'
+                        const formattedDate = tx.so_date ? new Date(tx.so_date).toLocaleDateString('id-ID', { 
+                          day: '2-digit', 
+                          month: 'short',
+                          year: 'numeric'
+                        }) : '-'
+                        return (
+                        <tr key={tx.so_number} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-2 px-2 text-slate-400 tabular-nums">{idx + 1}</td>
+                          <td className="py-2 px-2 font-mono text-slate-700 whitespace-nowrap">{tx.so_number}</td>
+                          <td className="py-2 px-2 text-slate-600 whitespace-nowrap">{formattedDate}</td>
+                          <td className="py-2 px-2 text-slate-600 text-[10px] max-w-[120px] truncate" title={tx.sales_coord_name || '-'}>
+                            {(tx.sales_coord_name || '-').toUpperCase()}
+                          </td>
+                          <td className="py-2 px-2 font-medium text-slate-700 max-w-[140px] truncate" title={tx.salesman || '-'}>
+                            {(tx.salesman || '-').toUpperCase()}
+                          </td>
+                          <td className="py-2 px-2 text-slate-600 max-w-[160px] truncate" title={tx.customer_name || '-'}>
+                            {tx.customer_name || '-'}
+                          </td>
+                          <td className="py-2 px-2 text-slate-600 whitespace-nowrap">{tx.type || '-'}</td>
+                          <td className="py-2 px-2 text-slate-600 max-w-[100px] truncate" title={tx.model || '-'}>
+                            {tx.model || '-'}
+                          </td>
+                          <td className="py-2 px-2 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold border ${leasingPillClass}`}>
+                              {leasingLabel}
+                            </span>
+                          </td>
+                        </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              )}
+              
+              {/* Total Summary (Outside Table for Responsive) - Only show if has data */}
+              {filteredTransactions.length > 0 && (
+              <div className="bg-slate-50 border-t-2 border-slate-300 rounded-lg p-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <span className="text-sm font-bold text-slate-700 uppercase tracking-wide">Total</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {Object.entries(leasingTotals)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([leasing, count]) => {
+                        const pillClass = leasing === 'Cash'
+                          ? 'bg-emerald-200 text-emerald-800 border-emerald-300'
+                          : leasing === 'FIF' ? 'bg-blue-200 text-blue-800 border-blue-300'
+                          : leasing === 'OTO' ? 'bg-amber-200 text-amber-800 border-amber-300'
+                          : leasing === 'ADIRA' ? 'bg-teal-200 text-teal-800 border-teal-300'
+                          : leasing === 'IMFI' ? 'bg-purple-200 text-purple-800 border-purple-300'
+                          : 'bg-slate-200 text-slate-800 border-slate-300'
+                        return (
+                          <span key={leasing} className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border shadow-sm leading-none ${pillClass}`}>
+                            <span className="leading-none">{leasing}:</span>
+                            <span className="leading-none tabular-nums">{count}</span>
+                          </span>
+                        )
+                      })}
+                  </div>
+                </div>
+              </div>
+              )}
+            </>
           ) : (
             <p className="text-xs text-slate-400 py-4 text-center">Tidak ada transaksi untuk tanggal ini.</p>
           )}

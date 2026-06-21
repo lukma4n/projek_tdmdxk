@@ -1,5 +1,6 @@
 import { prisma } from '../config/db.js'
 import { resolveSeriesKey } from './showroomTacController.js'
+import { clampLimit } from '../utils/pagination.js'
 
 function numberValue(value) {
   const parsed = decimalValue(value)
@@ -361,7 +362,7 @@ export async function getSalesOrderMargins(req, res, next) {
       where,
       include: { creator: { select: { name: true, username: true } } },
       orderBy: { created_at: 'desc' },
-      take: parseInt(limit),
+      take: clampLimit(limit, 100),
     })
     const summary = {
       total: rows.length,

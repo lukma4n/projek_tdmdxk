@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+:root{
+ --bg:#f1f5f9;--bg-deep:#e8edf3;--panel:#ffffff;--sidebar:#ffffff;
+ --border:#e4e8ee;--border-strong:#cbd5e1;
+ --text:#1e293b;--text-strong:#0f172a;--text-muted:#64748b;--text-faint:#94a3b8;
+ --accent:#2563eb;--accent-text:#1d4ed8;--accent-soft:#eef4ff;
+ --danger:#dc2626;--danger-soft:#fef2f2;--success:#16a34a;--success-soft:#effdf3;--warning:#d97706;--warning-soft:#fff8ed;
+ --hover:#f1f5f9;--rpad:7px;
+}
+[data-theme="dark"]{
+ --bg:#020617;--bg-deep:#0b1120;--panel:#0f172a;--sidebar:#0f172a;
+ --border:rgba(255,255,255,.09);--border-strong:rgba(255,255,255,.18);
+ --text:#e2e8f0;--text-strong:#f8fafc;--text-muted:#94a3b8;--text-faint:#64748b;
+ --accent:#3b82f6;--accent-text:#7dabfb;--accent-soft:rgba(59,130,246,.15);
+ --danger:#f87171;--danger-soft:rgba(248,113,113,.14);--success:#4ade80;--success-soft:rgba(74,222,128,.14);--warning:#fbbf24;--warning-soft:rgba(251,191,36,.14);
+ --hover:rgba(255,255,255,.05);
+}
+[data-accent="indigo"]{--accent:#4f46e5;--accent-text:#4338ca;--accent-soft:#eef2ff}
+[data-theme="dark"][data-accent="indigo"]{--accent:#6366f1;--accent-text:#a5b4fc;--accent-soft:rgba(99,102,241,.16)}
+[data-accent="teal"]{--accent:#0d9488;--accent-text:#0f766e;--accent-soft:#effdfa}
+[data-theme="dark"][data-accent="teal"]{--accent:#14b8a6;--accent-text:#5eead4;--accent-soft:rgba(20,184,166,.16)}
+[data-density="comfortable"]{--rpad:11px}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:9px}
+::-webkit-scrollbar-track{background:transparent}
+input::placeholder{color:var(--text-faint)}
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" data-accent="{{ accent }}" data-density="{{ density }}" style="position:relative;height:100vh;width:100%;background:var(--bg);color:var(--text);display:flex;flex-direction:column;overflow:hidden">
+
+<sc-if value="{{ notLoggedIn }}" hint-placeholder-val="{{ true }}">
+ <div style="flex:1;display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 90% at 50% -10%,var(--bg-deep),var(--bg));padding:24px">
+   <div style="position:absolute;top:16px;right:16px"><button onClick="{{ toggleTheme }}" style="width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer">{{ themeIconEl }}</button></div>
+   <div style="width:368px;max-width:100%;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:34px 32px;box-shadow:0 18px 50px rgba(15,23,42,.12)">
+     <div style="display:flex;flex-direction:column;align-items:center;gap:13px;margin-bottom:26px">
+       <div style="width:54px;height:54px;border-radius:15px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center">{{ ic_wrench }}</div>
+       <div style="text-align:center">
+         <div style="font-size:21px;font-weight:800;color:var(--text-strong);letter-spacing:-.02em">Sistem DXK</div>
+         <div style="font-size:12px;color:var(--text-faint);font-weight:500;margin-top:3px">TDM Ketapang · Operasional Bengkel &amp; Showroom</div>
+       </div>
+     </div>
+     <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px">Username</label>
+     <input defaultValue="{{ username }}" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);font:inherit;font-size:13px;outline:none;margin-bottom:15px" />
+     <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px">Password</label>
+     <input type="password" defaultValue="{{ password }}" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);font:inherit;font-size:13px;outline:none;margin-bottom:22px" />
+     <button onClick="{{ doLogin }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border-radius:9px;border:0;background:var(--accent);color:#fff;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer">Masuk</button>
+     <div style="text-align:center;font-size:11px;color:var(--text-faint);margin-top:18px">Aplikasi internal · Akses LAN cabang</div>
+   </div>
+ </div>
+</sc-if>
+
+<sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}">
+ <header style="height:56px;flex:none;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:14px;position:relative;z-index:40">
+   <div style="display:flex;align-items:center;gap:13px;min-width:0">
+     <button onClick="{{ toggleSidebar }}" style="width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none">{{ ic_menu }}</button>
+     <div style="display:flex;align-items:center;gap:10px">
+       <div style="width:32px;height:32px;border-radius:9px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex:none">{{ ic_wrench }}</div>
+       <div style="line-height:1.18;white-space:nowrap">
+         <div style="font-size:13.5px;font-weight:700;color:var(--text-strong);letter-spacing:-.01em">Sistem DXK</div>
+         <div style="font-size:10.5px;color:var(--text-faint);font-weight:500">TDM Ketapang</div>
+       </div>
+     </div>
+     <div style="width:1px;height:24px;background:var(--border);margin:0 2px"></div>
+     <div style="display:flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--border);border-radius:999px;font-size:11.5px;color:var(--text-muted);background:var(--bg);white-space:nowrap">{{ ic_refresh }}<span>Last sync <b style="color:var(--text);font-weight:600;font-family:'JetBrains Mono',monospace">06:30</b></span></div>
+     <button onClick="{{ openImport }}" style="display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:8px;border:0;background:var(--accent);color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">{{ ic_upload }} Import Data</button>
+   </div>
+   <div style="display:flex;align-items:center;gap:6px">
+     <button onClick="{{ toggleBell }}" style="position:relative;width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer">{{ ic_bell }}<span style="position:absolute;top:2px;right:2px;min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:var(--danger);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ bellCount }}</span></button>
+     <button onClick="{{ toggleTheme }}" style="width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer">{{ themeIconEl }}</button>
+     <div style="display:flex;align-items:center;gap:9px;padding-left:10px;margin-left:4px;border-left:1px solid var(--border)">
+       <div style="text-align:right;line-height:1.2;white-space:nowrap"><div style="font-size:12.5px;font-weight:600;color:var(--text-strong)">Rudi Hartono</div><div style="font-size:10.5px;color:var(--accent-text);font-weight:600">IT Master</div></div>
+       <div style="width:33px;height:33px;border-radius:50%;background:var(--accent-soft);color:var(--accent-text);font-weight:700;font-size:12.5px;display:flex;align-items:center;justify-content:center;flex:none">RH</div>
+     </div>
+   </div>
+
+   <sc-if value="{{ bellOpen }}">
+     <div style="position:absolute;top:52px;right:14px;width:332px;background:var(--panel);border:1px solid var(--border);border-radius:13px;box-shadow:0 20px 55px rgba(2,6,23,.28);overflow:hidden;z-index:50">
+       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 15px;border-bottom:1px solid var(--border)"><span style="font-weight:700;font-size:13px;color:var(--text-strong)">Notifikasi Approval</span><span style="font-size:10.5px;font-weight:700;color:var(--accent-text);background:var(--accent-soft);padding:2px 8px;border-radius:999px">{{ bellCount }} baru</span></div>
+       <div style="max-height:330px;overflow:auto">
+         <sc-for list="{{ bellTasks }}" as="t" hint-placeholder-count="4">
+           <div style="display:flex;gap:10px;padding:11px 15px;border-bottom:1px solid var(--border);cursor:pointer" style-hover="background:var(--hover)">
+             <div style="width:7px;height:7px;border-radius:50%;margin-top:5px;flex:none;background:{{ t.color }}"></div>
+             <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;color:var(--text);line-height:1.3">{{ t.title }}</div><div style="font-size:11px;color:var(--text-faint);margin-top:2px">{{ t.meta }}</div></div>
+             <span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:6px;height:fit-content;color:{{ t.color }};background:{{ t.bg }}">{{ t.tag }}</span>
+           </div>
+         </sc-for>
+       </div>
+       <div style="padding:10px 14px"><button style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);font:inherit;font-size:12px;font-weight:600;cursor:pointer">Lihat semua task</button></div>
+     </div>
+   </sc-if>
+ </header>
+
+ <div style="flex:1;display:flex;min-height:0">
+   <sc-if value="{{ sidebarOpen }}" hint-placeholder-val="{{ true }}">
+     <aside style="width:252px;flex:none;background:var(--sidebar);border-right:1px solid var(--border);overflow:auto;padding:6px 10px 28px">
+       <sc-for list="{{ groups }}" as="grp" hint-placeholder-count="5">
+         <div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--text-faint);padding:15px 10px 5px">{{ grp.label }}</div>
+         <sc-for list="{{ grp.sections }}" as="sec">
+           <button onClick="{{ sec.onToggle }}" style="{{ sec.headStyle }}" style-hover="background:var(--hover)">
+             <span style="display:flex;align-items:center;gap:10px">{{ sec.iconEl }}<span>{{ sec.label }}</span></span>
+             <span style="{{ sec.chevStyle }}">{{ sec.chevEl }}</span>
+           </button>
+           <sc-if value="{{ sec.open }}">
+             <div style="display:flex;flex-direction:column;gap:1px;margin:1px 0 4px">
+               <sc-for list="{{ sec.items }}" as="it">
+                 <button onClick="{{ it.onSelect }}" style="{{ it.style }}" style-hover="background:var(--hover)">{{ it.label }}</button>
+               </sc-for>
+             </div>
+           </sc-if>
+         </sc-for>
+       </sc-for>
+     </aside>
+   </sc-if>
+
+   <main style="flex:1;min-width:0;overflow:auto;background:var(--bg)">
+    <div style="padding:18px 22px 48px;max-width:1500px">
+     <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap">
+       <div>
+         <div style="font-size:11px;color:var(--text-faint);font-weight:500;margin-bottom:4px">{{ crumbGroup }} <span style="opacity:.45">/</span> {{ crumbSection }}</div>
+         <h1 style="margin:0;font-size:20px;font-weight:800;color:var(--text-strong);letter-spacing:-.02em">{{ pageTitle }}</h1>
+       </div>
+       <div style="font-size:11.5px;color:var(--text-muted);display:flex;align-items:center;gap:6px">{{ ic_clock }} Data per 20 Jun 2026, 06:30</div>
+     </div>
+
+     <sc-if value="{{ isDashBengkel }}">
+       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px">
+         <sc-for list="{{ kpiBengkel }}" as="k" hint-placeholder-count="4">
+           <div style="{{ k.cardStyle }}">
+             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+               <div style="font-size:11.5px;color:var(--text-muted);font-weight:600">{{ k.label }}</div>
+               <div style="{{ k.iconWrap }}">{{ k.iconEl }}</div>
+             </div>
+             <div style="font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--text-strong);margin-top:9px;font-family:'JetBrains Mono',monospace">{{ k.value }}</div>
+             <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="font-size:11px;font-weight:700;color:{{ k.trendColor }}">{{ k.trend }}</span><span style="font-size:11px;color:var(--text-faint)">{{ k.sub }}</span></div>
+           </div>
+         </sc-for>
+       </div>
+       <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:14px;margin-bottom:14px">
+         <div style="background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden">
+           <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 15px;border-bottom:1px solid var(--border)"><span style="font-size:13px;font-weight:700;color:var(--text-strong)">Open Work Order</span><span style="font-size:11.5px;color:var(--accent-text);font-weight:600;cursor:pointer">Lihat semua →</span></div>
+           <div style="overflow:auto"><table style="width:100%;border-collapse:collapse">
+             <thead><tr>
+               <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:9px 14px;border-bottom:1px solid var(--border);white-space:nowrap">No WO</th>
+               <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:9px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Customer</th>
+               <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:9px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Unit</th>
+               <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:9px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Mekanik</th>
+               <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:9px 14px;border-bottom:1px solid var(--border);white-space:nowrap">State</th>
+               <th style="text-align:right;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:9px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Total</th>
+             </tr></thead>
+             <tbody><sc-for list="{{ woDash }}" as="r" hint-placeholder-count="6">
+               <tr style-hover="background:var(--hover)">
+                 <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--accent-text);font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap">{{ r.wo }}</td>
+                 <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text);font-weight:500;white-space:nowrap">{{ r.cust }}</td>
+                 <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-muted);white-space:nowrap">{{ r.unit }}</td>
+                 <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-muted);white-space:nowrap">{{ r.mek }}</td>
+                 <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;color:{{ r.bc }};background:{{ r.bb }}">{{ r.stateLabel }}</span></td>
+                 <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text);font-weight:600;text-align:right;font-family:'JetBrains Mono',monospace;white-space:nowrap">Rp {{ r.total }}</td>
+               </tr>
+             </sc-for></tbody>
+           </table></div>
+         </div>
+         <div style="background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden">
+           <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 15px;border-bottom:1px solid var(--border)"><span style="font-size:13px;font-weight:700;color:var(--text-strong)">Alert &amp; Perhatian</span></div>
+           <div style="padding:11px 13px;display:flex;flex-direction:column;gap:8px">
+             <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="4">
+               <div style="display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border-radius:9px;background:{{ a.bg }}">
+                 <span style="color:{{ a.color }};margin-top:1px;flex:none">{{ a.iconEl }}</span>
+                 <div style="flex:1;min-width:0;font-size:12px;color:var(--text);line-height:1.38">{{ a.text }}</div>
+                 <span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:{{ a.color }};flex:none;margin-top:2px">{{ a.tag }}</span>
+               </div>
+             </sc-for>
+           </div>
+         </div>
+       </div>
+       <div style="background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden">
+         <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 15px;border-bottom:1px solid var(--border)"><span style="font-size:13px;font-weight:700;color:var(--text-strong)">Kesegaran Data Import</span><span style="font-size:11px;color:var(--text-faint)">snapshot harian dari sistem induk AHM</span></div>
+         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:15px">
+           <sc-for list="{{ freshness }}" as="f" hint-placeholder-count="4">
+             <div style="border:1px solid var(--border);border-radius:10px;padding:12px 13px;background:var(--bg)">
+               <div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:12.5px;font-weight:700;color:var(--text-strong)">{{ f.mod }}</div><div style="width:8px;height:8px;border-radius:50%;background:{{ f.dotColor }}"></div></div>
+               <div style="font-size:10.5px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.file }}</div>
+               <div style="font-size:11px;color:var(--text-muted);margin-top:9px">Sync <b style="color:var(--text);font-weight:600">{{ f.sync }}</b></div>
+               <div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap">
+                 <span style="font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:6px;color:var(--success);background:var(--success-soft)">{{ f.ok }} ok</span>
+                 <span style="{{ f.errStyle }}">{{ f.err }} err</span>
+                 <span style="font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:6px;color:var(--text-muted);background:var(--hover)">{{ f.active }} aktif</span>
+               </div>
+             </div>
+           </sc-for>
+         </div>
+       </div>
+     </sc-if>
+
+     <sc-if value="{{ isWorkshop }}">
+       <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;flex-wrap:wrap">
+         <div style="position:relative;flex:1;min-width:220px;max-width:340px"><span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-faint)">{{ ic_search }}</span><input value="{{ woSearch }}" onChange="{{ onSearch }}" placeholder="Cari no WO, customer, unit, mekanik..." style="width:100%;padding:8px 11px 8px 34px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;outline:none" /></div>
+         <select style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;cursor:pointer"><option>Semua State</option><option>Open</option><option>Selesai</option><option>Batal</option></select>
+         <select style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;cursor:pointer"><option>Semua Tipe</option><option>Servis Berkala</option><option>Perbaikan</option><option>KPB</option></select>
+         <input type="date" style="padding:7px 11px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px" />
+         <span style="font-size:11.5px;color:var(--text-faint);margin-left:auto">{{ woCount }} work order</span>
+       </div>
+       <div style="background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden">
+         <div style="overflow:auto"><table style="width:100%;border-collapse:collapse">
+           <thead><tr>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">No WO</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Tgl</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Customer</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Unit</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Plat</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Mekanik</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">State</th>
+             <th style="text-align:right;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Total</th>
+           </tr></thead>
+           <tbody><sc-for list="{{ woAll }}" as="r" hint-placeholder-count="10">
+             <tr style="cursor:pointer" style-hover="background:var(--hover)">
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--accent-text);font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap">{{ r.wo }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">{{ r.tgl }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text);font-weight:500;white-space:nowrap">{{ r.cust }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-muted);white-space:nowrap">{{ r.unit }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">{{ r.plate }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-muted);white-space:nowrap">{{ r.mek }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;color:{{ r.bc }};background:{{ r.bb }}">{{ r.stateLabel }}</span></td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text);font-weight:600;text-align:right;font-family:'JetBrains Mono',monospace;white-space:nowrap">Rp {{ r.total }}</td>
+             </tr>
+           </sc-for></tbody>
+         </table></div>
+       </div>
+     </sc-if>
+
+     <sc-if value="{{ isStock }}">
+       <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;flex-wrap:wrap">
+         <div style="position:relative;flex:1;min-width:220px;max-width:320px"><span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-faint)">{{ ic_search }}</span><input placeholder="Cari kode atau nama part..." style="width:100%;padding:8px 11px 8px 34px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;outline:none" /></div>
+         <select style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;cursor:pointer"><option>Semua Kategori</option><option>Oli &amp; Cairan</option><option>Fast Moving</option><option>Body</option></select>
+         <select style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;cursor:pointer"><option>Semua Ranking</option><option>A</option><option>B</option><option>C</option></select>
+         <button style="display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;margin-left:auto">{{ ic_printer }} Print Label Batch</button>
+       </div>
+       <div style="background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden">
+         <div style="overflow:auto"><table style="width:100%;border-collapse:collapse">
+           <thead><tr>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Kode Part</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Nama Part</th>
+             <th style="text-align:right;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Qty</th>
+             <th style="text-align:right;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Min</th>
+             <th style="text-align:center;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Rank</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Aging</th>
+           </tr></thead>
+           <tbody><sc-for list="{{ stockRows }}" as="r" hint-placeholder-count="10">
+             <tr style-hover="background:var(--hover)">
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text);font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap">{{ r.kode }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text);font-weight:500;white-space:nowrap">{{ r.nama }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-strong);font-weight:700;text-align:right;font-family:'JetBrains Mono',monospace">{{ r.qty }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-faint);text-align:right;font-family:'JetBrains Mono',monospace">{{ r.min }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted);text-align:center;font-weight:600">{{ r.rank }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;color:{{ r.bc }};background:{{ r.bb }}">{{ r.aging }}</span></td>
+             </tr>
+           </sc-for></tbody>
+         </table></div>
+       </div>
+     </sc-if>
+
+     <sc-if value="{{ isDashUnit }}">
+       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px">
+         <sc-for list="{{ kpiUnit }}" as="k" hint-placeholder-count="4">
+           <div style="{{ k.cardStyle }}">
+             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div style="font-size:11.5px;color:var(--text-muted);font-weight:600">{{ k.label }}</div><div style="{{ k.iconWrap }}">{{ k.iconEl }}</div></div>
+             <div style="font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--text-strong);margin-top:9px;font-family:'JetBrains Mono',monospace">{{ k.value }}</div>
+             <div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="font-size:11px;font-weight:700;color:{{ k.trendColor }}">{{ k.trend }}</span><span style="font-size:11px;color:var(--text-faint)">{{ k.sub }}</span></div>
+           </div>
+         </sc-for>
+       </div>
+       <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px">
+         <div style="background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden">
+           <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 15px;border-bottom:1px solid var(--border)"><span style="font-size:13px;font-weight:700;color:var(--text-strong)">Aging Stock Unit</span><span style="font-size:11.5px;color:var(--text-faint)">50 unit ready</span></div>
+           <div style="padding:18px 16px;display:flex;flex-direction:column;gap:16px">
+             <sc-for list="{{ aging }}" as="a" hint-placeholder-count="4">
+               <div>
+                 <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text);font-weight:600">{{ a.label }}</span><span style="font-family:'JetBrains Mono',monospace;color:var(--text-muted)">{{ a.val }} unit</span></div>
+                 <div style="height:10px;border-radius:999px;background:var(--hover);overflow:hidden"><div style="height:100%;border-radius:999px;width:{{ a.w }};background:{{ a.color }}"></div></div>
+               </div>
+             </sc-for>
+           </div>
+         </div>
+         <div style="background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden">
+           <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 15px;border-bottom:1px solid var(--border)"><span style="font-size:13px;font-weight:700;color:var(--text-strong)">Status STNK &amp; BPKB</span></div>
+           <div style="padding:15px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+             <sc-for list="{{ stnkbpkb }}" as="s" hint-placeholder-count="4">
+               <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--bg)"><div style="font-size:25px;font-weight:800;font-family:'JetBrains Mono',monospace;color:{{ s.color }}">{{ s.v }}</div><div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;font-weight:500">{{ s.label }}</div></div>
+             </sc-for>
+           </div>
+         </div>
+       </div>
+     </sc-if>
+
+     <sc-if value="{{ isStockUnit }}">
+       <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;flex-wrap:wrap">
+         <div style="position:relative;flex:1;min-width:220px;max-width:320px"><span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-faint)">{{ ic_search }}</span><input placeholder="Cari no mesin atau tipe..." style="width:100%;padding:8px 11px 8px 34px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;outline:none" /></div>
+         <select style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;cursor:pointer"><option>Semua Tipe</option><option>BeAT</option><option>Vario</option><option>PCX</option><option>Scoopy</option></select>
+         <select style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;cursor:pointer"><option>Semua Status KSU</option><option>OK</option><option>Pending</option></select>
+         <span style="font-size:11.5px;color:var(--text-faint);margin-left:auto">50 unit ready</span>
+       </div>
+       <div style="background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden">
+         <div style="overflow:auto"><table style="width:100%;border-collapse:collapse">
+           <thead><tr>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">No Mesin</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Tipe</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Warna</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Status KSU</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Aging</th>
+           </tr></thead>
+           <tbody><sc-for list="{{ unitRows }}" as="r" hint-placeholder-count="10">
+             <tr style="cursor:pointer" style-hover="background:var(--hover)">
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text);font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap">{{ r.mesin }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text);font-weight:500;white-space:nowrap">{{ r.tipe }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-muted);white-space:nowrap">{{ r.warna }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;color:{{ r.kc }};background:{{ r.kb }}">{{ r.ksu }}</span></td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;color:{{ r.bc }};background:{{ r.bb }}">{{ r.agingLabel }}</span></td>
+             </tr>
+           </sc-for></tbody>
+         </table></div>
+       </div>
+     </sc-if>
+
+     <sc-if value="{{ isDocHandling }}">
+       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+         <span style="font-size:12.5px;color:var(--text-muted)">8 handover berjalan · 4 menunggu serah terima</span>
+         <button style="display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:8px;border:0;background:var(--accent);color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">{{ ic_plus }} Buat Handover Baru</button>
+       </div>
+       <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:14px">
+         <div style="background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden">
+           <div style="overflow:auto"><table style="width:100%;border-collapse:collapse">
+             <thead><tr>
+               <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">No Mesin</th>
+               <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Customer</th>
+               <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Salesman</th>
+               <th style="text-align:center;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Step</th>
+               <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Status</th>
+             </tr></thead>
+             <tbody><sc-for list="{{ handovers }}" as="r" hint-placeholder-count="8">
+               <tr style="cursor:pointer" style-hover="background:var(--hover)">
+                 <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text);font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap">{{ r.mesin }}</td>
+                 <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text);font-weight:500;white-space:nowrap">{{ r.cust }}</td>
+                 <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-muted);white-space:nowrap">{{ r.salesman }}</td>
+                 <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted);text-align:center;font-family:'JetBrains Mono',monospace">{{ r.prog }}</td>
+                 <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);white-space:nowrap"><span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;color:{{ r.bc }};background:{{ r.bb }}">{{ r.status }}</span></td>
+               </tr>
+             </sc-for></tbody>
+           </table></div>
+         </div>
+         <div style="background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden;align-self:start">
+           <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 15px;border-bottom:1px solid var(--border)"><div><div style="font-size:13px;font-weight:700;color:var(--text-strong)">Serah Terima Dokumen</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);margin-top:1px">JFZ1E2345678 · Siti Aminah</div></div><span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;color:var(--warning);background:var(--warning-soft)">Proses 3/5</span></div>
+           <div style="padding:15px">
+             <div style="display:flex;flex-direction:column">
+               <sc-for list="{{ docSteps }}" as="d" hint-placeholder-count="5">
+                 <div style="display:flex;align-items:center;gap:11px;padding:6px 0"><div style="{{ d.dotStyle }}">{{ d.n }}</div><div style="font-size:12.5px;font-weight:600;color:{{ d.labelColor }}">{{ d.label }}</div></div>
+               </sc-for>
+             </div>
+             <div style="height:1px;background:var(--border);margin:14px 0"></div>
+             <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:9px">Foto tahap saat ini — BPKB</div>
+             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+               <div style="aspect-ratio:4/3;border:1.5px dashed var(--border-strong);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--text-faint);background:var(--bg)">{{ ic_camera }}<span style="font-size:10.5px;font-family:'JetBrains Mono',monospace">foto depan</span></div>
+               <div style="aspect-ratio:4/3;border:1.5px dashed var(--border-strong);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--text-faint);background:var(--bg)">{{ ic_camera }}<span style="font-size:10.5px;font-family:'JetBrains Mono',monospace">foto belakang</span></div>
+             </div>
+             <div style="display:flex;gap:8px;margin-top:14px"><button style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Lewati</button><button style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 13px;border-radius:8px;border:0;background:var(--accent);color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">{{ ic_upload }} Upload &amp; Lanjut</button></div>
+           </div>
+         </div>
+       </div>
+     </sc-if>
+
+     <sc-if value="{{ isOpname }}">
+       <div style="background:var(--panel);border:1px solid var(--border);border-radius:11px;margin-bottom:14px">
+         <div style="padding:16px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+           <div>
+             <div style="display:flex;align-items:center;gap:11px"><span style="font-size:16px;font-weight:800;color:var(--text-strong);font-family:'JetBrains Mono',monospace">OPN-2406-03</span><span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;color:var(--accent-text);background:var(--accent-soft)">Submitted</span></div>
+             <div style="font-size:12px;color:var(--text-muted);margin-top:5px">Sesi opname sparepart · dibuat 20 Jun 2026 · PIC: Partman Yudi</div>
+           </div>
+           <div style="display:flex;gap:8px"><button style="display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Lanjut Scan</button><button style="display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;border:0;background:var(--accent);color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Submit Approval</button></div>
+         </div>
+         <div style="padding:0 16px 16px"><div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-muted);margin-bottom:7px"><span>Progress scan item</span><span style="font-family:'JetBrains Mono',monospace">142 / 187 item</span></div><div style="height:10px;border-radius:999px;background:var(--hover);overflow:hidden"><div style="height:100%;width:{{ opnameProgress }};background:var(--accent);border-radius:999px"></div></div></div>
+       </div>
+       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+         <input placeholder="Scan / ketik barcode CODE128..." style="flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;font-family:'JetBrains Mono',monospace;outline:none" />
+         <button style="display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:8px;border:0;background:var(--accent);color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">{{ ic_search }} Cari</button>
+         <button style="display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Kamera</button>
+       </div>
+       <div style="background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden">
+         <div style="overflow:auto"><table style="width:100%;border-collapse:collapse">
+           <thead><tr>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Kode Part</th>
+             <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Nama Part</th>
+             <th style="text-align:right;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Qty Sistem</th>
+             <th style="text-align:right;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Qty Scan</th>
+             <th style="text-align:center;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap">Selisih</th>
+           </tr></thead>
+           <tbody><sc-for list="{{ opnameRows }}" as="r" hint-placeholder-count="10">
+             <tr style-hover="background:var(--hover)">
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text);font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap">{{ r.kode }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text);font-weight:500;white-space:nowrap">{{ r.nama }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-muted);text-align:right;font-family:'JetBrains Mono',monospace">{{ r.sys }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text);font-weight:600;text-align:right;font-family:'JetBrains Mono',monospace">{{ r.scan }}</td>
+               <td style="padding:var(--rpad) 14px;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;color:{{ r.bc }};background:{{ r.bb }}">{{ r.selisih }}</span></td>
+             </tr>
+           </sc-for></tbody>
+         </table></div>
+         <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px"><span style="font-size:12px;color:var(--text-muted)">5 item selisih · perlu form persetujuan <b style="color:var(--text)">BASO</b></span><button style="display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;border:0;background:var(--accent);color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Buat BASO Selisih</button></div>
+       </div>
+     </sc-if>
+
+     <sc-if value="{{ isPlaceholder }}">
+       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:70px 20px;background:var(--panel);border:1px dashed var(--border-strong);border-radius:14px">
+         <div style="width:62px;height:62px;border-radius:16px;background:var(--accent-soft);color:var(--accent-text);display:flex;align-items:center;justify-content:center;margin-bottom:17px">{{ placeholderIconEl }}</div>
+         <div style="font-size:17px;font-weight:700;color:var(--text-strong)">{{ pageTitle }}</div>
+         <div style="font-size:13px;color:var(--text-muted);margin-top:7px;max-width:400px;line-height:1.5">Halaman ini sudah ada di struktur navigasi (IT Master melihat seluruh menu), namun mockup detailnya belum dibuat. Pilih halaman dengan desain hi-fi dari sidebar: Dashboard Bengkel, Workshop, Stok Sparepart, Dashboard Unit, Stock Unit, Document Handling, atau Opname Sparepart.</div>
+       </div>
+     </sc-if>
+    </div>
+   </main>
+ </div>
+</sc-if>
+
+<sc-if value="{{ importOpen }}">
+ <div onClick="{{ closeImport }}" style="position:fixed;inset:0;background:rgba(2,6,23,.55);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:70;padding:24px">
+   <div onClick="{{ stopProp }}" style="width:640px;max-width:100%;max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:0 28px 80px rgba(2,6,23,.45)">
+     <div style="display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--border)">
+       <div style="display:flex;align-items:center;gap:11px"><div style="width:36px;height:36px;border-radius:9px;background:var(--accent-soft);color:var(--accent-text);display:flex;align-items:center;justify-content:center">{{ ic_upload }}</div><div><div style="font-size:15px;font-weight:700;color:var(--text-strong)">Import Data</div><div style="font-size:11.5px;color:var(--text-faint)">Tarik snapshot dari sistem induk AHM · Excel / DOCX / PDF</div></div></div>
+       <button onClick="{{ closeImport }}" style="width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer">{{ ic_x }}</button>
+     </div>
+     <div style="padding:18px">
+       <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:11px">Pilih modul import</div>
+       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px">
+         <sc-for list="{{ importModules }}" as="m" hint-placeholder-count="9">
+           <div style="{{ m.style }}"><div style="font-size:12.5px;font-weight:600;color:var(--text-strong)">{{ m.mod }}</div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);margin-top:3px">{{ m.fmt }}</div></div>
+         </sc-for>
+       </div>
+       <div style="border:1.5px dashed var(--border-strong);border-radius:12px;padding:28px;text-align:center;background:var(--bg);cursor:pointer">
+         <div style="display:inline-flex;color:var(--accent-text);margin-bottom:9px">{{ ic_upload_big }}</div>
+         <div style="font-size:13px;font-weight:600;color:var(--text)">Letakkan file di sini atau klik untuk pilih</div>
+         <div style="font-size:11.5px;color:var(--success);margin-top:7px;font-family:'JetBrains Mono',monospace">WORKSHOP_20Jun2026.xlsx · 124 baris terdeteksi · 2 warning</div>
+       </div>
+     </div>
+     <div style="padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+       <div style="font-size:11px;color:var(--text-faint)">Backup otomatis dibuat sebelum import destruktif</div>
+       <div style="display:flex;gap:8px"><button onClick="{{ closeImport }}" style="display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Batal</button><button style="display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:8px;border:0;background:var(--accent);color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Lihat Preview {{ ic_chevR }}</button></div>
+     </div>
+   </div>
+ </div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;blue&quot;,&quot;indigo&quot;,&quot;teal&quot;],&quot;default&quot;:&quot;blue&quot;,&quot;tsType&quot;:&quot;'blue'|'indigo'|'teal'&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;compact&quot;,&quot;comfortable&quot;],&quot;default&quot;:&quot;compact&quot;,&quot;tsType&quot;:&quot;'compact'|'comfortable'&quot;},&quot;kpiStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;accentbar&quot;,&quot;filled&quot;,&quot;bordered&quot;],&quot;default&quot;:&quot;bordered&quot;,&quot;tsType&quot;:&quot;'accentbar'|'filled'|'bordered'&quot;}}">
+class Component extends DCLogic {
+  state = {
+    loggedIn: false,
+    theme: 'light',
+    page: 'dashboard-bengkel',
+    openSection: 'ws-op',
+    sidebarOpen: true,
+    importOpen: false,
+    bellOpen: false,
+    woSearch: '',
+    username: 'it.master',
+    password: 'rahasia123',
+  };
+
+  ICONS = {
+    dashboard:'<rect x="3" y="3" width="7" height="9" rx="1.2"/><rect x="14" y="3" width="7" height="5" rx="1.2"/><rect x="14" y="12" width="7" height="9" rx="1.2"/><rect x="3" y="16" width="7" height="5" rx="1.2"/>',
+    package:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+    bar:'<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
+    users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    trending:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+    tag:'<path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.4"/>',
+    car:'<path d="M19 17h2v-4l-2.2-5.4A2 2 0 0 0 16.95 6H7.05a2 2 0 0 0-1.85 1.6L3 13v4h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 17h6"/>',
+    file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+    clipboard:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+    settings:'<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+    chevron:'<polyline points="6 9 12 15 18 9"/>',
+    'chevron-right':'<polyline points="9 18 15 12 9 6"/>',
+    search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+    bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+    sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+    moon:'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+    upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+    menu:'<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>',
+    x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+    refresh:'<path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>',
+    alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    printer:'<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/>',
+    plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    camera:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+    clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    wrench:'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+  };
+
+  NAV = [
+    {label:'Workshop', sections:[
+      {id:'ws-op', label:'Operasional', icon:'dashboard', items:[{key:'dashboard-bengkel',label:'Dashboard Bengkel'},{key:'workshop',label:'Workshop (WO)'},{key:'program-ahm',label:'Program AHM'}]},
+      {id:'ws-sp', label:'Sparepart', icon:'package', items:[{key:'stock',label:'Stok Sparepart'},{key:'hotline',label:'Part Hotline'}]},
+      {id:'ws-rep', label:'Laporan & Target', icon:'bar', items:[{key:'workshop-target',label:'Target Bengkel'},{key:'workshop-dashboard',label:'Dashboard Laporan'},{key:'workshop-analysis',label:'Analisa Penjualan'},{key:'workshop-closing',label:'Laporan Harian'},{key:'mechanics',label:'Performa Mekanik'}]},
+    ]},
+    {label:'CRM & Layanan', sections:[
+      {id:'crm', label:'Layanan & Follow-up', icon:'users', items:[{key:'customers',label:'Data Konsumen'},{key:'follow-kpb',label:'Follow-up KPB'},{key:'follow-stnk',label:'Follow-up STNK'},{key:'follow-bpkb',label:'Follow-up BPKB'}]},
+    ]},
+    {label:'Showroom', sections:[
+      {id:'sr-sell', label:'Penjualan', icon:'trending', items:[{key:'marketing-target',label:'Target Marketing'},{key:'dashboard-penjualan',label:'Analisis Penjualan'},{key:'closing-harian',label:'Closing Harian'}]},
+      {id:'sr-mkt', label:'Marketing & Master', icon:'tag', items:[{key:'tabel-diskon',label:'Tabel Diskon'},{key:'tac',label:'Master TAC'},{key:'margin',label:'Kalkulator Margin'},{key:'harga-otr',label:'Master Harga OTR'},{key:'sales',label:'Master Sales'},{key:'team-leader',label:'Master Team Leader'},{key:'program',label:'Master Program'},{key:'bbn',label:'Master BBN'}]},
+      {id:'sr-unit', label:'Unit', icon:'car', items:[{key:'dashboard-unit',label:'Dashboard Unit'},{key:'stock-unit',label:'Stock Unit'},{key:'ksu',label:'Master KSU'}]},
+      {id:'sr-doc', label:'STNK & BPKB', icon:'file', items:[{key:'stnk',label:'Stock STNK'},{key:'bpkb',label:'Stock BPKB'},{key:'monitoring',label:'Monitoring STNK & BPKB'},{key:'document-handling',label:'Document Handling'}]},
+    ]},
+    {label:'Stock Opname', sections:[
+      {id:'op', label:'Opname', icon:'clipboard', items:[{key:'opname-sparepart',label:'Opname Sparepart'},{key:'opname-unit',label:'Opname Unit'},{key:'opname-stnk',label:'Opname STNK'},{key:'opname-bpkb',label:'Opname BPKB'},{key:'pic-users',label:'PIC Opname Users'}]},
+    ]},
+    {label:'Administrasi', sections:[
+      {id:'adm', label:'Sistem', icon:'settings', items:[{key:'users',label:'Manajemen User'},{key:'roles',label:'Manajemen Akses'},{key:'backups',label:'Backup & Restore'}]},
+    ]},
+  ];
+
+  KPIB = [
+    {label:'Total WO Hari Ini',value:'24',sub:'unit masuk',trend:'+12%',up:true,icon:'clipboard'},
+    {label:'Revenue Hari Ini',value:'18,4jt',sub:'jasa + part',trend:'+8%',up:true,icon:'trending'},
+    {label:'Hotline Aktif',value:'7',sub:'PO berjalan',trend:'-2',up:false,icon:'package'},
+    {label:'Critical Stock',value:'5',sub:'item < min',trend:'Perhatian',up:false,danger:true,icon:'alert'},
+  ];
+  KPIU = [
+    {label:'Unit Ready',value:'42',sub:'siap jual',trend:'+3',up:true,icon:'car'},
+    {label:'Aging > 60hr',value:'8',sub:'perlu didorong',trend:'+2',up:false,danger:true,icon:'clock'},
+    {label:'On Proses',value:'15',sub:'inden / PDI',trend:'-1',up:true,icon:'package'},
+    {label:'Target Bulan',value:'45/60',sub:'75% tercapai',trend:'75%',up:true,icon:'trending'},
+  ];
+  WO = [
+    {wo:'WO-2406-0142',tgl:'20/06',cust:'Budi Santoso',unit:'Honda BeAT',plate:'KB 3421 AB',mek:'Andi P.',state:'open',total:'185.000'},
+    {wo:'WO-2406-0141',tgl:'20/06',cust:'Siti Aminah',unit:'Vario 160',plate:'KB 2290 CD',mek:'Joko S.',state:'open',total:'312.000'},
+    {wo:'WO-2406-0140',tgl:'20/06',cust:'Hendra Wijaya',unit:'Scoopy',plate:'KB 5512 EF',mek:'Rian A.',state:'done',total:'95.000'},
+    {wo:'WO-2406-0139',tgl:'20/06',cust:'Dewi Lestari',unit:'PCX 160',plate:'KB 1180 GH',mek:'Andi P.',state:'open',total:'540.000'},
+    {wo:'WO-2406-0138',tgl:'19/06',cust:'Agus Salim',unit:'Supra X 125',plate:'KB 7723 IJ',mek:'Bayu N.',state:'done',total:'145.000'},
+    {wo:'WO-2406-0137',tgl:'19/06',cust:'Rina Marlina',unit:'Genio',plate:'KB 6634 KL',mek:'Joko S.',state:'open',total:'210.000'},
+    {wo:'WO-2406-0136',tgl:'19/06',cust:'Toni Gunawan',unit:'CRF150L',plate:'KB 4401 MN',mek:'Rian A.',state:'done',total:'420.000'},
+    {wo:'WO-2406-0135',tgl:'19/06',cust:'Maya Sari',unit:'BeAT Street',plate:'KB 9087 OP',mek:'Bayu N.',state:'cancel',total:'0'},
+    {wo:'WO-2406-0134',tgl:'18/06',cust:'Eko Prasetyo',unit:'Vario 125',plate:'KB 3345 QR',mek:'Andi P.',state:'done',total:'175.000'},
+    {wo:'WO-2406-0133',tgl:'18/06',cust:'Lia Kurnia',unit:'Revo X',plate:'KB 8810 ST',mek:'Joko S.',state:'open',total:'130.000'},
+    {wo:'WO-2406-0132',tgl:'18/06',cust:'Fajar Nugroho',unit:'CB150R',plate:'KB 2256 UV',mek:'Rian A.',state:'done',total:'365.000'},
+    {wo:'WO-2406-0131',tgl:'18/06',cust:'Nur Hidayah',unit:'BeAT Deluxe',plate:'KB 7799 WX',mek:'Bayu N.',state:'open',total:'98.000'},
+  ];
+  STOCK = [
+    {kode:'15400-KVB-901',nama:'Oli SPX2 0.8L',qty:3,min:12,rank:'A',aging:'Fast',tone:'success'},
+    {kode:'06435-KVB-405',nama:'Kampas Rem Depan',qty:24,min:10,rank:'A',aging:'Fast',tone:'success'},
+    {kode:'91201-KVB-003',nama:'Seal Crankshaft',qty:7,min:5,rank:'B',aging:'Normal',tone:'muted'},
+    {kode:'23100-K1A-T01',nama:'V-Belt Vario',qty:5,min:6,rank:'A',aging:'Slow',tone:'warning'},
+    {kode:'35010-K0J-N51',nama:'Kunci Kontak Set',qty:2,min:3,rank:'C',aging:'Dead',tone:'danger'},
+    {kode:'31500-BR3-001',nama:'Aki GTZ6V',qty:18,min:8,rank:'A',aging:'Fast',tone:'success'},
+    {kode:'17210-K59-A10',nama:'Filter Udara BeAT',qty:9,min:10,rank:'B',aging:'Normal',tone:'muted'},
+    {kode:'44711-KVB-902',nama:'Ban Luar 80/90-14',qty:4,min:6,rank:'B',aging:'Slow',tone:'warning'},
+    {kode:'12000-KZR-600',nama:'Piston Kit STD',qty:1,min:2,rank:'C',aging:'Dead',tone:'danger'},
+    {kode:'08232-M99-K1L',nama:'Oli Gardan AHM',qty:40,min:15,rank:'A',aging:'Fast',tone:'success'},
+  ];
+  UNITS = [
+    {mesin:'JF51E1234567',tipe:'BeAT CBS',warna:'Hitam',ksu:'OK',aging:12,tone:'success'},
+    {mesin:'JFZ1E2345678',tipe:'Vario 160 ABS',warna:'Merah',ksu:'OK',aging:8,tone:'success'},
+    {mesin:'JF81E3456789',tipe:'Scoopy Stylish',warna:'Putih',ksu:'Pending',aging:41,tone:'accent'},
+    {mesin:'KF12E4567890',tipe:'PCX 160',warna:'Abu',ksu:'OK',aging:22,tone:'success'},
+    {mesin:'JM01E5678901',tipe:'Genio CBS',warna:'Biru',ksu:'OK',aging:67,tone:'warning'},
+    {mesin:'ME1KE6789012',tipe:'CRF150L',warna:'Merah',ksu:'Pending',aging:95,tone:'danger'},
+    {mesin:'JF51E7890123',tipe:'BeAT Street',warna:'Hitam Doff',ksu:'OK',aging:18,tone:'success'},
+    {mesin:'KC21E8901234',tipe:'CB150R SF',warna:'Hitam',ksu:'OK',aging:73,tone:'warning'},
+    {mesin:'JFZ1E9012345',tipe:'Vario 125',warna:'Silver',ksu:'OK',aging:5,tone:'success'},
+    {mesin:'JM21E0123456',tipe:'Supra GTR 150',warna:'Hitam Merah',ksu:'Pending',aging:102,tone:'danger'},
+  ];
+  HANDOVER = [
+    {mesin:'JF51E1234567',cust:'Budi Santoso',salesman:'Dimas',prog:'5/5',status:'Selesai',tone:'success'},
+    {mesin:'JFZ1E2345678',cust:'Siti Aminah',salesman:'Wawan',prog:'3/5',status:'Proses',tone:'warning'},
+    {mesin:'JF81E3456789',cust:'Hendra W.',salesman:'Dimas',prog:'2/5',status:'Overdue',tone:'danger'},
+    {mesin:'KF12E4567890',cust:'Dewi Lestari',salesman:'Putri',prog:'5/5',status:'Selesai',tone:'success'},
+    {mesin:'JM01E5678901',cust:'Agus Salim',salesman:'Wawan',prog:'4/5',status:'Proses',tone:'warning'},
+    {mesin:'ME1KE6789012',cust:'Rina Marlina',salesman:'Dimas',prog:'1/5',status:'Proses',tone:'warning'},
+    {mesin:'JF51E7890123',cust:'Toni Gunawan',salesman:'Putri',prog:'5/5',status:'Selesai',tone:'success'},
+    {mesin:'KC21E8901234',cust:'Maya Sari',salesman:'Wawan',prog:'2/5',status:'Overdue',tone:'danger'},
+  ];
+  OPNAME = [
+    {kode:'15400-KVB-901',nama:'Oli SPX2 0.8L',sys:12,scan:12,selisih:'0',tone:'success'},
+    {kode:'06435-KVB-405',nama:'Kampas Rem Depan',sys:24,scan:23,selisih:'-1',tone:'warning'},
+    {kode:'91201-KVB-003',nama:'Seal Crankshaft',sys:7,scan:7,selisih:'0',tone:'success'},
+    {kode:'23100-K1A-T01',nama:'V-Belt Vario',sys:6,scan:4,selisih:'-2',tone:'warning'},
+    {kode:'35010-K0J-N51',nama:'Kunci Kontak Set',sys:3,scan:0,selisih:'-3',tone:'danger'},
+    {kode:'31500-BR3-001',nama:'Aki GTZ6V',sys:18,scan:18,selisih:'0',tone:'success'},
+    {kode:'17210-K59-A10',nama:'Filter Udara BeAT',sys:10,scan:11,selisih:'+1',tone:'warning'},
+    {kode:'44711-KVB-902',nama:'Ban Luar 80/90-14',sys:6,scan:6,selisih:'0',tone:'success'},
+    {kode:'12000-KZR-600',nama:'Piston Kit STD',sys:2,scan:0,selisih:'-2',tone:'warning'},
+    {kode:'08232-M99-K1L',nama:'Oli Gardan AHM',sys:15,scan:15,selisih:'0',tone:'success'},
+  ];
+  ALERTS = [
+    {level:'critical',text:'Stok kritis: Oli SPX2 0.8L tersisa 3 pcs (min 12)'},
+    {level:'critical',text:'WO-2406-0118 menunggu sparepart lebih dari 5 hari'},
+    {level:'warning',text:'8 WO open lebih dari 3 hari belum closing'},
+    {level:'warning',text:'Hotline HL-2406-22 belum update status 2 hari'},
+  ];
+  FRESH = [
+    {mod:'Workshop',file:'WO_20Jun2026.xlsx',sync:'06:30',ok:124,err:2,active:'1.204'},
+    {mod:'Stock Sparepart',file:'STOCK_20Jun.xlsx',sync:'06:32',ok:3187,err:0,active:'3.187'},
+    {mod:'Part Hotline',file:'HOTLINE_20Jun.xlsx',sync:'06:33',ok:42,err:1,active:'39'},
+    {mod:'Customers',file:'SALES_19Jun.xlsx',sync:'kemarin',ok:865,err:0,active:'865'},
+  ];
+  AGING = [
+    {label:'0 – 30 hari',val:28,tone:'success'},
+    {label:'31 – 60 hari',val:14,tone:'accent'},
+    {label:'61 – 90 hari',val:6,tone:'warning'},
+    {label:'> 90 hari',val:2,tone:'danger'},
+  ];
+  STNKBPKB = [
+    {label:'STNK Proses',v:23,danger:false},
+    {label:'STNK Selesai',v:188,danger:false},
+    {label:'BPKB Proses',v:31,danger:false},
+    {label:'BPKB Overdue',v:4,danger:true},
+  ];
+  BELL = [
+    {title:'Approval opname OPN-2406-03',meta:'PIC → ADH · menunggu review',tag:'High',tone:'danger'},
+    {title:'Import Stock gagal 1 baris',meta:'Sync 06:32 · cek format',tag:'Sync',tone:'warning'},
+    {title:'Follow-up KPB jatuh tempo (12)',meta:'Tim CRM · hari ini',tag:'Follow-up',tone:'accent'},
+    {title:'Restore point pre_import dibuat',meta:'06:30 · otomatis',tag:'Sync',tone:'muted'},
+  ];
+  DOCSTEPS = [
+    {n:1,label:'Verifikasi Unit',done:true},
+    {n:2,label:'Foto STNK',done:true},
+    {n:3,label:'Foto BPKB',done:false,current:true},
+    {n:4,label:'Tanda Tangan Customer',done:false},
+    {n:5,label:'Selesai',done:false},
+  ];
+  IMPORTM = [
+    {mod:'Workshop',fmt:'XLSX'},{mod:'Stock Sparepart',fmt:'XLSX'},{mod:'Part Hotline',fmt:'XLSX'},
+    {mod:'Sales / Customers',fmt:'XLSX'},{mod:'Stock Unit Showroom',fmt:'XLSX'},{mod:'Master Harga OTR',fmt:'XLSX'},
+    {mod:'Master BBN',fmt:'PDF'},{mod:'Master Program',fmt:'DOCX'},{mod:'STNK / BPKB Track',fmt:'XLSX'},
+  ];
+
+  icon(name, size) {
+    return React.createElement('svg', {
+      width: size||16, height: size||16, viewBox:'0 0 24 24', fill:'none',
+      stroke:'currentColor', strokeWidth:1.9, strokeLinecap:'round', strokeLinejoin:'round',
+      style:{flex:'none', display:'block'},
+      dangerouslySetInnerHTML:{__html:this.ICONS[name]||''}
+    });
+  }
+
+  tone(t) {
+    const m = {
+      success:['var(--success)','var(--success-soft)'],
+      accent:['var(--accent-text)','var(--accent-soft)'],
+      warning:['var(--warning)','var(--warning-soft)'],
+      danger:['var(--danger)','var(--danger-soft)'],
+      muted:['var(--text-muted)','var(--hover)'],
+    };
+    return m[t] || m.muted;
+  }
+
+  renderVals() {
+    const S = this.state;
+    const P = this.props || {};
+    const accent = P.accent || 'blue';
+    const density = P.density || 'compact';
+    const kpiStyle = P.kpiStyle || 'accentbar';
+    const stateLabel = {open:'Open', done:'Selesai', cancel:'Batal'};
+    const built = ['dashboard-bengkel','workshop','stock','dashboard-unit','stock-unit','document-handling','opname-sparepart'];
+
+    const groups = this.NAV.map(g => ({
+      label: g.label,
+      sections: g.sections.map(sec => {
+        const open = S.openSection === sec.id;
+        return {
+          label: sec.label, open,
+          iconEl: this.icon(sec.icon, 16),
+          chevEl: this.icon('chevron', 15),
+          chevStyle: 'display:flex;color:var(--text-faint);transition:transform .18s;transform:rotate(' + (open?'180':'0') + 'deg)',
+          headStyle: 'display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;padding:7px 10px;border:0;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:' + (open?'var(--text-strong)':'var(--text)') + ';background:transparent',
+          onToggle: () => this.setState({ openSection: open ? '' : sec.id }),
+          items: sec.items.map(it => {
+            const a = S.page === it.key;
+            return {
+              label: it.label, active: a,
+              onSelect: () => this.setState({ page: it.key }),
+              style: 'display:flex;align-items:center;width:100%;text-align:left;padding:6px 10px 6px 36px;border:0;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;color:' + (a?'var(--accent-text)':'var(--text-muted)') + ';background:' + (a?'var(--accent-soft)':'transparent') + ';font-weight:' + (a?'600':'500'),
+            };
+          }),
+        };
+      }),
+    }));
+
+    let pageTitle='', crumbGroup='', crumbSection='';
+    this.NAV.forEach(g => g.sections.forEach(sec => sec.items.forEach(it => {
+      if (it.key === S.page) { pageTitle = it.label; crumbGroup = g.label; crumbSection = sec.label; }
+    })));
+
+    const buildKpi = (arr) => arr.map(k => {
+      const dt = k.danger ? 'danger' : 'accent';
+      const ic = this.tone(dt);
+      let cardStyle = 'background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:15px';
+      if (kpiStyle === 'accentbar') cardStyle = 'background:var(--panel);border:1px solid var(--border);border-left:3px solid ' + (k.danger?'var(--danger)':'var(--accent)') + ';border-radius:11px;padding:15px 15px 15px 14px';
+      else if (kpiStyle === 'filled') cardStyle = 'background:' + ic[1] + ';border:1px solid ' + ic[1] + ';border-radius:11px;padding:15px';
+      return {
+        label:k.label, value:k.value, sub:k.sub, trend:k.trend,
+        iconEl: this.icon(k.icon, 16),
+        cardStyle,
+        iconWrap: 'width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none;color:' + ic[0] + ';background:' + ic[1],
+        trendColor: k.up ? 'var(--success)' : (k.danger ? 'var(--danger)' : 'var(--warning)'),
+      };
+    });
+
+    const q = (S.woSearch||'').toLowerCase();
+    const woE = (r) => { const c = this.tone(r.tone || (r.state==='open'?'accent':r.state==='done'?'success':'muted')); return {...r, bc:c[0], bb:c[1], stateLabel: stateLabel[r.state]||r.state}; };
+    const woAll = this.WO.filter(r => !q || (r.cust+r.unit+r.wo+r.mek).toLowerCase().includes(q)).map(woE);
+    const woDash = this.WO.filter(r => r.state==='open').slice(0,6).map(woE);
+
+    const stockRows = this.STOCK.map(r => { const c=this.tone(r.tone); return {...r, bc:c[0], bb:c[1]}; });
+    const unitRows = this.UNITS.map(r => { const c=this.tone(r.tone); const k=this.tone(r.ksu==='OK'?'success':'warning'); return {...r, bc:c[0], bb:c[1], kc:k[0], kb:k[1], agingLabel: r.aging+' hari'}; });
+    const handovers = this.HANDOVER.map(r => { const c=this.tone(r.tone); return {...r, bc:c[0], bb:c[1]}; });
+    const opnameRows = this.OPNAME.map(r => { const c=this.tone(r.tone); return {...r, bc:c[0], bb:c[1]}; });
+    const alerts = this.ALERTS.map(a => { const t=a.level==='critical'?'danger':'warning'; const c=this.tone(t); return {...a, color:c[0], bg:c[1], iconEl:this.icon('alert',15), tag:a.level==='critical'?'Kritis':'Perhatian'}; });
+    const freshness = this.FRESH.map(f => ({...f, dotColor: f.err>0?'var(--warning)':'var(--success)', errStyle:'font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:6px;color:'+(f.err>0?'var(--danger)':'var(--text-muted)')+';background:'+(f.err>0?'var(--danger-soft)':'var(--hover)')}));
+    const agingMax = Math.max.apply(null, this.AGING.map(a=>a.val));
+    const aging = this.AGING.map(a => { const c=this.tone(a.tone); return {...a, color:c[0], w:(a.val/agingMax*100)+'%'}; });
+    const stnkbpkb = this.STNKBPKB.map(s => ({...s, color: s.danger?'var(--danger)':'var(--text-strong)'}));
+    const bellTasks = this.BELL.map(t => { const c=this.tone(t.tone); return {...t, color:c[0], bg:c[1]}; });
+    const importModules = this.IMPORTM.map((m,i) => ({...m, style:'border:1px solid '+(i===0?'var(--accent)':'var(--border)')+';background:'+(i===0?'var(--accent-soft)':'var(--bg)')+';border-radius:9px;padding:11px 12px;cursor:pointer'}));
+    const docSteps = this.DOCSTEPS.map(d => ({...d,
+      dotStyle: 'width:24px;height:24px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;' + (d.done?'background:var(--success);color:#fff':(d.current?'background:var(--accent);color:#fff':'background:var(--hover);color:var(--text-faint)')),
+      labelColor: (d.done||d.current)?'var(--text-strong)':'var(--text-faint)',
+    }));
+
+    return {
+      theme: S.theme, accent, density,
+      loggedIn: S.loggedIn, notLoggedIn: !S.loggedIn,
+      sidebarOpen: S.sidebarOpen, importOpen: S.importOpen, bellOpen: S.bellOpen,
+      groups, pageTitle, crumbGroup, crumbSection,
+      bellCount: this.BELL.length, bellTasks,
+      themeIconEl: this.icon(S.theme==='dark'?'sun':'moon', 17),
+      username: S.username, password: S.password,
+      woSearch: S.woSearch, woCount: woAll.length,
+      isDashBengkel: S.page==='dashboard-bengkel', isWorkshop: S.page==='workshop', isStock: S.page==='stock',
+      isDashUnit: S.page==='dashboard-unit', isStockUnit: S.page==='stock-unit', isDocHandling: S.page==='document-handling',
+      isOpname: S.page==='opname-sparepart', isPlaceholder: !built.includes(S.page),
+      placeholderIconEl: this.icon('settings', 30),
+      kpiBengkel: buildKpi(this.KPIB), kpiUnit: buildKpi(this.KPIU),
+      woDash, woAll, stockRows, unitRows, handovers, opnameRows,
+      alerts, freshness, aging, stnkbpkb, importModules, docSteps,
+      opnameProgress: '76%',
+      ic_menu: this.icon('menu',18), ic_refresh: this.icon('refresh',13), ic_upload: this.icon('upload',15),
+      ic_upload_big: this.icon('upload',26), ic_search: this.icon('search',15), ic_printer: this.icon('printer',15),
+      ic_plus: this.icon('plus',15), ic_camera: this.icon('camera',22), ic_clock: this.icon('clock',13),
+      ic_bell: this.icon('bell',17), ic_x: this.icon('x',16), ic_chevR: this.icon('chevron-right',14), ic_wrench: this.icon('wrench',17),
+      onSearch: (e) => this.setState({ woSearch: e.target.value }),
+      toggleSidebar: () => this.setState({ sidebarOpen: !S.sidebarOpen }),
+      toggleTheme: () => this.setState({ theme: S.theme==='dark'?'light':'dark' }),
+      openImport: () => this.setState({ importOpen: true, bellOpen: false }),
+      closeImport: () => this.setState({ importOpen: false }),
+      toggleBell: () => this.setState({ bellOpen: !S.bellOpen }),
+      stopProp: (e) => e.stopPropagation(),
+      doLogin: () => this.setState({ loggedIn: true }),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -32,6 +32,7 @@ export default function UsersPage() {
     username: '',
     password: '',
     name: '',
+    phone: '',
     role: isPicOpname ? 'PIC Stock opname' : (ALL_ROLES[0] || 'PIC Stock opname'),
     locations: [],
   }))
@@ -68,7 +69,7 @@ export default function UsersPage() {
     try {
       await api.createUser(formData)
       setShowForm(false)
-      setFormData({ username: '', password: '', name: '', role: ROLES[0] || 'PIC Stock opname', locations: [] })
+      setFormData({ username: '', password: '', name: '', phone: '', role: ROLES[0] || 'PIC Stock opname', locations: [] })
       loadUsers()
     } catch (err) {
       setError(err.message)
@@ -82,6 +83,7 @@ export default function UsersPage() {
       await api.updateUser(editingUser.id, {
         name: editingUser.name,
         role: editingUser.role,
+        phone: editingUser.phone,
         locations: editingUser.locations,
       })
       setEditingUser(null)
@@ -126,6 +128,7 @@ export default function UsersPage() {
               username: '',
               password: '',
               name: '',
+              phone: '',
               role: isPicOpname ? 'PIC Stock opname' : (ROLES[0] || 'PIC Stock opname'),
               locations: [],
             })
@@ -173,9 +176,9 @@ export default function UsersPage() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="minimal 6 karakter"
+                  placeholder="minimal 8 karakter"
                   required
-                  minLength={6}
+                  minLength={8}
                 />
               </div>
               <div>
@@ -187,6 +190,16 @@ export default function UsersPage() {
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Roni"
                   required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">No. HP (Opsional)</label>
+                <input
+                  type="text"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="08123456789"
                 />
               </div>
               {isPicOpname ? (
@@ -273,8 +286,8 @@ export default function UsersPage() {
                 value={resetPassword}
                 onChange={(e) => setResetPassword(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Password baru minimal 6 karakter"
-                minLength={6}
+                placeholder="Password baru minimal 8 karakter"
+                minLength={8}
               />
               <button
                 onClick={handleResetPassword}
@@ -299,7 +312,7 @@ export default function UsersPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  {['Nama', 'Username', ...(isPicOpname ? [] : ['Role']), 'Lokasi', 'Dibuat', 'Aksi'].map((h) => (
+                  {['Nama', 'Username', 'No. HP', ...(isPicOpname ? [] : ['Role']), 'Lokasi', 'Dibuat', 'Aksi'].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -321,6 +334,20 @@ export default function UsersPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">{user.username}</td>
+
+                    <td className="px-4 py-3">
+                      {editingUser?.id === user.id ? (
+                        <input
+                          type="text"
+                          value={editingUser.phone || ''}
+                          onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                          className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded text-sm"
+                          placeholder="0812..."
+                        />
+                      ) : (
+                        <span className="text-sm text-slate-600">{user.phone || '-'}</span>
+                      )}
+                    </td>
 
                     {!isPicOpname && (
                       <td className="px-4 py-3">

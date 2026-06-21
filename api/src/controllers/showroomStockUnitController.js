@@ -2,6 +2,7 @@ import xlsx from 'xlsx'
 import { rmSync } from 'fs'
 import path from 'path'
 import os from 'os'
+import { clampLimit } from '../utils/pagination.js'
 import { prisma } from '../config/db.js'
 import { withImportLock } from '../services/importLockService.js'
 import { ensureNoActiveShowroomOpname } from './showroomOpnameController.js'
@@ -193,7 +194,7 @@ export async function getStockUnits(req, res, next) {
   try {
     const { page = 1, limit = 50, aging_tag } = req.query
     const pageInt = parseInt(page)
-    const limitInt = parseInt(limit)
+    const limitInt = clampLimit(limit, 50)
     let where = buildStockUnitWhere(req.query)
     if (aging_tag && /^[A-L]$/i.test(String(aging_tag))) {
       where = applyAgingTagFilter(where, aging_tag)

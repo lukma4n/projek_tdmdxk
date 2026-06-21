@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 import Layout from './components/Layout/Layout'
@@ -10,6 +10,10 @@ import NotFound from './pages/NotFound'
 const Hotline = lazy(() => import('./pages/Hotline'))
 const Stock = lazy(() => import('./pages/Stock'))
 const Workshop = lazy(() => import('./pages/Workshop'))
+const WorkshopTarget = lazy(() => import('./pages/WorkshopTarget'))
+const WorkshopReportDashboard = lazy(() => import('./pages/WorkshopReportDashboard'))
+const WorkshopSalesAnalysis = lazy(() => import('./pages/WorkshopSalesAnalysis'))
+const WorkshopClosingDaily = lazy(() => import('./pages/WorkshopClosingDaily'))
 const KpbLcrMonitor = lazy(() => import('./pages/KpbLcrMonitor'))
 const Customers = lazy(() => import('./pages/Customers'))
 const FollowupKpb = lazy(() => import('./pages/FollowupKpb'))
@@ -17,6 +21,7 @@ const MechanicPerformance = lazy(() => import('./pages/MechanicPerformance'))
 const Users = lazy(() => import('./pages/Users'))
 const Opname = lazy(() => import('./pages/Opname'))
 const Backups = lazy(() => import('./pages/Backups'))
+const RoleManagement = lazy(() => import('./pages/RoleManagement'))
 const ShowroomDashboard = lazy(() => import('./pages/ShowroomDashboard'))
 const ShowroomStockUnit = lazy(() => import('./pages/ShowroomStockUnit'))
 const ShowroomStnk = lazy(() => import('./pages/ShowroomStnk'))
@@ -38,32 +43,46 @@ const ShowroomClosingDaily = lazy(() => import('./pages/ShowroomClosingDaily'))
 const ShowroomMarketingTarget = lazy(() => import('./pages/ShowroomMarketingTarget'))
 const ShowroomLabelBukuService = lazy(() => import('./pages/ShowroomLabelBukuService'))
 const ShowroomDocumentFollowup = lazy(() => import('./pages/ShowroomDocumentFollowup'))
-import {
-  HOTLINE_ROLES,
-  STOCK_ROLES,
-  WORKSHOP_ROLES,
-  PROGRAM_ROLES,
-  CUSTOMER_ROLES,
-  FOLLOWUP_ROLES,
-  OPNAME_ROLES,
-  ADMIN_ROLES,
-  MANAGEMENT_ROLES,
-  DASHBOARD_BENGKEL_ROLES,
-  SHOWROOM_ROLES,
-  SHOWROOM_SALES_ORDER_ROLES,
-  SHOWROOM_OPNAME_ROLES,
-  SHOWROOM_DOCUMENT_STOCK_ROLES,
-  SHOWROOM_LABEL_BUKU_SERVICE_ROLES,
-  SHOWROOM_STNK_BPKB_MONITORING_ROLES,
-  SHOWROOM_PIC_USERS_ROLES,
-  DOCUMENT_FOLLOWUP_ROLES,
-  ROLES,
-} from './config/roles'
+const ShowroomDocumentHandover = lazy(() => import('./pages/ShowroomDocumentHandover'))
+const StnkBpkbCheck = lazy(() => import('./pages/StnkBpkbCheck'))
 
-function RoleGuard({ children, allowedRoles }) {
-  const { user } = useAuthStore()
+import { ROLES } from './config/roles'
 
-  if (!user?.role || !allowedRoles.includes(user.role)) {
+function RoleGuard({ children, menuKey }) {
+  const { user, permissions, permissionsLoaded, permissionsError } = useAuthStore()
+
+  if (!user?.role) {
+    return <Navigate to="/" replace />
+  }
+
+  // IT Master bypass semua guard
+  if (user.role === ROLES.MASTER_IT) return children
+
+  // Tunggu hingga permissions selesai dimuat sebelum memberi akses
+  if (!permissionsLoaded) return <PageLoader />
+
+  // Jika permissions gagal dimuat, tampilkan error daripada memberi akses kosong
+  if (permissionsError) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-sm text-slate-500">
+        <p>Gagal memuat izin akses. Silakan muat ulang halaman.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="rounded bg-slate-800 px-4 py-2 text-white hover:bg-slate-700"
+        >
+          Muat Ulang
+        </button>
+      </div>
+    )
+  }
+
+  // menuKey wajib ada — route tanpa menuKey dianggap salah konfigurasi
+  if (!menuKey) {
+    return <Navigate to="/" replace />
+  }
+
+  const allowedRoles = permissions[menuKey] || []
+  if (!allowedRoles.includes(user.role)) {
     return <Navigate to="/" replace />
   }
 
@@ -77,14 +96,15 @@ function DefaultRoute() {
   if (user?.role === ROLES.ADMIN_CRM) return <Navigate to="/follow-up-kpb" replace />
   if (user?.role === ROLES.ADH) return <Navigate to="/showroom/opname-unit" replace />
   if (user?.role === ROLES.PIC_STOCK_OPNAME) return <Navigate to="/showroom/opname-unit" replace />
+  if (user?.role === ROLES.SALESMAN) return <Navigate to="/showroom/document-handover" replace />
+  
   return (
-    <RoleGuard allowedRoles={DASHBOARD_BENGKEL_ROLES}>
+    <RoleGuard menuKey="DASHBOARD_BENGKEL">
       <Dashboard />
     </RoleGuard>
   )
 }
 
-// Fallback loading sederhana saat chunk lazy-load
 function PageLoader() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
@@ -98,17 +118,41 @@ function LazyPage({ children }) {
 }
 
 function App() {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, permissionsLoaded, permissionsError, fetchPermissions, retryPermissions } = useAuthStore()
+
+  useEffect(() => {
+    if (isAuthenticated && !permissionsLoaded && !permissionsError) {
+      fetchPermissions()
+    }
+  }, [isAuthenticated, permissionsLoaded, permissionsError, fetchPermissions])
+
+  if (isAuthenticated && !permissionsLoaded && !permissionsError) return <PageLoader />
+
+  if (isAuthenticated && permissionsError) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-sm text-slate-500">
+        <p>Gagal memuat izin akses. Periksa koneksi jaringan dan coba lagi.</p>
+        <button
+          onClick={() => { retryPermissions(); fetchPermissions() }}
+          className="rounded bg-slate-800 px-4 py-2 text-white hover:bg-slate-700"
+        >
+          Coba Lagi
+        </button>
+      </div>
+    )
+  }
 
   return (
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
+      <Route path="/public/stnk-bpkb-check" element={<LazyPage><StnkBpkbCheck /></LazyPage>} />
       <Route path="/" element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
+
         <Route index element={<DefaultRoute />} />
         <Route
           path="hotline"
           element={
-            <RoleGuard allowedRoles={HOTLINE_ROLES}>
+            <RoleGuard menuKey="HOTLINE">
               <LazyPage><Hotline /></LazyPage>
             </RoleGuard>
           }
@@ -116,7 +160,7 @@ function App() {
         <Route
           path="stock"
           element={
-            <RoleGuard allowedRoles={STOCK_ROLES}>
+            <RoleGuard menuKey="STOCK">
               <LazyPage><Stock /></LazyPage>
             </RoleGuard>
           }
@@ -124,15 +168,47 @@ function App() {
         <Route
           path="workshop"
           element={
-            <RoleGuard allowedRoles={WORKSHOP_ROLES}>
+            <RoleGuard menuKey="WORKSHOP">
               <LazyPage><Workshop /></LazyPage>
             </RoleGuard>
           }
         />
+        <Route 
+          path="workshop-target" 
+          element={
+            <RoleGuard menuKey="WORKSHOP_REPORT">
+              <LazyPage><WorkshopTarget /></LazyPage>
+            </RoleGuard>
+          } 
+        />
+        <Route 
+          path="workshop-dashboard" 
+          element={
+            <RoleGuard menuKey="WORKSHOP_REPORT">
+              <LazyPage><WorkshopReportDashboard /></LazyPage>
+            </RoleGuard>
+          } 
+        />
+        <Route 
+          path="workshop-sales-analysis" 
+          element={
+            <RoleGuard menuKey="WORKSHOP_REPORT">
+              <LazyPage><WorkshopSalesAnalysis /></LazyPage>
+            </RoleGuard>
+          } 
+        />
+        <Route 
+          path="workshop-closing-daily" 
+          element={
+            <RoleGuard menuKey="WORKSHOP_REPORT">
+              <LazyPage><WorkshopClosingDaily /></LazyPage>
+            </RoleGuard>
+          } 
+        />
         <Route
           path="monitor-kpb-lcr"
           element={
-            <RoleGuard allowedRoles={PROGRAM_ROLES}>
+            <RoleGuard menuKey="PROGRAM">
               <LazyPage><KpbLcrMonitor /></LazyPage>
             </RoleGuard>
           }
@@ -140,7 +216,7 @@ function App() {
         <Route
           path="customers"
           element={
-            <RoleGuard allowedRoles={CUSTOMER_ROLES}>
+            <RoleGuard menuKey="CUSTOMER">
               <LazyPage><Customers /></LazyPage>
             </RoleGuard>
           }
@@ -148,7 +224,7 @@ function App() {
         <Route
           path="follow-up-kpb"
           element={
-            <RoleGuard allowedRoles={FOLLOWUP_ROLES}>
+            <RoleGuard menuKey="FOLLOWUP">
               <LazyPage><FollowupKpb /></LazyPage>
             </RoleGuard>
           }
@@ -156,7 +232,7 @@ function App() {
         <Route
           path="mechanics"
           element={
-            <RoleGuard allowedRoles={ADMIN_ROLES}>
+            <RoleGuard menuKey="ADMIN">
               <LazyPage><MechanicPerformance /></LazyPage>
             </RoleGuard>
           }
@@ -164,15 +240,27 @@ function App() {
         <Route
           path="users"
           element={
-            <RoleGuard allowedRoles={MANAGEMENT_ROLES}>
-              <LazyPage><Users /></LazyPage>
+            <RoleGuard menuKey="MANAGEMENT">
+              <LazyPage>
+                <Users />
+              </LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="roles"
+          element={
+            <RoleGuard menuKey="MANAGEMENT">
+              <LazyPage>
+                <RoleManagement />
+              </LazyPage>
             </RoleGuard>
           }
         />
         <Route
           path="backups"
           element={
-            <RoleGuard allowedRoles={MANAGEMENT_ROLES}>
+            <RoleGuard menuKey="MANAGEMENT">
               <LazyPage><Backups /></LazyPage>
             </RoleGuard>
           }
@@ -180,7 +268,7 @@ function App() {
         <Route
           path="opname"
           element={
-            <RoleGuard allowedRoles={OPNAME_ROLES}>
+            <RoleGuard menuKey="OPNAME">
               <LazyPage><Opname /></LazyPage>
             </RoleGuard>
           }
@@ -188,7 +276,7 @@ function App() {
         <Route
           path="showroom/dashboard"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomDashboard /></LazyPage>
             </RoleGuard>
           }
@@ -196,7 +284,7 @@ function App() {
         <Route
           path="showroom/stock-unit"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomStockUnit /></LazyPage>
             </RoleGuard>
           }
@@ -204,7 +292,7 @@ function App() {
         <Route
           path="showroom/stnk"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_DOCUMENT_STOCK_ROLES}>
+            <RoleGuard menuKey="SHOWROOM_DOCUMENT_STOCK">
               <LazyPage><ShowroomStnk /></LazyPage>
             </RoleGuard>
           }
@@ -212,7 +300,7 @@ function App() {
         <Route
           path="showroom/bpkb"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_DOCUMENT_STOCK_ROLES}>
+            <RoleGuard menuKey="SHOWROOM_DOCUMENT_STOCK">
               <LazyPage><ShowroomBpkb /></LazyPage>
             </RoleGuard>
           }
@@ -220,7 +308,7 @@ function App() {
         <Route
           path="showroom/stnk-bpkb-monitoring"
           element={
-              <RoleGuard allowedRoles={SHOWROOM_STNK_BPKB_MONITORING_ROLES}>
+              <RoleGuard menuKey="SHOWROOM_STNK_BPKB_MONITORING">
               <LazyPage><ShowroomStnkBpkbMonitoring /></LazyPage>
             </RoleGuard>
           }
@@ -228,7 +316,7 @@ function App() {
         <Route
           path="showroom/harga-otr"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomOtrPrice /></LazyPage>
             </RoleGuard>
           }
@@ -236,7 +324,7 @@ function App() {
         <Route
           path="showroom/bbn"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomBbnPrice /></LazyPage>
             </RoleGuard>
           }
@@ -244,7 +332,7 @@ function App() {
         <Route
           path="showroom/program"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomProgram /></LazyPage>
             </RoleGuard>
           }
@@ -252,7 +340,7 @@ function App() {
         <Route
           path="showroom/tabel-diskon"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomDiscountTable /></LazyPage>
             </RoleGuard>
           }
@@ -260,7 +348,7 @@ function App() {
         <Route
           path="showroom/tac-leasing"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomTacLeasing /></LazyPage>
             </RoleGuard>
           }
@@ -268,7 +356,7 @@ function App() {
         <Route
           path="showroom/dealer-burden"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomDealerBurden /></LazyPage>
             </RoleGuard>
           }
@@ -276,7 +364,7 @@ function App() {
         <Route
           path="showroom/salespeople"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomSalespeople /></LazyPage>
             </RoleGuard>
           }
@@ -284,7 +372,7 @@ function App() {
         <Route
           path="showroom/team-leader"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomTeamLeader /></LazyPage>
             </RoleGuard>
           }
@@ -292,7 +380,7 @@ function App() {
         <Route
           path="showroom/ksu"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomKsuMaster /></LazyPage>
             </RoleGuard>
           }
@@ -300,7 +388,7 @@ function App() {
         <Route
           path="showroom/sales-order-margin"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_SALES_ORDER_ROLES}>
+            <RoleGuard menuKey="SHOWROOM_SALES_ORDER">
               <LazyPage><SalesOrderMargin /></LazyPage>
             </RoleGuard>
           }
@@ -308,7 +396,7 @@ function App() {
         <Route
           path="showroom/dashboard-penjualan"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomSalesAnalysis /></LazyPage>
             </RoleGuard>
           }
@@ -316,7 +404,7 @@ function App() {
         <Route
           path="showroom/closing-harian"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomClosingDaily /></LazyPage>
             </RoleGuard>
           }
@@ -324,7 +412,7 @@ function App() {
         <Route
           path="showroom/marketing-target"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_ROLES}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomMarketingTarget /></LazyPage>
             </RoleGuard>
           }
@@ -332,7 +420,7 @@ function App() {
         <Route
           path="showroom/label-buku-service"
           element={
-              <RoleGuard allowedRoles={SHOWROOM_LABEL_BUKU_SERVICE_ROLES}>
+              <RoleGuard menuKey="SHOWROOM_LABEL_BUKU_SERVICE">
               <LazyPage><ShowroomLabelBukuService /></LazyPage>
             </RoleGuard>
           }
@@ -340,7 +428,7 @@ function App() {
         <Route
           path="showroom/opname-unit"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_OPNAME_ROLES}>
+            <RoleGuard menuKey="SHOWROOM_OPNAME">
               <LazyPage><ShowroomOpname type="unit" /></LazyPage>
             </RoleGuard>
           }
@@ -348,7 +436,7 @@ function App() {
         <Route
           path="showroom/opname-stnk"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_OPNAME_ROLES}>
+            <RoleGuard menuKey="SHOWROOM_OPNAME">
               <LazyPage><ShowroomOpname type="stnk" /></LazyPage>
             </RoleGuard>
           }
@@ -356,7 +444,7 @@ function App() {
         <Route
           path="showroom/opname-bpkb"
           element={
-            <RoleGuard allowedRoles={SHOWROOM_OPNAME_ROLES}>
+            <RoleGuard menuKey="SHOWROOM_OPNAME">
               <LazyPage><ShowroomOpname type="bpkb" /></LazyPage>
             </RoleGuard>
           }
@@ -364,7 +452,7 @@ function App() {
         <Route
           path="showroom/pic-users"
           element={
-              <RoleGuard allowedRoles={SHOWROOM_PIC_USERS_ROLES}>
+              <RoleGuard menuKey="SHOWROOM_PIC_USERS">
               <LazyPage><Users /></LazyPage>
             </RoleGuard>
           }
@@ -372,7 +460,7 @@ function App() {
         <Route
           path="follow-up-stnk"
           element={
-            <RoleGuard allowedRoles={DOCUMENT_FOLLOWUP_ROLES}>
+            <RoleGuard menuKey="DOCUMENT_FOLLOWUP">
               <LazyPage><ShowroomDocumentFollowup type="stnk" /></LazyPage>
             </RoleGuard>
           }
@@ -380,8 +468,16 @@ function App() {
         <Route
           path="follow-up-bpkb"
           element={
-            <RoleGuard allowedRoles={DOCUMENT_FOLLOWUP_ROLES}>
+            <RoleGuard menuKey="DOCUMENT_FOLLOWUP">
               <LazyPage><ShowroomDocumentFollowup type="bpkb" /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="showroom/document-handover"
+          element={
+            <RoleGuard menuKey="DOCUMENT_HANDOVER">
+              <LazyPage><ShowroomDocumentHandover /></LazyPage>
             </RoleGuard>
           }
         />

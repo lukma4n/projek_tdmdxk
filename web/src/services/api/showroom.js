@@ -286,3 +286,23 @@ export const getShowroomMarketingTargetSummary = (params = {}) => {
 }
 export const upsertShowroomMarketingTarget = (data) => fetchWithAuth('/showroom/marketing-targets', { method: 'POST', body: data })
 export const deleteShowroomMarketingTarget = (id) => fetchWithAuth(`/showroom/marketing-targets/${id}`, { method: 'DELETE' })
+
+// Document Handover (Serah Terima Dokumen)
+export const getDocumentHandovers = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/document-handovers${query ? '?' + query : ''}`)
+}
+export const getDocumentHandoverSummary = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/document-handovers/summary${query ? '?' + query : ''}`)
+}
+export const getHandoverSalespeople = () => fetchWithAuth('/showroom/document-handovers/salespeople')
+export const getAvailableDocuments = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/document-handovers/available${query ? '?' + query : ''}`)
+}
+export const createDocumentHandover = (data) => fetchWithAuth('/showroom/document-handovers', { method: 'POST', body: data })
+export const getHandoverSteps = (id) => fetchWithAuth(`/showroom/document-handovers/${id}/steps`)
+export const addHandoverStep = (id, formData) => fetchWithAuth(`/showroom/document-handovers/${id}/steps`, { method: 'POST', body: formData, headers: {} })
+export const updateDocumentHandover = (id, data) => fetchWithAuth(`/showroom/document-handovers/${id}`, { method: 'PUT', body: data })
+export const deleteDocumentHandover = (id) => fetchWithAuth(`/showroom/document-handovers/${id}`, { method: 'DELETE' })

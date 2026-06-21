@@ -1,4 +1,5 @@
 import { prisma } from '../config/db.js'
+import { clampLimit } from '../utils/pagination.js'
 
 export async function getStock(req, res, next) {
   try {
@@ -25,7 +26,7 @@ export async function getStock(req, res, next) {
       prisma.stock_part_locations.findMany({
         where,
         skip,
-        take: parseInt(limit),
+        take: clampLimit(limit, 50),
         orderBy: { aging_days: 'desc' },
       }),
       prisma.stock_part_locations.count({ where }),
@@ -128,7 +129,7 @@ export async function getStockByLocation(req, res, next) {
       prisma.stock_part_locations.findMany({
         where,
         skip,
-        take: parseInt(limit),
+        take: clampLimit(limit, 50),
         orderBy: { qty_available: 'desc' },
         include: {
           part: { select: { product_name: true, kategori: true, lokasi: true } },

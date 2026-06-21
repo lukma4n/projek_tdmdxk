@@ -113,7 +113,7 @@ export function parseHotlineFile(filePath) {
     }
   }
 
-  return { records: validRecords, errors, preview: preview('hotline', validRecords, errors) }
+  return { records: validRecords, errors, preview: preview('hotline', validRecords, errors, { importMode: 'hotline_upsert_by_no' }) }
 }
 
 const SPAREPART_LOCATION_MAP = {
@@ -273,7 +273,11 @@ export function parseStockFile(filePath) {
     records,
     locationRecords,
     errors,
-    preview: preview('stock', records, errors, { duplicateProductRows: rows.length - records.length }),
+    preview: preview('stock', records, errors, {
+      duplicateProductRows: rows.length - records.length,
+      locationDetailCount: locationRecords.length,
+      importMode: 'active_snapshot',
+    }),
   }
 }
 

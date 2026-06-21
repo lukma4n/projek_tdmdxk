@@ -91,7 +91,7 @@ function isHundredPercent(summary) {
 export default function ShowroomOpname({ type = 'unit' }) {
   const config = TYPE_CONFIG[type] || TYPE_CONFIG.unit
   const { user } = useAuthStore()
-  const canOperate = ['PIC Stock opname', 'Lead PIC Stock opname'].includes(user?.role)
+  const canOperate = ['PIC Stock opname'].includes(user?.role)
   const canApproveAdh = user?.role === 'ADH'
   const canApproveKacab = user?.role === 'Kepala Cabang'
   const [sessions, setSessions] = useState([])

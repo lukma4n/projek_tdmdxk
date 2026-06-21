@@ -6,6 +6,7 @@ import { parseHotlineFile, parseStockFile, parseWorkshopFile, parseImportFile } 
 import { createAuditLog, getOperationalAuditLogs } from '../services/auditService.js'
 import { endMaintenance, startMaintenance } from '../services/maintenanceService.js'
 import { withImportLock } from '../services/importLockService.js'
+import { ensureNoActiveOpname, OPEN_IMPORT_BLOCK_STATUSES } from './opnameController.js'
 
 async function cleanupUpload(req) {
   if (req.file?.path) await fs.unlink(req.file.path).catch(() => { })
@@ -18,13 +19,16 @@ export async function uploadHotline(req, res, next) {
       const { records: validRecords, errors } = parseHotlineFile(req.file.path)
       const backup = await createDatabaseBackup('pre_import_hotline')
 
-      // Replace all: delete existing, insert new (transaction = rollback kalau gagal)
+      // Upsert by no_hotline
       await prisma.$transaction(async (tx) => {
-        await tx.hotlines.deleteMany()
-        if (validRecords.length > 0) {
-          await tx.hotlines.createMany({ data: validRecords })
+        for (const record of validRecords) {
+          await tx.hotlines.upsert({
+            where: { no_hotline: record.no_hotline },
+            update: record,
+            create: record
+          })
         }
-      }, { maxWait: 20000, timeout: 60000 })
+      }, { maxWait: 20000, timeout: 120000 })
 
       await prisma.sync_logs.create({
         data: {
@@ -41,7 +45,7 @@ export async function uploadHotline(req, res, next) {
         userId: req.user?.userId,
         tableName: 'sync_import',
         recordId: 'hotline',
-        fieldName: 'replace_all',
+        fieldName: 'upsert_by_no_hotline',
         newValue: {
           module: 'hotline',
           filename: req.file.originalname,
@@ -73,22 +77,44 @@ export async function uploadStock(req, res, next) {
   try {
     if (!req.file?.path) return res.status(400).json({ error: 'File wajib diupload' })
     await withImportLock('sync:stock', async () => {
+      await ensureNoActiveOpname()
       const { records: validRecords, locationRecords, errors } = parseStockFile(req.file.path)
+      if (!validRecords.length) {
+        const err = new Error('File tidak berisi data stock yang valid')
+        err.statusCode = 400
+        throw err
+      }
       const backup = await createDatabaseBackup('pre_import_stock')
 
-      // Replace all: clear opname + delete stock + insert new (transaction = rollback kalau gagal)
+      // Snapshot Upsert by product_code
       await prisma.$transaction(async (tx) => {
-        await tx.opname_items.deleteMany()
-        await tx.opname_sessions.deleteMany()
-        await tx.stock_part_locations.deleteMany()
-        await tx.stock_parts.deleteMany()
-        if (validRecords.length > 0) {
-          await tx.stock_parts.createMany({ data: validRecords })
+        const activeProductCodes = validRecords.map(r => r.product_code).filter(Boolean)
+        
+        for (const record of validRecords) {
+          await tx.stock_parts.upsert({
+            where: { product_code: record.product_code },
+            update: record,
+            create: record
+          })
         }
+        
+        await tx.stock_parts.deleteMany({
+          where: { product_code: { notIn: activeProductCodes } }
+        })
+
+        // Bersihkan opname_items dari sesi non-aktif yang mereferensikan product_code yg sudah dihapus
+        await tx.opname_items.deleteMany({
+          where: {
+            product_code: { notIn: activeProductCodes },
+            session: { status: { notIn: OPEN_IMPORT_BLOCK_STATUSES } },
+          },
+        })
+
+        await tx.stock_part_locations.deleteMany()
         if (locationRecords.length > 0) {
           await tx.stock_part_locations.createMany({ data: locationRecords })
         }
-      }, { maxWait: 20000, timeout: 60000 })
+      }, { maxWait: 20000, timeout: 120000 })
 
       await prisma.sync_logs.create({
         data: {
@@ -105,14 +131,13 @@ export async function uploadStock(req, res, next) {
         userId: req.user?.userId,
         tableName: 'sync_import',
         recordId: 'stock',
-        fieldName: 'replace_all',
+        fieldName: 'active_snapshot_upsert',
         newValue: {
           module: 'stock',
           filename: req.file.originalname,
           rows_success: validRecords.length,
           rows_error: errors.length,
           backup: backup.filename,
-          cascade: 'opname_sessions_and_items_deleted',
         },
       })
 
@@ -142,11 +167,26 @@ export async function uploadWorkshop(req, res, next) {
       const { records: finalRecords, errors, preview } = parseWorkshopFile(req.file.path)
       const backup = await createDatabaseBackup('pre_import_workshop')
 
-      // Replace all: delete existing, insert new (transaction = rollback kalau gagal)
+      const woNumbers = finalRecords.map((record) => record.wo_number)
+      const existingWos = await prisma.work_orders.findMany({
+        where: { wo_number: { in: woNumbers } },
+        select: { wo_number: true },
+      })
+      const existingWoNumbers = new Set(existingWos.map((wo) => wo.wo_number))
+      const createRecords = finalRecords.filter((record) => !existingWoNumbers.has(record.wo_number))
+      const updateRecords = finalRecords.filter((record) => existingWoNumbers.has(record.wo_number))
+
+      // Upsert by wo_number: preserves other work orders, allows daily/incremental updates!
       await prisma.$transaction(async (tx) => {
-        await tx.work_orders.deleteMany()
-        if (finalRecords.length > 0) {
-          await tx.work_orders.createMany({ data: finalRecords })
+        if (createRecords.length > 0) {
+          await tx.work_orders.createMany({ data: createRecords })
+        }
+
+        for (const record of updateRecords) {
+          await tx.work_orders.update({
+            where: { wo_number: record.wo_number },
+            data: record,
+          })
         }
       }, { maxWait: 20000, timeout: 120000 })
 
@@ -165,13 +205,15 @@ export async function uploadWorkshop(req, res, next) {
         userId: req.user?.userId,
         tableName: 'sync_import',
         recordId: 'workshop',
-        fieldName: 'replace_year_to_date',
+        fieldName: 'upsert_by_wo_number',
         newValue: {
           module: 'workshop',
-          import_mode: 'workshop_year_to_date_snapshot',
+          import_mode: 'workshop_upsert_by_wo',
           filename: req.file.originalname,
           rows_success: finalRecords.length,
           rows_error: errors.length,
+          created: createRecords.length,
+          updated: updateRecords.length,
           date_range: preview.dateRange,
           warnings: preview.warnings,
           backup: backup.filename,
@@ -183,16 +225,18 @@ export async function uploadWorkshop(req, res, next) {
       await cleanupUpload(req)
 
       res.json({
-        message: 'Import Workshop Tahun Berjalan selesai',
+        message: 'Import Workshop selesai',
         success: finalRecords.length,
+        created: createRecords.length,
+        updated: updateRecords.length,
         errors: errors.length,
         errorDetails: errors.slice(0, 10),
-        importMode: 'workshop_year_to_date_snapshot',
+        importMode: 'workshop_upsert_by_wo',
         dateRange: preview.dateRange,
         warnings: preview.warnings,
         backup: backup.filename,
       })
-    }, { module: 'workshop', reason: 'replace_ytd' })
+    }, { module: 'workshop', reason: 'upsert_wo' })
   } catch (error) {
     await cleanupUpload(req)
     next(error)
@@ -217,6 +261,29 @@ export async function previewImport(req, res, next) {
       preview.existingCount = existingCount
       preview.newCount = newCount
       preview.soNumbersSample = result.records.slice(0, 5).map((r) => r.so_number)
+    } else if (req.params.module === 'workshop') {
+      const woNumbers = result.records.map((record) => record.wo_number)
+      const existingWos = await prisma.work_orders.findMany({
+        where: { wo_number: { in: woNumbers } },
+        select: { wo_number: true },
+      })
+      const existingWoNumbers = new Set(existingWos.map((w) => w.wo_number))
+      const existingCount = woNumbers.filter((wo) => existingWoNumbers.has(wo)).length
+      const newCount = result.records.length - existingCount
+      preview.existingCount = existingCount
+      preview.newCount = newCount
+      preview.woNumbersSample = result.records.slice(0, 5).map((r) => r.wo_number)
+    } else if (req.params.module === 'stock') {
+      const activeProductCodes = result.records.map(r => r.product_code).filter(Boolean)
+      const [currentRows, estimatedDeleted] = await Promise.all([
+        prisma.stock_parts.count(),
+        activeProductCodes.length > 0
+          ? prisma.stock_parts.count({ where: { product_code: { notIn: activeProductCodes } } })
+          : prisma.stock_parts.count()
+      ])
+      preview.currentRows = currentRows
+      preview.estimatedDeleted = estimatedDeleted
+      preview.finalRows = result.records.length
     }
 
     await cleanupUpload(req)

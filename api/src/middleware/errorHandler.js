@@ -11,9 +11,16 @@ export function errorHandler(err, req, res, next) {
     return res.status(404).json({ requestId: req.id, error: 'Data tidak ditemukan' })
   }
 
-  res.status(err.status || err.statusCode || 500).json({
+  const status = err.status || err.statusCode || 500
+  // Expose message only for client errors (4xx) yang memang dimaksud untuk user.
+  // Error 5xx tidak boleh expose internal detail ke client.
+  const userMessage = status < 500
+    ? (err.message || 'Permintaan tidak valid')
+    : 'Terjadi kesalahan pada server. Silakan coba lagi.'
+
+  res.status(status).json({
     requestId: req.id,
-    error: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    error: userMessage,
+    ...(process.env.NODE_ENV === 'development' && { debug: err.message, stack: err.stack }),
   })
 }

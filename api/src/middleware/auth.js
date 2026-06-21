@@ -43,13 +43,44 @@ export async function authenticate(req, res, next) {
 export function authorize(...roles) {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Belum login' })
+      return res.status(401).json({ error: 'Akses ditolak' })
     }
-    
+    // Bypass untuk IT Master agar bisa akses semuanya (sebagai superadmin)
+    if (req.user.role === 'IT Master') {
+      return next()
+    }
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Akses ditolak' })
+      return res.status(403).json({ error: `Akses ditolak. Role Anda: ${req.user.role}` })
     }
-    
     next()
+  }
+}
+
+// Middleware baru untuk Dynamic RBAC (Mengecek akses ke database berdasarkan Menu Key)
+export function authorizeMenu(menuKey) {
+  return async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Akses ditolak' })
+    }
+    // IT Master otomatis lolos
+    if (req.user.role === 'IT Master') {
+      return next()
+    }
+
+    try {
+      const permission = await prisma.role_permissions.findFirst({
+        where: {
+          menu_key: menuKey,
+          role_name: req.user.role
+        }
+      })
+
+      if (!permission) {
+        return res.status(403).json({ error: `Akses ditolak untuk modul ${menuKey}. Role Anda: ${req.user.role}` })
+      }
+      next()
+    } catch (error) {
+      return res.status(500).json({ error: 'Gagal memverifikasi hak akses dari server.' })
+    }
   }
 }

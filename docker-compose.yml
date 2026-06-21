@@ -1,23 +1,7 @@
-version: '3.8'
-
+# DB resmi aplikasi = SQLite (file di api/prisma/dev.db) untuk deployment single-site.
+# Compose ini hanya menyediakan Redis (dipakai aplikasi via api/src/config/redis.js).
+# Postgres/pgAdmin sengaja tidak disertakan; lihat docs/rencana_perbaikan.md & prisma/MIGRATION_ALIGNMENT.md.
 services:
-  postgres:
-    image: postgres:17-alpine
-    container_name: dxk_postgres
-    environment:
-      POSTGRES_USER: dxk_user
-      POSTGRES_PASSWORD: dxk_password
-      POSTGRES_DB: dxk_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dxk_user -d dxk_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7-alpine
     container_name: dxk_redis
@@ -27,18 +11,5 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes
 
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: dxk_pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@dxk.local
-      PGADMIN_DEFAULT_PASSWORD: admin123
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
-
 volumes:
-  postgres_data:
   redis_data:

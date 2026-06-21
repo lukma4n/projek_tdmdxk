@@ -5,42 +5,68 @@ import { useAppStore } from '../stores/appStore'
 import {
   Wrench, Phone, Package, AlertTriangle, CheckCircle, Clock,
   DollarSign, ArrowRight, Loader2, Database, TrendingUp, TrendingDown,
+  RefreshCw, Bell
 } from 'lucide-react'
 
-// Skydash Admin design tokens (from DESIGN Skydash Admin.md)
-const C = {
-  primary: '#4B49AC',
-  primaryDark: '#27367F',
-  primaryLight: '#B9B8EE',
-  accentBlue: '#248AFD',
-  electricBlue: '#0D6EFD',
-  success: '#57B657',
-  warning: '#FFC100',
-  error: '#FF4747',
-  textPrimary: '#1F1F1F',
-  textSecondary: '#6C7383',
-  textTertiary: '#A3A4A5',
-  border: '#CED4DA',
-  surface: '#F8F9FA',
-  card: '#FFFFFF',
-  shadow: 'rgba(0, 0, 0, 0.05) 0px 2px 8px 0px',
-  shadowMd: 'rgba(0, 0, 0, 0.1) 0px 4px 12px 0px',
-  shadowLg: 'rgba(205, 209, 225, 1) 0px 5px 21px -5px',
-  shadowDropdown: 'rgba(0, 0, 0, 0.2) 0px 3px 21px 0px',
+function formatDateTime(value) {
+  if (!value) return 'Belum pernah import'
+  return new Date(value).toLocaleString('id-ID', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
 }
 
-// 4 KPI cards — Skydash: max 2-3 accent colors per view, semantic
-// Pakai: 1 primary (Total WO), 1 warning (Hotline), 1 error (Stok Kritis), 1 success (Revenue)
-const SUMMARY_CARDS = [
-  { key: 'totalWO',       label: 'Total WO Hari Ini', icon: Wrench,  accent: C.primary,  path: '/workshop' },
-  { key: 'totalHotline',  label: 'Hotline Pending',    icon: Phone,   accent: C.warning,  path: '/hotline' },
-  { key: 'criticalStock', label: 'Stok Kritis (>365 hari)', icon: Package, accent: C.error, path: '/stock' },
-  { key: 'revenue',       label: 'Revenue Hari Ini',   icon: DollarSign, accent: C.success, path: '/workshop', isCurrency: true },
-]
+function StatCard({ label, value, icon: Icon, colorClass, borderClass, iconBgClass, trend }) {
+  return (
+    <div className={`relative overflow-hidden rounded-2xl border ${borderClass} bg-white p-5 shadow-sm hover:shadow-md transition-all duration-300 group`}>
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+          <p className={`text-3xl font-black ${colorClass} tabular-nums truncate`} title={value}>{value}</p>
+        </div>
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconBgClass} shadow-sm`}>
+          <Icon size={24} />
+        </div>
+      </div>
+      {trend && (
+        <div className="mt-3 flex items-center gap-1.5">
+          {trend.isPositive ? (
+            <TrendingUp size={14} className="text-emerald-500" />
+          ) : (
+            <TrendingDown size={14} className="text-red-500" />
+          )}
+          <span className={`text-xs font-semibold ${trend.isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
+            {trend.text}
+          </span>
+          <span className="text-xs text-slate-400 font-medium">vs kemarin</span>
+        </div>
+      )}
+      <div className={`absolute bottom-0 left-0 h-1 w-full ${iconBgClass.replace('bg-', 'bg-opacity-50 bg-')}`} />
+    </div>
+  )
+}
 
-const formatValue = (summary, card) => {
-  const v = summary?.[card.key] || 0
-  return card.isCurrency ? `Rp ${v.toLocaleString('id-ID')}` : v.toLocaleString('id-ID')
+function SectionCard({ title, icon: Icon, colorClass = "text-blue-600", bgClass = "bg-blue-50", badge, children }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow duration-300">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-center gap-3">
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${bgClass} ${colorClass}`}>
+            <Icon size={20} />
+          </div>
+          <h2 className="font-bold text-slate-800 text-lg">{title}</h2>
+        </div>
+        {badge > 0 && (
+          <span className={`px-3 py-1 rounded-lg text-xs font-bold ${bgClass} ${colorClass}`}>
+            {badge}
+          </span>
+        )}
+      </div>
+      <div className="flex-1 p-4 flex flex-col">
+        {children}
+      </div>
+    </div>
+  )
 }
 
 const formatTrendPct = (trend) => {
@@ -81,7 +107,10 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="animate-spin" size={32} style={{ color: C.primary }} />
+        <div className="text-center space-y-3">
+          <Loader2 className="animate-spin text-blue-600 mx-auto" size={32} />
+          <p className="text-sm text-slate-500">Memuat data dashboard...</p>
+        </div>
       </div>
     )
   }
@@ -90,211 +119,200 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <AlertTriangle className="mx-auto mb-2" size={32} style={{ color: C.error }} />
-          <p className="text-sm font-medium" style={{ color: C.error }}>{error}</p>
-          <button
-            onClick={loadDashboard}
-            className="mt-2 text-sm font-bold hover:underline"
-            style={{ color: C.electricBlue }}
-          >
-            Coba lagi
+          <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-3">
+            <AlertTriangle className="text-red-500" size={28} />
+          </div>
+          <p className="text-red-600 font-medium">{error}</p>
+          <button onClick={loadDashboard} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+            Coba Lagi
           </button>
         </div>
       </div>
     )
   }
 
-  const formatDateTime = (value) => {
-    if (!value) return 'Belum pernah import'
-    return new Date(value).toLocaleString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
-
   const criticalCount = summary?.alerts?.critical?.length || 0
   const attentionCount = summary?.alerts?.attention?.length || 0
 
+  const cards = [
+    {
+      label: 'WO Hari Ini',
+      value: (summary?.totalWO || 0).toLocaleString('id-ID'),
+      icon: Wrench,
+      colorClass: 'text-blue-700',
+      borderClass: 'border-blue-200',
+      iconBgClass: 'bg-blue-100 text-blue-600',
+      trend: formatTrendPct(summary?.trend?.totalWO),
+    },
+    {
+      label: 'Revenue Hari Ini',
+      value: `Rp ${(summary?.revenue || 0).toLocaleString('id-ID')}`,
+      icon: DollarSign,
+      colorClass: 'text-emerald-700',
+      borderClass: 'border-emerald-200',
+      iconBgClass: 'bg-emerald-100 text-emerald-600',
+      trend: formatTrendPct(summary?.trend?.revenue),
+    },
+    {
+      label: 'Hotline Pending',
+      value: (summary?.totalHotline || 0).toLocaleString('id-ID'),
+      icon: Phone,
+      colorClass: 'text-amber-700',
+      borderClass: 'border-amber-200',
+      iconBgClass: 'bg-amber-100 text-amber-600',
+    },
+    {
+      label: 'WO Open',
+      value: (summary?.openWO || 0).toLocaleString('id-ID'),
+      icon: Clock,
+      colorClass: 'text-purple-700',
+      borderClass: 'border-purple-200',
+      iconBgClass: 'bg-purple-100 text-purple-600',
+    },
+    {
+      label: 'Stok Kritis > 365h',
+      value: (summary?.criticalStock || 0).toLocaleString('id-ID'),
+      icon: Package,
+      colorClass: 'text-red-700',
+      borderClass: 'border-red-200',
+      iconBgClass: 'bg-red-100 text-red-600',
+    },
+    {
+      label: 'Stok > 180h',
+      value: (summary?.attentionStock || 0).toLocaleString('id-ID'),
+      icon: AlertTriangle,
+      colorClass: 'text-orange-700',
+      borderClass: 'border-orange-200',
+      iconBgClass: 'bg-orange-100 text-orange-600',
+    },
+  ]
+
   return (
     <div className="space-y-8">
-      {/* Page Title — Skydash: H2 35px/500, Body 14px/600 subtitle */}
-      <div className="flex items-end justify-between gap-4 flex-wrap">
+      {/* Header */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1
-            className="text-[35px] font-medium leading-[35px]"
-            style={{ color: C.textPrimary }}
-          >
-            Dashboard Bengkel
-          </h1>
-          <p className="mt-2 text-sm font-semibold" style={{ color: C.textSecondary }}>
-            Ringkasan operasional bengkel dan sparepart DXK
-          </p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard Bengkel</h1>
+          <p className="text-sm text-slate-500 mt-1">Ringkasan operasional bengkel dan sparepart DXK</p>
         </div>
-        {/* Skydash secondary button: 46px height, weight 700, 4px radius, border-only */}
         <button
           onClick={loadDashboard}
-          className="inline-flex items-center gap-2 h-[46px] px-6 text-sm font-bold transition-colors"
-          style={{
-            backgroundColor: 'transparent',
-            color: C.primary,
-            border: `2px solid ${C.primary}`,
-            borderRadius: '4px',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = C.surface
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-          }}
+          className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
         >
-          <Clock size={16} />
-          Refresh
+          <RefreshCw size={16} /> Refresh Data
         </button>
       </div>
 
-      {/* 4 Metric Cards — Skydash Data Card: bg colored, text white, radius 20px, padding 24px */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {SUMMARY_CARDS.map((card) => {
-          const Icon = card.icon
-          const trend = summary?.trend?.[card.key]
-          const trendFmt = formatTrendPct(trend)
-          return (
-            <button
-              key={card.key}
-              onClick={() => navigate(card.path)}
-              className="group text-left p-6 transition-all duration-200 min-h-[120px] hover:-translate-y-0.5"
-              style={{
-                backgroundColor: card.accent,
-                color: C.card,
-                borderRadius: '20px',
-                border: 'none',
-                boxShadow: C.shadow,
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.boxShadow = C.shadowMd }}
-              onMouseLeave={(e) => { e.currentTarget.style.boxShadow = C.shadow }}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p
-                    className="text-[16px] font-medium leading-[16px]"
-                    style={{ color: 'rgba(255,255,255,0.85)' }}
-                  >
-                    {card.label}
-                  </p>
-                  <p className="mt-3 text-[32px] font-medium leading-[32px] tabular-nums truncate" style={{ color: C.card }}>
-                    {formatValue(summary, card)}
-                  </p>
-                </div>
-                <div
-                  className="flex h-12 w-12 shrink-0 items-center justify-center"
-                  style={{
-                    backgroundColor: 'rgba(255,255,255,0.18)',
-                    borderRadius: '15px',
-                  }}
-                >
-                  <Icon size={22} />
-                </div>
-              </div>
-              {trendFmt && (
-                <div className="mt-3 flex items-center gap-1.5">
-                  {trendFmt.isPositive ? (
-                    <TrendingUp size={12} style={{ color: C.card }} />
-                  ) : (
-                    <TrendingDown size={12} style={{ color: C.card }} />
-                  )}
-                  <span className="text-xs font-medium" style={{ color: C.card }}>
-                    {trendFmt.text}
-                  </span>
-                  <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                    vs kemarin
-                  </span>
-                </div>
-              )}
-            </button>
-          )
-        })}
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {cards.map((card) => (
+          <StatCard key={card.label} {...card} />
+        ))}
       </div>
 
-      {/* Content Card: Freshness Data — Skydash Default Card: bg white, radius 20px, shadow 0.05 */}
-      <div
-        className="overflow-hidden"
-        style={{
-          backgroundColor: C.card,
-          borderRadius: '20px',
-          border: 'none',
-          boxShadow: C.shadow,
-        }}
-      >
-        <div
-          className="px-6 py-5 border-b flex items-center justify-between"
-          style={{ borderColor: C.border, backgroundColor: C.surface }}
+      {/* Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SectionCard 
+          title="Alert Kritis" 
+          icon={AlertTriangle} 
+          colorClass="text-red-600" 
+          bgClass="bg-red-100"
+          badge={criticalCount}
         >
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-10 w-10 items-center justify-center"
-              style={{ backgroundColor: C.primaryLight, color: C.primary, borderRadius: '8px' }}
-            >
-              <Database size={18} />
-            </div>
-            <div>
-              <h2
-                className="text-[18px] font-medium leading-[18px]"
-                style={{ color: C.textPrimary }}
+          <div className="space-y-2 flex-1">
+            {(summary?.alerts?.critical || []).map((alert, i) => (
+              <button
+                key={i}
+                onClick={() => navigate(alert.path)}
+                className="w-full text-left px-4 py-3 flex items-center gap-3 rounded-xl border border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all group"
               >
-                Freshness Data
-              </h2>
-              <p className="text-xs font-medium mt-1" style={{ color: C.textSecondary }}>
-                Status import terakhir per modul
-              </p>
-            </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 px-2 py-0.5 rounded-md">
+                  {alert.type === 'stock' ? 'Stok' : alert.type === 'workshop' ? 'WO' : alert.type}
+                </span>
+                <span className="flex-1 text-sm font-semibold text-slate-700 truncate">
+                  {alert.message}
+                </span>
+                <ArrowRight size={14} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+              </button>
+            ))}
+            {(summary?.alerts?.critical || []).length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full py-6 text-slate-400">
+                <CheckCircle size={32} className="text-emerald-500 mb-2 opacity-50" />
+                <p className="text-sm font-medium">Tidak ada alert kritis</p>
+              </div>
+            )}
+          </div>
+        </SectionCard>
+
+        <SectionCard 
+          title="Perlu Perhatian" 
+          icon={Bell} 
+          colorClass="text-orange-600" 
+          bgClass="bg-orange-100"
+          badge={attentionCount}
+        >
+          <div className="space-y-2 flex-1">
+            {(summary?.alerts?.attention || []).map((alert, i) => (
+              <button
+                key={i}
+                onClick={() => navigate(alert.path)}
+                className="w-full text-left px-4 py-3 flex items-center gap-3 rounded-xl border border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all group"
+              >
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700 px-2 py-0.5 rounded-md">
+                  {alert.type === 'stock' ? 'Stok' : alert.type === 'workshop' ? 'WO' : alert.type}
+                </span>
+                <span className="flex-1 text-sm font-semibold text-slate-700 truncate">
+                  {alert.message}
+                </span>
+                <ArrowRight size={14} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+              </button>
+            ))}
+            {(summary?.alerts?.attention || []).length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full py-6 text-slate-400">
+                <CheckCircle size={32} className="text-emerald-500 mb-2 opacity-50" />
+                <p className="text-sm font-medium">Tidak ada peringatan</p>
+              </div>
+            )}
+          </div>
+        </SectionCard>
+      </div>
+
+      {/* Freshness */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <div className="flex items-center gap-3 pb-4 border-b border-slate-100 mb-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+            <Database size={20} />
+          </div>
+          <div>
+            <h2 className="font-bold text-slate-800 text-lg">Freshness Data Bengkel</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Status import terakhir per modul</p>
           </div>
         </div>
-        <div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x"
-          style={{ borderColor: C.border }}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {(summary?.freshness || []).map((item) => (
-            <div key={item.module} className="px-6 py-5 space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <p
-                  className="text-[15px] font-semibold truncate"
-                  style={{ color: C.textPrimary }}
-                >
-                  {item.label}
-                </p>
-                {/* Skydash badge: rgba bg + solid text, radius 8px, padding 4px 12px */}
-                <span
-                  className="text-xs font-semibold px-3 py-1 shrink-0"
-                  style={{
-                    backgroundColor: C.primaryLight,
-                    color: C.primary,
-                    borderRadius: '8px',
-                  }}
-                >
-                  {(item.total_rows || 0).toLocaleString('id-ID')} rows
-                </span>
+            <div key={item.module} className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between group hover:bg-white hover:border-blue-200 hover:shadow-sm transition-all duration-300">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">{item.label}</p>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-700">
+                    {(item.total_rows || 0).toLocaleString('id-ID')} baris
+                  </span>
+                </div>
+                <p className="font-bold text-slate-800 text-sm mb-1">{formatDateTime(item.last_import_at)}</p>
+                {item.filename && (
+                  <p className="text-[10px] text-slate-400 truncate mb-3" title={item.filename}>
+                    {item.filename}
+                  </p>
+                )}
               </div>
-              <p className="text-xs font-medium" style={{ color: C.textSecondary }}>
-                {formatDateTime(item.last_import_at)}
-              </p>
-              {item.filename && (
-                <p
-                  className="text-xs font-medium truncate"
-                  style={{ color: C.textTertiary }}
-                  title={item.filename}
-                >
-                  {item.filename}
-                </p>
-              )}
-              <div className="flex items-center gap-3 text-xs font-semibold pt-1">
-                <span style={{ color: C.success }}>
+              <div className="flex items-center gap-3 text-xs font-semibold pt-3 border-t border-slate-200">
+                <span className="flex items-center gap-1 text-emerald-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                   OK {item.rows_success || 0}
                 </span>
                 {item.rows_error > 0 && (
-                  <span style={{ color: C.error }}>
+                  <span className="flex items-center gap-1 text-red-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
                     Error {item.rows_error}
                   </span>
                 )}
@@ -302,116 +320,6 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Content Cards: Alerts — 2 columns, Skydash Default Card style */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AlertCard
-          icon={AlertTriangle}
-          title="Alert Kritis"
-          accent={C.error}
-          count={criticalCount}
-          alerts={summary?.alerts?.critical}
-          navigate={navigate}
-          emptyText="Tidak ada alert kritis"
-        />
-        <AlertCard
-          icon={Clock}
-          title="Perlu Perhatian"
-          accent={C.warning}
-          count={attentionCount}
-          alerts={summary?.alerts?.attention}
-          navigate={navigate}
-          emptyText="Tidak ada peringatan"
-        />
-      </div>
-    </div>
-  )
-}
-
-function AlertCard({ icon: Icon, title, accent, count, alerts, navigate, emptyText }) {
-  return (
-    <div
-      className="overflow-hidden"
-      style={{
-        backgroundColor: C.card,
-        borderRadius: '20px',
-        border: 'none',
-        boxShadow: C.shadow,
-      }}
-    >
-      <div
-        className="px-6 py-5 border-b flex items-center justify-between"
-        style={{ borderColor: C.border, backgroundColor: C.surface }}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className="flex h-10 w-10 items-center justify-center"
-            style={{ backgroundColor: `${accent}1A`, color: accent, borderRadius: '8px' }}
-          >
-            <Icon size={18} />
-          </div>
-          <h2
-            className="text-[18px] font-medium leading-[18px]"
-            style={{ color: C.textPrimary }}
-          >
-            {title}
-          </h2>
-        </div>
-        {count > 0 && (
-          <span
-            className="text-xs font-semibold px-3 py-1"
-            style={{
-              backgroundColor: accent,
-              color: C.card,
-              borderRadius: '8px',
-            }}
-          >
-            {count}
-          </span>
-        )}
-      </div>
-      <div className="p-4 space-y-1">
-        {(alerts || []).map((alert, i) => (
-          <button
-            key={i}
-            onClick={() => navigate(alert.path)}
-            className="group w-full text-left px-3 py-3 flex items-center gap-3 min-h-[48px] transition-colors"
-            style={{ borderRadius: '4px' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = C.surface
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-            }}
-          >
-            <span
-              className="text-xs font-bold uppercase tracking-wide"
-              style={{ color: accent }}
-            >
-              {alert.type === 'stock' ? 'Stok' : alert.type === 'workshop' ? 'WO' : alert.type}
-            </span>
-            <span
-              className="flex-1 text-sm font-semibold truncate"
-              style={{ color: C.textPrimary }}
-            >
-              {alert.message}
-            </span>
-            <ArrowRight
-              size={14}
-              className="transition-transform group-hover:translate-x-1 shrink-0"
-              style={{ color: C.textSecondary }}
-            />
-          </button>
-        ))}
-        {(alerts || []).length === 0 && (
-          <div className="text-center py-8">
-            <CheckCircle className="mx-auto mb-2" size={24} style={{ color: C.success }} />
-            <p className="text-sm font-medium" style={{ color: C.textSecondary }}>
-              {emptyText}
-            </p>
-          </div>
-        )}
       </div>
     </div>
   )

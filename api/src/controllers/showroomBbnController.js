@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import xlsx from 'xlsx'
 import { prisma } from '../config/db.js'
+import { clampLimit } from '../utils/pagination.js'
 import { withImportLock } from '../services/importLockService.js'
 
 function cleanText(value = '') {
@@ -106,7 +107,7 @@ export async function getBbnPrices(req, res, next) {
   try {
     const { page = 1, limit = 100, search, city } = req.query
     const pageInt = parseInt(page)
-    const limitInt = parseInt(limit)
+    const limitInt = clampLimit(limit, 100)
     const where = {}
     if (city) where.city_name = { contains: String(city) }
     if (search) {
@@ -139,7 +140,7 @@ export async function previewBbnPrices(req, res, next) {
   try {
     if (!req.file) return res.status(400).json({ error: 'File wajib diupload' })
     const rows = parseBbnFile(req.file)
-    fs.unlinkSync(req.file.path)
+    if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {})
     res.json({ total: rows.length, sample: rows.slice(0, 10) })
   } catch (error) { next(error) }
 }
@@ -148,7 +149,7 @@ export async function uploadBbnPrices(req, res, next) {
   try {
     if (!req.file) return res.status(400).json({ error: 'File wajib diupload' })
     const rows = parseBbnFile(req.file)
-    fs.unlinkSync(req.file.path)
+    if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {})
     if (!rows.length) return res.status(400).json({ error: 'Data BBN tidak ditemukan di file' })
 
     const result = await withImportLock('showroom:bbn', async () => {

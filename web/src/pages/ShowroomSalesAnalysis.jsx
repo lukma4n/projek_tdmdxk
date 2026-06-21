@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getSalesDashboard, exportSalesDashboard } from '../services/api/showroom'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend, ReferenceLine, BarChart, Bar } from 'recharts'
 import {
   Loader2,
   AlertTriangle,
@@ -17,6 +17,7 @@ import {
   Target,
   Zap,
   Calendar,
+  Award,
 } from 'lucide-react'
 import {
   LEASING_COLORS,
@@ -25,7 +26,6 @@ import {
   getDateRangePreset,
 } from '../components/showroom/ShowroomSalesUtils'
 import {
-  CountBar,
   StatCard,
   SectionCard,
   TeamCard,
@@ -41,6 +41,20 @@ export default function ShowroomSalesAnalysis() {
   const [to, setTo] = useState(initialRange.to)
   const [activePreset, setActivePreset] = useState('mtd')
   const [target, setTarget] = useState('')
+  const [visibleLines, setVisibleLines] = useState({
+    count: true,
+    cash: true,
+    credit: true,
+  })
+
+  const handleLegendClick = useCallback((e) => {
+    const { dataKey } = e
+    if (!dataKey) return
+    setVisibleLines((prev) => ({
+      ...prev,
+      [dataKey]: !prev[dataKey],
+    }))
+  }, [])
 
   const loadData = useCallback(async () => {
     try {
@@ -112,8 +126,13 @@ export default function ShowroomSalesAnalysis() {
   }
 
   const summary = data?.summary || {}
-  const maxModelPeriod = Math.max(...(data?.byModelPeriod || []).map((d) => d.count), 1)
-  const stats = dashboardStatCards(summary, data?.period)
+  const stats = dashboardStatCards(summary, data?.period, data?.analysis)
+  
+  // Transform flat areaModelCorrelation into simple horizontal layout
+  const simpleChartData = (data?.areaModelCorrelation || []).slice(0, 8).map((row) => ({
+    name: `${String(row.area || 'Lainnya').replace('KAB. ', '')} - ${row.model}`,
+    unit: row.count,
+  }))
 
   return (
     <div className="space-y-6">
@@ -231,57 +250,121 @@ export default function ShowroomSalesAnalysis() {
                 current: summary.closingDo || 0,
                 prev: data.comparison.prevTotal || 0,
                 growth: data.comparison.growthPercent || 0,
-                color: data.comparison.growthPercent >= 0 ? 'text-emerald-700' : 'text-red-700',
-                bg: data.comparison.growthPercent >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200',
               },
               {
                 label: 'Cash vs Bulan Lalu',
                 current: summary.cashCount || 0,
                 prev: data.comparison.prevCash || 0,
                 growth: data.comparison.cashGrowthPercent || 0,
-                color: data.comparison.cashGrowthPercent >= 0 ? 'text-emerald-700' : 'text-red-700',
-                bg: data.comparison.cashGrowthPercent >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200',
               },
               {
                 label: 'Kredit vs Bulan Lalu',
                 current: summary.creditCount || 0,
                 prev: data.comparison.prevCredit || 0,
                 growth: data.comparison.creditGrowthPercent || 0,
-                color: data.comparison.creditGrowthPercent >= 0 ? 'text-emerald-700' : 'text-red-700',
-                bg: data.comparison.creditGrowthPercent >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200',
               },
             ].map((item) => (
-              <div key={item.label} className={`rounded-2xl border p-5 shadow-sm ${item.bg}`}>
+              <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-300">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{item.label}</p>
-                <div className="flex items-end gap-3 mt-2">
-                  <p className="text-2xl font-black text-slate-800 tabular-nums">{item.current.toLocaleString('id-ID')}</p>
-                  <div className={`flex items-center gap-1 text-xs font-bold ${item.color} mb-1`}>
-                    {item.growth >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                    {item.growth}%
+                <div className="flex items-end justify-between mt-2.5">
+                  <div className="space-y-1">
+                    <p className="text-2xl font-black text-slate-800 tabular-nums">{item.current.toLocaleString('id-ID')}</p>
+                    <p className="text-xs text-slate-400">Bulan lalu: {item.prev.toLocaleString('id-ID')} unit</p>
+                  </div>
+                  <div className={`flex items-center gap-0.5 text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${
+                    item.growth >= 0 
+                      ? 'bg-emerald-100 text-emerald-800' 
+                      : 'bg-rose-100 text-rose-800'
+                  }`}>
+                    {item.growth >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+                    {Math.abs(item.growth)}%
                   </div>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">Bulan lalu: {item.prev.toLocaleString('id-ID')} unit</p>
               </div>
             ))}
           </div>
         )}
 
-        {/* Master Sales Coverage */}
-        {summary.totalActiveSales != null && (
-          <div className="grid grid-cols-1 gap-4">
-            <div className="relative overflow-hidden rounded-2xl border border-purple-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Sales Aktif di Master</p>
-              <p className="text-3xl font-black text-purple-700 tabular-nums mt-2">{summary.totalActiveSales}</p>
+        {/* Productivity & Gap Analysis */}
+        {data?.analysis && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap size={16} className="text-indigo-600" />
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Produktivitas</p>
+              </div>
+              <p className="text-2xl font-black text-indigo-700 tabular-nums">{data.analysis.avgUnitsPerSales || 0}</p>
+              <p className="text-xs text-slate-500 mt-1">Unit / Sales ({summary.totalActiveSales || 0} sales aktif)</p>
+              <p className="text-xs text-slate-400 mt-1">Rata-rata {data.analysis.avgUnitsPerDay || 0} unit/hari</p>
             </div>
+
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Target size={16} className="text-blue-600" />
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Proyeksi Akhir Bulan</p>
+              </div>
+              <p className="text-2xl font-black text-blue-700 tabular-nums">{(data.analysis.projectedMonthEnd || 0).toLocaleString('id-ID')}</p>
+              <p className="text-xs text-slate-500 mt-1">Estimasi jika pace tetap</p>
+              <p className="text-xs text-slate-400 mt-1">{data.analysis.daysRemaining || 0} hari tersisa</p>
+            </div>
+
+            {data.analysis.target > 0 && (
+              <div className={`rounded-2xl border p-5 shadow-sm flex items-center justify-between gap-4 ${data.analysis.gap <= 0 ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50'}`}>
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Target size={16} className={data.analysis.gap <= 0 ? 'text-emerald-600' : 'text-rose-600'} />
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Target vs Gap</p>
+                  </div>
+                  <p className="text-2xl font-black tabular-nums">
+                    <span className={data.analysis.gap <= 0 ? 'text-emerald-700' : 'text-rose-700'}>
+                      {data.analysis.gap <= 0 ? `+${Math.abs(data.analysis.gap)}` : `-${data.analysis.gap}`}
+                    </span>
+                  </p>
+                  <p className="text-xs text-slate-500 leading-normal">
+                    {data.analysis.gap <= 0 ? 'Target tercapai! 🎉' : `Butuh ${data.analysis.dailyRequired} unit/hari untuk target ${data.analysis.target}`}
+                  </p>
+                </div>
+                <div className="relative flex items-center justify-center shrink-0 w-20 h-20">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle cx="40" cy="40" r="32" stroke={data.analysis.gap <= 0 ? '#d1fae5' : '#fee2e2'} strokeWidth="6" fill="transparent" />
+                    <circle cx="40" cy="40" r="32" stroke={data.analysis.gap <= 0 ? '#10b981' : '#f43f5e'} strokeWidth="6" fill="transparent"
+                      strokeDasharray={2 * Math.PI * 32}
+                      strokeDashoffset={2 * Math.PI * 32 * (1 - Math.min(100, data.analysis.attainmentRate || 0) / 100)}
+                      strokeLinecap="round" />
+                  </svg>
+                  <span className="absolute text-sm font-black text-slate-800">
+                    {data.analysis.attainmentRate || 0}%
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Daily Trend Chart */}
-        <SectionCard title="Trend Penjualan Harian" icon={Activity}>
+        <SectionCard title="Trend Penjualan Harian" icon={Activity} action={
+          <span className="text-[10px] text-slate-400 font-semibold italic">
+            Klik legend untuk menyembunyikan/menampilkan grafik
+          </span>
+        }>
           {(data?.dailyTrend || []).length > 0 ? (
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data.dailyTrend}>
+                <AreaChart data={data.dailyTrend}>
+                  <defs>
+                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorCash" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorCredit" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                   <XAxis
                     dataKey="date"
@@ -297,10 +380,26 @@ export default function ShowroomSalesAnalysis() {
                     contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     formatter={(value, name) => [`${value} unit`, name]}
                   />
-                  <Line type="monotone" dataKey="count" name="Total" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, fill: '#2563eb' }} />
-                  <Line type="monotone" dataKey="cash" name="Cash" stroke="#10b981" strokeWidth={2} dot={{ r: 3, fill: '#10b981' }} />
-                  <Line type="monotone" dataKey="credit" name="Kredit" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3, fill: '#f59e0b' }} />
-                </LineChart>
+                  <Legend onClick={handleLegendClick} wrapperStyle={{ paddingTop: '10px', cursor: 'pointer', fontSize: 12, fontWeight: 'semibold' }} />
+                  {data?.analysis?.targetPace > 0 && (
+                    <ReferenceLine
+                      y={data.analysis.targetPace}
+                      stroke="#f43f5e"
+                      strokeDasharray="4 4"
+                      strokeWidth={1.5}
+                      label={{
+                        value: `Pace Target (${data.analysis.targetPace} unit/hari)`,
+                        fill: '#f43f5e',
+                        position: 'top',
+                        fontSize: 10,
+                        fontWeight: 'bold'
+                      }}
+                    />
+                  )}
+                  <Area type="monotone" dataKey="count" name="Total" stroke="#2563eb" fill="url(#colorTotal)" strokeWidth={3} dot={{ r: 4, fill: '#2563eb' }} hide={!visibleLines.count} />
+                  <Area type="monotone" dataKey="cash" name="Cash" stroke="#10b981" fill="url(#colorCash)" strokeWidth={2} dot={{ r: 3, fill: '#10b981' }} hide={!visibleLines.cash} />
+                  <Area type="monotone" dataKey="credit" name="Kredit" stroke="#f59e0b" fill="url(#colorCredit)" strokeWidth={2} dot={{ r: 3, fill: '#f59e0b' }} hide={!visibleLines.credit} />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           ) : (
@@ -309,193 +408,399 @@ export default function ShowroomSalesAnalysis() {
         </SectionCard>
 
         {/* Area vs Model Correlation */}
-        <SectionCard title="Korelasi Area vs Model" icon={BarChart3}>
+        <SectionCard 
+          title="Tipe Motor Terlaris per Kabupaten" 
+          icon={BarChart3}
+          action={
+            <span className="text-[10px] text-slate-400 font-semibold italic">
+              Memetakan tipe motor yang paling laku di setiap wilayah
+            </span>
+          }
+        >
           {(data?.areaModelCorrelation || []).length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-2 px-3 font-semibold text-slate-500">Area</th>
-                    <th className="text-left py-2 px-3 font-semibold text-slate-500">Model</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-500">Unit</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {(data?.areaModelCorrelation || []).map((row) => (
-                    <tr key={`${row.area}-${row.model}`} className="hover:bg-slate-50">
-                      <td className="py-2 px-3 font-medium text-slate-700">{row.area}</td>
-                      <td className="py-2 px-3 text-slate-600">{row.model}</td>
-                      <td className="py-2 px-3 text-right font-bold text-slate-800 tabular-nums">{row.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-4">
+              {/* Quick Explanation for Laymen */}
+              {data.areaModelCorrelation[0] && (
+                <div className="p-4 bg-blue-50/70 border border-blue-100 rounded-2xl flex items-start gap-3 text-xs text-blue-800 shadow-sm">
+                  <span className="text-base shrink-0">💡</span>
+                  <div className="leading-relaxed">
+                    <span className="font-bold text-blue-900">Penjelasan Singkat:</span> Halaman ini membandingkan penjualan motor berdasarkan wilayah kabupaten dan tipe motornya. Saat ini, penjualan paling banyak adalah model <span className="font-bold text-blue-900 underline decoration-blue-300">{data.areaModelCorrelation[0].model}</span> di <span className="font-bold text-blue-900">{String(data.areaModelCorrelation[0].area).replace('KAB. ', '')}</span> yaitu sebanyak <span className="font-bold text-blue-950 bg-blue-100/80 px-1.5 py-0.5 rounded">{data.areaModelCorrelation[0].count} unit</span>.
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Simple Horizontal Bar Chart */}
+                <div className="flex-1 h-[320px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      layout="vertical"
+                      data={simpleChartData}
+                      margin={{ left: 10, right: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+                      <XAxis type="number" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        stroke="#475569"
+                        fontSize={11}
+                        tickLine={false}
+                        width={180}
+                      />
+                      <Tooltip
+                        contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value) => [`${value} unit terjual`, 'Total Penjualan']}
+                      />
+                      <Bar
+                        dataKey="unit"
+                        name="Total Penjualan"
+                        radius={[0, 4, 4, 0]}
+                        barSize={18}
+                      >
+                        {simpleChartData.map((entry, index) => {
+                          const colors = ['#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#eff6ff']
+                          return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                        })}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                {/* Detailed Table */}
+                <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6 max-h-[320px] overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-400">
+                        <th className="text-left pb-2 font-semibold text-slate-500">Kabupaten/Kota</th>
+                        <th className="text-left pb-2 font-semibold text-slate-500">Tipe Motor</th>
+                        <th className="text-right pb-2 font-semibold text-slate-500">Jumlah Terjual</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {(data?.areaModelCorrelation || []).map((row) => (
+                        <tr key={`${row.area}-${row.model}`} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-2.5 font-medium text-slate-700">{String(row.area || 'Lainnya').replace('KAB. ', '')}</td>
+                          <td className="py-2.5 text-slate-600 font-semibold">{row.model}</td>
+                          <td className="py-2.5 text-right font-black text-slate-800 tabular-nums">{row.count} Unit</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           ) : (
             <p className="text-sm text-slate-400 py-4 text-center">Belum ada data korelasi area-model untuk periode ini.</p>
           )}
         </SectionCard>
 
-        {/* Productivity & Gap Analysis */}
-        {data?.analysis && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap size={16} className="text-indigo-600" />
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Produktivitas</p>
-              </div>
-              <p className="text-2xl font-black text-indigo-700 tabular-nums">{data.analysis.avgUnitsPerSales || 0}</p>
-              <p className="text-xs text-slate-500 mt-1">Unit / Sales per periode</p>
-              <p className="text-xs text-slate-400 mt-1">Rata-rata {data.analysis.avgUnitsPerDay || 0} unit/hari</p>
-            </div>
-
-            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <Target size={16} className="text-blue-600" />
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Proyeksi Akhir Bulan</p>
-              </div>
-              <p className="text-2xl font-black text-blue-700 tabular-nums">{(data.analysis.projectedMonthEnd || 0).toLocaleString('id-ID')}</p>
-              <p className="text-xs text-slate-500 mt-1">Estimasi jika pace tetap</p>
-              <p className="text-xs text-slate-400 mt-1">{data.analysis.daysRemaining || 0} hari tersisa</p>
-            </div>
-
-            {data.analysis.target > 0 && (
-              <div className={`rounded-2xl border p-5 shadow-sm ${data.analysis.gap <= 0 ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50'}`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <Target size={16} className={data.analysis.gap <= 0 ? 'text-emerald-600' : 'text-rose-600'} />
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Target vs Gap</p>
+        {/* Team Performance & Leaderboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <SectionCard
+              title="Team Performance"
+              icon={Users}
+              action={
+                <span className="text-xs font-semibold text-slate-500">
+                  {data?.byTeamPeriod?.length || 0} Tim • {summary.totalActiveSales || 0} Sales Aktif
+                </span>
+              }
+            >
+              {(data?.byTeamPeriod || []).length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(data?.byTeamPeriod || []).map((team) => (
+                    <TeamCard key={team.team} {...team} collapsible />
+                  ))}
                 </div>
-                <p className="text-2xl font-black tabular-nums">
-                  <span className={data.analysis.gap <= 0 ? 'text-emerald-700' : 'text-rose-700'}>{data.analysis.gap <= 0 ? '+' : ''}{data.analysis.gap}</span>
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {data.analysis.gap <= 0 ? 'Target tercapai! 🎉' : `Butuh ${data.analysis.dailyRequired} unit/hari untuk target ${data.analysis.target}`}
-                </p>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data team untuk periode ini.</p>
+              )}
+            </SectionCard>
           </div>
-        )}
-
-        {/* Team Performance */}
-        <SectionCard
-          title="Team Performance"
-          icon={Users}
-          action={<span className="text-sm font-semibold text-slate-500">{data?.byTeamPeriod?.length || 0} Team</span>}
-        >
-          {(data?.byTeamPeriod || []).length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(data?.byTeamPeriod || []).map((team) => (
-                <TeamCard key={team.team} {...team} collapsible />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-400 py-4 text-center">Belum ada data team untuk periode ini.</p>
-          )}
-        </SectionCard>
+          <div>
+            <SectionCard title="Leaderboard Sales (Top 5)" icon={Award}>
+              {(data?.topSalespeople || []).length > 0 ? (
+                <div className="divide-y divide-slate-100">
+                  {(data?.topSalespeople || []).map((sales, idx) => {
+                    const maxCount = data.topSalespeople[0].count || 1
+                    const percentage = Math.round((sales.count / maxCount) * 100)
+                    
+                    return (
+                      <div key={sales.name} className="py-2.5 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Minimalist number */}
+                          <span className="text-xs font-bold text-slate-400 w-5">
+                            {String(idx + 1).padStart(2, '0')}
+                          </span>
+                          <span className="font-semibold text-slate-700 text-sm truncate uppercase tracking-tight">
+                            {sales.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {/* Minimal thin bar indicating ratio */}
+                          <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
+                            <div className="h-full bg-blue-600 rounded-full" style={{ width: `${percentage}%` }} />
+                          </div>
+                          <span className="text-sm font-bold text-slate-800 tabular-nums">
+                            {sales.count} unit
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data sales untuk periode ini.</p>
+              )}
+            </SectionCard>
+          </div>
+        </div>
 
         {/* Cash & Credit + Leasing + Top Model */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <div className="space-y-6">
             <SectionCard title="Sales Type" icon={CreditCard}>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
-                      <TrendingUp size={18} />
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2 gap-4 flex-1 w-full">
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+                        <TrendingUp size={16} />
+                      </div>
+                      <span className="font-bold text-emerald-800 text-sm">Cash</span>
                     </div>
-                    <span className="font-bold text-emerald-800">Cash</span>
+                    <p className="text-2xl font-black text-emerald-700 tabular-nums">
+                      {(summary.cashCount || 0).toLocaleString('id-ID')}
+                    </p>
+                    <p className="text-xs text-emerald-600">
+                      {summary.cashPercent || 0}% dari total periode
+                    </p>
                   </div>
-                  <p className="text-3xl font-black text-emerald-700 tabular-nums">
-                    {(summary.cashCount || 0).toLocaleString('id-ID')}
-                  </p>
-                  <p className="text-sm text-emerald-600 mt-1">
-                    {summary.cashPercent || 0}% dari total periode
-                  </p>
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                        <CreditCard size={16} />
+                      </div>
+                      <span className="font-bold text-amber-800 text-sm">Kredit</span>
+                    </div>
+                    <p className="text-2xl font-black text-amber-700 tabular-nums">
+                      {(summary.creditCount || 0).toLocaleString('id-ID')}
+                    </p>
+                    <p className="text-xs text-amber-600">
+                      {summary.creditPercent || 0}% dari total periode
+                    </p>
+                  </div>
                 </div>
-                <div className="bg-amber-50 rounded-xl border border-amber-200 p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
-                      <CreditCard size={18} />
-                    </div>
-                    <span className="font-bold text-amber-800">Kredit</span>
+                <div className="h-40 w-40 shrink-0 flex items-center justify-center relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Cash', value: summary.cashCount || 0 },
+                          { name: 'Kredit', value: summary.creditCount || 0 },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={65}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        <Cell fill="#10b981" />
+                        <Cell fill="#f59e0b" />
+                      </Pie>
+                      <Tooltip formatter={(value) => [`${value} unit`, 'Sales']} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute flex flex-col items-center justify-center leading-none">
+                    <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Total</span>
+                    <span className="text-lg font-black text-slate-800 mt-0.5">{(summary.closingDo || 0).toLocaleString('id-ID')}</span>
                   </div>
-                  <p className="text-3xl font-black text-amber-700 tabular-nums">
-                    {(summary.creditCount || 0).toLocaleString('id-ID')}
-                  </p>
-                  <p className="text-sm text-amber-600 mt-1">
-                    {summary.creditPercent || 0}% dari total periode
-                  </p>
                 </div>
               </div>
             </SectionCard>
 
             <SectionCard title="Leasing Breakdown (% dari Total Kredit)" icon={CreditCard}>
               {(data?.byLeasingPeriod || []).length > 0 ? (
-                <div className="space-y-4">
-                  {(data?.byLeasingPeriod || []).map((item) => (
-                    <div key={item.name} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  <div className="h-40 w-40 shrink-0 flex items-center justify-center relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={data.byLeasingPeriod}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={45}
+                          outerRadius={65}
+                          paddingAngle={3}
+                          dataKey="count"
+                        >
+                          {(data.byLeasingPeriod).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={LEASING_COLORS[entry.name] || '#94a3b8'} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [`${value} unit`, 'Penjualan']} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute flex flex-col items-center justify-center leading-none">
+                      <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Kredit</span>
+                      <span className="text-lg font-black text-slate-800 mt-0.5">{(summary.creditCount || 0).toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 w-full space-y-2.5">
+                    {(data.byLeasingPeriod).map((item) => (
+                      <div key={item.name} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-slate-700">{item.name}</span>
-                          <span className="text-xs text-slate-400">{item.percent}%</span>
+                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: LEASING_COLORS[item.name] || '#94a3b8' }} />
+                          <span className="font-semibold text-slate-700">{item.name}</span>
+                          <span className="text-xs text-slate-400">({item.percent}%)</span>
                         </div>
                         <span className="font-bold text-slate-800 tabular-nums">{item.count} unit</span>
                       </div>
-                      <div className="h-3 rounded-full bg-slate-100 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-700 ease-out"
-                          style={{
-                            width: `${item.percent}%`,
-                            backgroundColor: LEASING_COLORS[item.name] || '#94a3b8',
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-slate-400 py-4 text-center">Belum ada data leasing untuk periode ini.</p>
               )}
             </SectionCard>
+
+            <SectionCard title="Komparasi Performa Leasing (vs Bulan Lalu)" icon={Activity}>
+              {(data?.leasingComparison || []).length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {(data.leasingComparison).map((item) => (
+                    <div key={item.name} className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: LEASING_COLORS[item.name] || '#94a3b8' }} />
+                        <span className="font-bold text-slate-700 text-xs uppercase">{item.name}</span>
+                      </div>
+                      <div className="flex items-baseline gap-2 pt-1">
+                        <p className="text-xl font-black text-slate-800 tabular-nums">{item.current}</p>
+                        <div className={`flex items-center text-[10px] font-bold ${item.growth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {item.growth >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                          {Math.abs(item.growth)}%
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-slate-400">Bulan lalu: {item.prev} unit</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data perbandingan leasing.</p>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Penjualan per Kabupaten" icon={MapPin}>
+              {(data?.byKabupatenPeriod || []).length > 0 ? (
+                <div className="divide-y divide-slate-100">
+                  {(data?.byKabupatenPeriod || []).map((item, idx) => {
+                    const maxCount = Math.max(...(data?.byKabupatenPeriod || []).map((d) => d.count), 1)
+                    const percentage = Math.round((item.count / maxCount) * 100)
+                    
+                    return (
+                      <div key={item.name} className="py-2.5 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Minimalist number */}
+                          <span className="text-xs font-bold text-slate-400 w-5">
+                            {String(idx + 1).padStart(2, '0')}
+                          </span>
+                          <span className="font-semibold text-slate-700 text-sm truncate uppercase tracking-tight">
+                            {String(item.name || 'Lainnya').replace('KAB. ', '')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {/* Minimal thin bar indicating ratio */}
+                          <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
+                            <div className="h-full bg-purple-600 rounded-full" style={{ width: `${percentage}%` }} />
+                          </div>
+                          <span className="text-sm font-bold text-slate-800 tabular-nums">
+                            {item.count} unit
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data area untuk periode ini.</p>
+              )}
+            </SectionCard>
           </div>
 
-          <SectionCard title="Unit Paling Laku (Top Model)" icon={BarChart3}>
-            {(data?.byModelPeriod || []).length > 0 ? (
-              <div className="space-y-4">
-                {(data?.byModelPeriod || []).map((item) => (
-                  <CountBar key={item.name} label={item.name} value={item.count} total={maxModelPeriod} />
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-400 py-4 text-center">Belum ada data model untuk periode ini.</p>
-            )}
-          </SectionCard>
-        </div>
+          <div className="space-y-6">
+            <SectionCard title="Unit Paling Laku (Top Model)" icon={BarChart3}>
+              {(data?.byModelPeriod || []).length > 0 ? (
+                <div className="divide-y divide-slate-100">
+                  {(data?.byModelPeriod || []).map((item, idx) => {
+                    const maxCount = data.byModelPeriod[0].count || 1
+                    const percentage = Math.round((item.count / maxCount) * 100)
+                    
+                    return (
+                      <div key={item.name} className="py-2.5 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Minimalist number */}
+                          <span className="text-xs font-bold text-slate-400 w-5">
+                            {String(idx + 1).padStart(2, '0')}
+                          </span>
+                          <span className="font-semibold text-slate-700 text-sm truncate uppercase tracking-tight">
+                            {item.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {/* Minimal thin bar indicating ratio */}
+                          <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
+                            <div className="h-full bg-blue-600 rounded-full" style={{ width: `${percentage}%` }} />
+                          </div>
+                          <span className="text-sm font-bold text-slate-800 tabular-nums">
+                            {item.count} unit
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data model untuk periode ini.</p>
+              )}
+            </SectionCard>
 
-        {/* Kabupaten & Kecamatan */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <SectionCard title="Top Kabupaten" icon={MapPin}>
-            {(data?.byKabupatenPeriod || []).length > 0 ? (
-              <div className="space-y-4">
-                {(data?.byKabupatenPeriod || []).map((item) => (
-                  <CountBar key={item.name} label={item.name} value={item.count} total={Math.max(...(data?.byKabupatenPeriod || []).map((d) => d.count), 1)} color="bg-purple-500" />
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-400 py-4 text-center">Belum ada data area untuk periode ini.</p>
-            )}
-          </SectionCard>
-          <SectionCard title="Top Kecamatan" icon={MapPin}>
-            {(data?.byKecamatanPeriod || []).length > 0 ? (
-              <div className="space-y-4">
-                {(data?.byKecamatanPeriod || []).map((item) => (
-                  <CountBar key={item.name} label={item.name} value={item.count} total={Math.max(...(data?.byKecamatanPeriod || []).map((d) => d.count), 1)} color="bg-teal-500" />
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-400 py-4 text-center">Belum ada data kecamatan untuk periode ini.</p>
-            )}
-          </SectionCard>
+            <SectionCard title="Penjualan per Kecamatan" icon={MapPin}>
+              {(data?.byKecamatanPeriod || []).length > 0 ? (
+                <div className="divide-y divide-slate-100">
+                  {(data?.byKecamatanPeriod || []).map((item, idx) => {
+                    const maxCount = Math.max(...(data?.byKecamatanPeriod || []).map((d) => d.count), 1)
+                    const percentage = Math.round((item.count / maxCount) * 100)
+                    
+                    return (
+                      <div key={item.name} className="py-2.5 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Minimalist number */}
+                          <span className="text-xs font-bold text-slate-400 w-5">
+                            {String(idx + 1).padStart(2, '0')}
+                          </span>
+                          <span className="font-semibold text-slate-700 text-sm truncate uppercase tracking-tight">
+                            {item.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {/* Minimal thin bar indicating ratio */}
+                          <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
+                            <div className="h-full bg-teal-600 rounded-full" style={{ width: `${percentage}%` }} />
+                          </div>
+                          <span className="text-sm font-bold text-slate-800 tabular-nums">
+                            {item.count} unit
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data kecamatan untuk periode ini.</p>
+              )}
+            </SectionCard>
+          </div>
         </div>
       </div>
     </div>

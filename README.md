@@ -113,19 +113,18 @@ Seed bawaan `api/prisma/seed.js` membuat user berikut jika dijalankan:
 
 | Role | Menu |
 |------|------|
-| Admin Showroom | Dashboard Showroom, Stock Unit, Master Harga, STNK, dan BPKB Showroom |
-| PIC Stock opname | Opname Unit, Opname STNK, dan Opname BPKB |
-| ADH | Verifikator 1 Opname Unit, Opname STNK, dan Opname BPKB |
-| Kepala Cabang | Dashboard Bengkel, Dashboard Showroom, Stock Unit, Master Harga, Master BBN/TAC, Simulasi DP & Margin, hasil Opname Showroom, Manajemen User, dan Backup & Restore |
+| IT Master | **Superadmin**: semua menu + Manajemen Akses (kontrol siapa bisa akses menu apa) |
+| Admin Showroom | Dashboard Showroom, Stock Unit/Harga/STNK/BPKB |
+| PIC Stock opname | Opname Unit, Opname STNK, Opname BPKB |
+| ADH | Verifikator 1 Opname |
+| Kepala Cabang | Dashboard Bengkel+Showroom, Master Harga, Manajemen User, Backup & Restore |
 | Kepala Bengkel | Semua menu bengkel, termasuk Performa Mekanik, Manajemen User, dan Backup & Restore |
 | Frondesk | Dashboard Bengkel, Workshop, Follow-up KPB |
 | Service Advisor | Dashboard Bengkel, Hotline, Stock, Workshop, Program AHM, Data Konsumen, Follow-up KPB |
 | Partman | Dashboard Bengkel, Stock, Hotline, Opname |
 | Admin CRM | Data Konsumen, Follow-up KPB, Follow-up STNK, Follow-up BPKB |
 
-Backend juga menerapkan authorization per endpoint. User dengan token valid tetap akan mendapat `403` jika role tidak sesuai.
-Menu `Backup & Restore` hanya tampil untuk Kepala Bengkel dan Kepala Cabang.
-Menu Opname Showroom dioperasikan role `PIC Stock opname`, diverifikasi tahap 1 oleh `ADH`, dan diverifikasi tahap 2 oleh Kepala Cabang.
+Akses menu per role dikontrol secara **dinamis dari database** (`role_permissions`). IT Master bisa mengatur akses melalui halaman `/roles` (Manajemen Akses). IT Master tidak bisa dihapus dari sistem.
 
 ## Import Excel
 
@@ -225,14 +224,14 @@ Filter `GET /api/customers` dan export sudah konsisten untuk `search`, `kpb_stat
 
 ### Users
 
-- `GET /api/users` - list user
+- `GET /api/users` - list user (termasuk phone)
 - `GET /api/users/:id` - detail user
-- `POST /api/users` - tambah user
-- `PATCH /api/users/:id` - update user
-- `DELETE /api/users/:id` - hapus user
+- `POST /api/users` - tambah user (body: username, password, name, phone?, role, locations)
+- `PATCH /api/users/:id` - update user (body: name?, phone?, role?, locations?)
+- `DELETE /api/users/:id` - hapus user (cascade delete relasi, IT Master tidak bisa dihapus)
 - `PATCH /api/users/:id/reset-password` - reset password
 
-Semua endpoint users hanya untuk `Kepala Bengkel` dan `Kepala Cabang`.
+Semua endpoint users hanya untuk IT Master, Kepala Bengkel, dan Kepala Cabang.
 
 ### Showroom Margin dan Master Data
 

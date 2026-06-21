@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { authenticate, authorize } from '../middleware/auth.js'
+import { authenticate, authorize, authorizeMenu } from '../middleware/auth.js'
 import { upload, uploadPdf } from '../middleware/upload.js'
 import {
   getShowroomDashboard,
@@ -75,18 +75,23 @@ import {
 
 import { uploadImage } from '../middleware/upload.js'
 
+import {
+  getDocumentHandovers, getDocumentHandoverSummary, getHandoverSalespeople,
+  getAvailableDocuments, createDocumentHandover, updateDocumentHandover, deleteDocumentHandover, addHandoverStep, getHandoverSteps, getHandoverPhoto,
+} from '../controllers/documentHandoverController.js'
+import { uploadHandoverPhoto } from '../middleware/upload.js'
+
 const router = Router()
 const showroomAccess = authorize('Admin', 'Kepala Cabang')
 const showroomSalesOrderAccess = authorize('Admin', 'Kepala Cabang')
 const documentStockAccess = authorize('Admin')
 const documentFollowupAccess = authorize('CRM')
-const showroomOpnameReadAccess = authorize('PIC Stock opname', 'Lead PIC Stock opname', 'ADH', 'Kepala Cabang')
-const showroomOpnameWriteAccess = authorize('PIC Stock opname', 'Lead PIC Stock opname')
-const showroomOpnameAdminAccess = authorize('Lead PIC Stock opname', 'ADH', 'Kepala Cabang')
+const showroomOpnameReadAccess = authorize('PIC Stock opname', 'ADH', 'Kepala Cabang')
+const showroomOpnameWriteAccess = authorize('PIC Stock opname')
+const showroomOpnameAdminAccess = authorize('PIC Stock opname', 'ADH', 'Kepala Cabang')
 const showroomOpnameAdhAccess = authorize('ADH')
 const showroomOpnameKacabAccess = authorize('Kepala Cabang')
-const showroomStockUnitFilterAccess = authorize('Admin', 'Kepala Cabang', 'Lead PIC Stock opname')
-const showroomUserAdminAccess = authorize('Kepala Bengkel', 'Kepala Cabang', 'Lead PIC Stock opname')
+const showroomStockUnitFilterAccess = authorize('Admin', 'Kepala Cabang')
 
 router.get('/dashboard', authenticate, showroomAccess, getShowroomDashboard)
 
@@ -107,8 +112,8 @@ router.get('/stock-units/summary', authenticate, showroomAccess, getStockUnitSum
 router.get('/stock-units/filters', authenticate, showroomStockUnitFilterAccess, getStockUnitFilters)
 router.get('/stock-units/:engineNumber/ksu', authenticate, showroomAccess, getUnitKsu)
 router.patch('/stock-units/:engineNumber/ksu', authenticate, showroomAccess, updateUnitKsu)
-router.post('/stock-units/preview', authenticate, showroomAccess, upload.single('file'), previewStockUnit)
-router.post('/stock-units/import', authenticate, showroomAccess, upload.single('file'), uploadStockUnit)
+router.post('/stock-units/preview', authenticate, authorizeMenu('IMPORT_SHOWROOM_STOCK_UNIT'), upload.single('file'), previewStockUnit)
+router.post('/stock-units/import', authenticate, authorizeMenu('IMPORT_SHOWROOM_STOCK_UNIT'), upload.single('file'), uploadStockUnit)
 
 router.get('/stnks', authenticate, documentStockAccess, getStnks)
 router.get('/stnks/export', authenticate, documentStockAccess, exportStnksExcel)
@@ -122,16 +127,16 @@ router.get('/bpkbs/filters', authenticate, documentStockAccess, getBpkbFilters)
 
 router.get('/otr-prices', authenticate, showroomAccess, getOtrPrices)
 router.get('/otr-prices/summary', authenticate, showroomAccess, getOtrPriceSummary)
-router.post('/otr-prices/preview', authenticate, showroomAccess, upload.single('file'), previewOtrPrices)
-router.post('/otr-prices/import', authenticate, showroomAccess, upload.single('file'), uploadOtrPrices)
-router.post('/otr-prices/off-purchase/preview', authenticate, showroomAccess, upload.single('file'), previewOffPurchasePrices)
-router.post('/otr-prices/off-purchase/import', authenticate, showroomAccess, upload.single('file'), uploadOffPurchasePrices)
+router.post('/otr-prices/preview', authenticate, authorizeMenu('IMPORT_SHOWROOM_OTR_PRICE'), upload.single('file'), previewOtrPrices)
+router.post('/otr-prices/import', authenticate, authorizeMenu('IMPORT_SHOWROOM_OTR_PRICE'), upload.single('file'), uploadOtrPrices)
+router.post('/otr-prices/off-purchase/preview', authenticate, authorizeMenu('IMPORT_SHOWROOM_OFF_PURCHASE_PRICE'), upload.single('file'), previewOffPurchasePrices)
+router.post('/otr-prices/off-purchase/import', authenticate, authorizeMenu('IMPORT_SHOWROOM_OFF_PURCHASE_PRICE'), upload.single('file'), uploadOffPurchasePrices)
 
 router.get('/bbn-prices', authenticate, showroomAccess, getBbnPrices)
 router.get('/bbn-prices/summary', authenticate, showroomAccess, getBbnPriceSummary)
 router.post('/bbn-prices', authenticate, showroomAccess, createBbnPrice)
-router.post('/bbn-prices/preview', authenticate, showroomAccess, upload.single('file'), previewBbnPrices)
-router.post('/bbn-prices/import', authenticate, showroomAccess, upload.single('file'), uploadBbnPrices)
+router.post('/bbn-prices/preview', authenticate, authorizeMenu('IMPORT_SHOWROOM_BBN'), upload.single('file'), previewBbnPrices)
+router.post('/bbn-prices/import', authenticate, authorizeMenu('IMPORT_SHOWROOM_BBN'), upload.single('file'), uploadBbnPrices)
 router.patch('/bbn-prices/adjustment', authenticate, showroomAccess, updateBbnPriceAdjustment)
 router.patch('/bbn-prices/:id', authenticate, showroomAccess, updateBbnPrice)
 
@@ -139,8 +144,8 @@ router.get('/programs/summary', authenticate, showroomAccess, getProgramSummary)
 router.get('/programs/leasing', authenticate, showroomAccess, getLeasingPrograms)
 router.get('/programs/md', authenticate, showroomAccess, getMdPrograms)
 router.get('/programs/discount-table', authenticate, showroomAccess, getDiscountTable)
-router.post('/programs/preview', authenticate, showroomAccess, upload.single('file'), previewPrograms)
-router.post('/programs/import', authenticate, showroomAccess, upload.single('file'), uploadPrograms)
+router.post('/programs/preview', authenticate, authorizeMenu('IMPORT_SHOWROOM_PROGRAM'), upload.single('file'), previewPrograms)
+router.post('/programs/import', authenticate, authorizeMenu('IMPORT_SHOWROOM_PROGRAM'), upload.single('file'), uploadPrograms)
 
 router.get('/tac/summary', authenticate, showroomAccess, getTacSummary)
 router.get('/tac/programs', authenticate, showroomAccess, getTacPrograms)
@@ -218,8 +223,8 @@ const stnkBpkbTrackAdminAccess = authorize('Admin')
 const stnkBpkbTrackReadAccess = authorize('Admin', 'CRM', 'Kepala Cabang')
 router.get('/stnk-bpkb-tracks/monitoring', authenticate, stnkBpkbTrackReadAccess, getStnkBpkbTrackMonitoring)
 router.get('/stnk-bpkb-tracks/export', authenticate, stnkBpkbTrackReadAccess, exportStnkBpkbTrackExcel)
-router.post('/stnk-bpkb-tracks/preview', authenticate, stnkBpkbTrackAdminAccess, upload.single('file'), previewStnkBpkbTrack)
-router.post('/stnk-bpkb-tracks/import', authenticate, stnkBpkbTrackAdminAccess, upload.single('file'), uploadStnkBpkbTrack)
+router.post('/stnk-bpkb-tracks/preview', authenticate, authorizeMenu('IMPORT_SHOWROOM_STNK_BPKB_TRACK'), upload.single('file'), previewStnkBpkbTrack)
+router.post('/stnk-bpkb-tracks/import', authenticate, authorizeMenu('IMPORT_SHOWROOM_STNK_BPKB_TRACK'), upload.single('file'), uploadStnkBpkbTrack)
 
 // Marketing Target (per Team Leader, bulanan)
 const marketingTargetReadAccess = authorize('Admin', 'Kepala Cabang')
@@ -229,5 +234,26 @@ router.get('/marketing-targets/summary', authenticate, marketingTargetReadAccess
 router.post('/marketing-targets', authenticate, marketingTargetWriteAccess, upsertMarketingTarget)
 router.patch('/marketing-targets/:id', authenticate, marketingTargetWriteAccess, upsertMarketingTarget)
 router.delete('/marketing-targets/:id', authenticate, marketingTargetWriteAccess, deleteMarketingTarget)
+
+// Document Handover (Serah Terima Dokumen)
+// Read  : semua role yang punya akses halaman (termasuk Kepala untuk monitoring)
+// Write : Admin Showroom + Salesman (operator aktif)
+// Delete: Admin Showroom + Kepala Cabang (kontrol ketat, tidak bisa dihapus sembarangan)
+const handoverReadAccess  = authorize('Admin', 'CRM', 'Service Advisor', 'Kepala Cabang', 'Kepala Bengkel', 'Salesman')
+const handoverWriteAccess = authorize('Admin', 'Salesman')
+const handoverDeleteAccess = authorize('Admin', 'Kepala Cabang')
+router.get('/document-handovers', authenticate, handoverReadAccess, getDocumentHandovers)
+router.get('/document-handovers/summary', authenticate, handoverReadAccess, getDocumentHandoverSummary)
+router.get('/document-handovers/salespeople', authenticate, handoverWriteAccess, getHandoverSalespeople)
+router.get('/document-handovers/available', authenticate, handoverWriteAccess, getAvailableDocuments)
+router.post('/document-handovers', authenticate, handoverWriteAccess, createDocumentHandover)
+router.get('/document-handovers/:id/steps', authenticate, handoverReadAccess, getHandoverSteps)
+router.put('/document-handovers/:id', authenticate, handoverWriteAccess, updateDocumentHandover)
+router.delete('/document-handovers/:id', authenticate, handoverDeleteAccess, deleteDocumentHandover)
+router.post('/document-handovers/:id/steps', authenticate, handoverWriteAccess, uploadHandoverPhoto.fields([
+  { name: 'photo_doc', maxCount: 1 },
+  { name: 'photo_handover', maxCount: 1 }
+]), addHandoverStep)
+router.get('/document-handovers/photo/:stepId', authenticate, handoverReadAccess, getHandoverPhoto)
 
 export default router

@@ -1,9 +1,9 @@
 # Product Requirements Document
 ## Sistem Workshop, Sparepart, dan Showroom DXK
 
-**Versi:** 2.3  
-**Tanggal Update:** 6 Mei 2026  
-**Status:** Functional, role-protected, dan siap dipakai harian untuk cabang DXK
+**Versi:** 2.4  
+**Tanggal Update:** 17 Juni 2026  
+**Status:** Functional, role-protected, siap dipakai harian untuk cabang DXK
 
 ---
 
@@ -124,6 +124,7 @@ Role aktif:
 
 | Role | Menu Frontend |
 |------|---------------|
+| **IT Master** (`IT_Master`) | **Superadmin**: semua menu. Khusus: Manajemen Akses, Manajemen User, Backup & Restore. Bypass semua auth guard. |
 | Admin Showroom (`Admin`) | Dashboard Showroom, Stock Unit Showroom, Master Harga, Stock STNK, Stock BPKB |
 | PIC Stock opname | Opname Unit, Opname STNK, Opname BPKB |
 | ADH | Verifikator 1 Opname Unit, Opname STNK, Opname BPKB |
@@ -135,6 +136,10 @@ Role aktif:
 | Admin CRM (`CRM`) | Data Konsumen, Follow-up KPB, Follow-up STNK, Follow-up BPKB |
 
 Role value database tetap `Admin` dan `CRM`. UI menampilkan label `Admin Showroom` dan `Admin CRM`.
+
+**Akses menu per role** dikendalikan secara dinamis dari tabel `role_permissions` di database. IT Master bypass total — tidak perlu entri di `role_permissions`.
+
+**IT Master tidak bisa dihapus** melalui Manajemen User. IT Master adalah satu-satunya akun yang bisa mengatur tabel `role_permissions` via halaman Manajemen Akses (`/roles`).
 
 Authorization diterapkan di backend dan frontend:
 
@@ -394,25 +399,29 @@ POST /api/customers/:id/followups
 
 ### 6.8 Manajemen User
 
-Hanya untuk Kepala Bengkel dan Kepala Cabang.
+Dapat diakses oleh IT Master, Kepala Bengkel, dan Kepala Cabang.
 
 Fitur:
 
-- List user.
-- Tambah user.
-- Edit nama dan role.
-- Hapus user.
+- List user dengan kolom: Nama, Username, No. HP, Role, Lokasi, Dibuat.
+- Tambah user (form: Username, Password, Nama, No. HP, Role, Lokasi).
+- Edit nama, role, No. HP, dan lokasi langsung di tabel (inline edit).
+- Hapus user (cascade delete semua relasi; IT Master tidak bisa dihapus).
 - Reset password.
 
-Role valid:
+Field `phone` disimpan di kolom `users.phone` (optional). Tujuan: persiapan integrasi notifikasi WhatsApp/Telegram.
 
-- Admin (`Admin Showroom` di UI)
+Role valid yang bisa dipilih:
+
+- IT Master
+- Admin Showroom (`Admin`)
 - Kepala Cabang
-- CRM (`Admin CRM` di UI)
+- CRM (`Admin CRM`)
 - Frondesk
 - Service Advisor
 - Kepala Bengkel
 - Partman
+- PIC Stock opname
 
 Endpoint:
 
@@ -923,17 +932,11 @@ Status: mendekati Odoo; selisih kecil masih perlu divalidasi dengan cost/harga b
 
 ---
 
-## 13. Roadmap
+### 2026-06-17
 
-- Export Excel Master Harga bila nanti dibutuhkan.
-- Halaman detail unit gabungan Stock Unit + harga + STNK + BPKB bila nanti dibutuhkan.
-- Dark mode toggle.
-- PWA installable untuk penggunaan mobile.
-- Role-based CRUD lebih granular di level action/field.
-- Notifikasi real-time/WebSocket.
-- Import progress bar untuk file besar.
-- Multi-cabang selain DXK.
-- Tracking lanjutan hubungan KPB dan riwayat workshop.
-- Validasi lanjutan kalkulator margin dengan 5-10 DSO Odoo tambahan lintas unit, area BBN, cash/kredit, TAC, PS MD, dan komisi.
-- Tambah edit/delete/deactivate untuk Matrix TAC, Dana Promosi Scheme, dan Alias Series bila operasional butuh koreksi rutin dari UI.
-- Export Excel Master BBN/TAC bila nanti diperlukan untuk audit atau sharing internal.
+- **Role IT Master** ditambahkan sebagai superadmin sistem. Bypass semua `authorize()` di backend. User `it_master` dibuat via script. IT Master tidak bisa dihapus.
+- **Manajemen Akses dinamis** (`/roles`): halaman baru khusus IT Master untuk mengatur akses menu per role melalui tabel centang. Data disimpan di `role_permissions`, dibaca sidebar saat load.
+- **Field `phone`** ditambahkan ke tabel `users` (nullable). Backend dan frontend sudah mendukung create/update/read No. HP. Persiapan integrasi notifikasi WhatsApp/Telegram.
+- **Sidebar distrukturisasi** menjadi 5 grup utama terpisah: Workshop, CRM & Layanan, Showroom, Stock Opname, Administrasi. Group Workshop memiliki sub-folder Operasional dan Laporan & Target. Sidebar menggunakan mode Accordion (tutup otomatis).
+- **Hapus user cascade** (`DELETE /api/users/:id`): logic baru null semua FK terkait lalu hard-delete user. IT Master dikecualikan dari penghapusan.
+- **Roadmap sudah diperbarui** untuk mencerminkan fitur yang sudah selesai dan prioritas baru.

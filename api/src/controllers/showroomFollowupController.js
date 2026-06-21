@@ -2,6 +2,7 @@ import xlsx from 'xlsx'
 import { rmSync } from 'fs'
 import path from 'path'
 import os from 'os'
+import { clampLimit } from '../utils/pagination.js'
 import { prisma } from '../config/db.js'
 import { DOCUMENT_FOLLOWUP_STATUSES, applyCustomerTypeFilter, getCustomerType, getFinanceCompanyShort } from './showroomUtils.js'
 import { formatForExcel } from '../utils/excelUtils.js'
@@ -148,7 +149,7 @@ export async function getDocumentFollowups(req, res, next) {
 
     const { page = 1, limit = 100 } = req.query
     const pageInt = parseInt(page)
-    const limitInt = parseInt(limit)
+    const limitInt = clampLimit(limit, 100)
     const data = await buildDocumentFollowupData(documentType, req.query)
     const skip = (pageInt - 1) * limitInt
     const paginated = data.slice(skip, skip + limitInt)

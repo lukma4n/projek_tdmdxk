@@ -6,10 +6,8 @@ const JWT_COOKIE_NAME = 'token'
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h'
 
 function isSecureCookie(req) {
-  // Only use secure cookies in production AND when not on localhost
   if (process.env.NODE_ENV !== 'production') return false
-  const host = req.headers.host || ''
-  return !host.includes('localhost') && !host.includes('127.0.0.1')
+  return req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https'
 }
 
 export async function login(req, res, next) {

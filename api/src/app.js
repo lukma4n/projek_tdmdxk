@@ -17,17 +17,24 @@ import dashboardRoutes from './routes/dashboardRoutes.js'
 import hotlineRoutes from './routes/hotlineRoutes.js'
 import stockRoutes from './routes/stockRoutes.js'
 import workshopRoutes from './routes/workshopRoutes.js'
+import workshopReportRoutes from './routes/workshopReportRoutes.js'
 import opnameRoutes from './routes/opnameRoutes.js'
 import syncRoutes from './routes/syncRoutes.js'
 import customerRoutes from './routes/customerRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import showroomRoutes from './routes/showroomRoutes.js'
 import notificationRoutes from './routes/notificationRoutes.js'
+import rolePermissionRoutes from './routes/rolePermissionRoutes.js'
+import publicRoutes from './routes/publicRoutes.js'
+
 
 dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 3001
+
+// Percaya 1 hop reverse proxy (nginx/PM2) agar req.protocol & x-forwarded-proto akurat
+app.set('trust proxy', 1)
 
 // Security middleware
 app.use(helmet())
@@ -51,24 +58,28 @@ const importLimiter = rateLimit({
 })
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500,
+  max: 2000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
 })
+const publicCheckLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Terlalu banyak percobaan pencarian, coba lagi dalam 15 menit.' },
+})
 app.use('/api/auth/login', authLimiter)
 app.use('/api/sync/', importLimiter)
+app.use('/api/public/', publicCheckLimiter)
 app.use('/api/', apiLimiter)
 
+
 // Middleware
-const allowedOrigins = [
-  'http://localhost:3001',
-  'http://localhost:5173',
-  'http://127.0.0.1:3001',
-  'http://127.0.0.1:5173',
-  'http://172.20.10.9:3001',
-  'http://172.20.10.9:5173',
-]
+const defaultOrigins = ['http://localhost:3001', 'http://localhost:5173', 'http://127.0.0.1:3001', 'http://127.0.0.1:5173']
+const extraOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean) : []
+const allowedOrigins = [...new Set([...defaultOrigins, ...extraOrigins])]
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -95,12 +106,16 @@ app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/hotline', hotlineRoutes)
 app.use('/api/stock', stockRoutes)
 app.use('/api/workshop', workshopRoutes)
+app.use('/api/workshop', workshopReportRoutes)
 app.use('/api/opname', opnameRoutes)
 app.use('/api/sync', syncRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/customers', customerRoutes)
 app.use('/api/showroom', showroomRoutes)
 app.use('/api/notifications', notificationRoutes)
+app.use('/api/permissions', rolePermissionRoutes)
+app.use('/api/public', publicRoutes)
+
 
 // Serve static files from frontend build in production
 if (process.env.NODE_ENV === 'production') {

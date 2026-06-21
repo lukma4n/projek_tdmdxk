@@ -100,11 +100,11 @@ export const LEASING_COLORS = {
 }
 
 // Stat card definitions for Analysis tab (period-based, dengan Target)
-export const dashboardStatCards = (summary, period) => [
+export const dashboardStatCards = (summary, period, analysis) => [
   {
     label: 'Closing DO',
     value: summary.closingDo || 0,
-    subtext: formatTanggalIndo(period?.from),
+    subtext: `Periode ${formatTanggalIndo(period?.from)}${period?.from !== period?.to ? ` - ${formatTanggalIndo(period?.to)}` : ''}`,
     icon: Bike,
     colorClass: 'text-blue-700',
     borderClass: 'border-blue-200',
@@ -113,7 +113,7 @@ export const dashboardStatCards = (summary, period) => [
   {
     label: 'Cash',
     value: summary.cashCount || 0,
-    subtext: `${summary.cashPercent || 0}%`,
+    subtext: `${summary.cashPercent || 0}% dari total`,
     icon: TrendingUp,
     colorClass: 'text-emerald-700',
     borderClass: 'border-emerald-200',
@@ -122,19 +122,19 @@ export const dashboardStatCards = (summary, period) => [
   {
     label: 'Kredit',
     value: summary.creditCount || 0,
-    subtext: `${summary.creditPercent || 0}%`,
+    subtext: `${summary.creditPercent || 0}% dari total`,
     icon: CreditCard,
     colorClass: 'text-amber-700',
     borderClass: 'border-amber-200',
     iconBgClass: 'bg-amber-100 text-amber-600',
   },
   {
-    label: 'Grand Total',
-    value: summary.closingDo || 0,
-    subtext: `Periode ${formatTanggalIndo(period?.from)}${period?.from !== period?.to ? ` - ${formatTanggalIndo(period?.to)}` : ''}`,
+    label: 'Rata-Rata Harian',
+    value: analysis?.avgUnitsPerDay || 0,
+    subtext: 'Unit terjual per hari',
     icon: BarChart3,
-    colorClass: 'text-slate-700',
-    borderClass: 'border-slate-200',
-    iconBgClass: 'bg-slate-100 text-slate-600',
+    colorClass: 'text-purple-700',
+    borderClass: 'border-purple-200',
+    iconBgClass: 'bg-purple-100 text-purple-600',
   },
 ]

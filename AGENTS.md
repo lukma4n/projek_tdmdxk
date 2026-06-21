@@ -50,6 +50,7 @@ npm run dev          # vite, port 5173, proxy /api ke :3001
 
 | DB value | Label UI | Akses singkat |
 |----------|----------|---------------|
+| `IT_Master` | IT Master | **Superadmin**. Bypass semua auth guard backend & frontend. Kelola role_permissions (siapa dapat akses menu apa), Manajemen User, Backup & Restore |
 | `Admin` | Admin Showroom | Dashboard Showroom, Stock Unit/Harga/STNK/BPKB |
 | `CRM` | Admin CRM | Data Konsumen, Follow-up KPB/STNK/BPKB |
 | `PIC_StockOpname` | PIC Stock opname | Opname Unit/STNK/BPKB |
@@ -60,7 +61,9 @@ npm run dev          # vite, port 5173, proxy /api ke :3001
 | `Service_Advisor` | Service Advisor | Dashboard Bengkel, Hotline, Stock, Workshop, Program AHM, Konsumen, Follow-up KPB |
 | `Partman` | Partman | Dashboard Bengkel, Stock, Hotline, Opname |
 
-Role guard di backend (`authorize(...roles)`) dan frontend (`web/src/config/roles.js`). API return `403` untuk role tak berhak. Konfigurasi & label UI lengkap di `web/src/config/roles.js` (`ROLES`, `ROLE_LABELS`, `displayRole`, `ALL_ROLES`, `IMPORT_ROLES`, group arrays, `getDefaultRoute`).
+Role guard di backend (`authorize(...roles)`) dan frontend (`web/src/config/roles.js`). API return `403` untuk role tak berhak. **IT Master** mendapat bypass total di `api/src/middleware/auth.js` (cek `req.user.role === 'IT_Master'` sebelum authorize list). Konfigurasi & label UI lengkap di `web/src/config/roles.js`.
+
+Akses menu per role dikontrol secara dinamis dari tabel `role_permissions` (database). IT Master adalah satu-satunya role yang TIDAK perlu entri di `role_permissions` karena bypass penuh.
 
 ## 6. Auth & Cookie
 - Login set cookie **`token`** httpOnly di `api/src/controllers/authController.js:58-63` dengan `secure: isSecureCookie(req)`, `sameSite: 'lax'`, `maxAge` 24h.
@@ -128,7 +131,7 @@ sqlite3 api/prisma/dev.db ".tables"     # ad-hoc query
 ## 10. Kode Opname & Barcode
 
 - **Kode opname auto-generate**: `SO/DXK/DDMMYY-HHMM` (contoh `SO/DXK/010526-1130`).
-- **Workflow showroom opname**: `draft` -> `open` -> `submitted` (PIC) -> `adh_done` (ADH verifikator 1) -> `rfa` (request final approval) -> `approved` (Kepala Cabang) / `rejected` -> `closed`. Status bisa kembali ke `open` saat revisi.
+- **Workflow showroom opname**: `draft` -> `open` -> `submitted` (PIC) -> `approved_adh` (ADH approve 1) -> `sent_to_kacab` (ADH kirim ke Kacab) -> `approved_kacab` (Kepala Cabang approve) / `rejected` -> `done` (setelah BASO upload + verifikasi). Status bisa kembali ke `open` saat revisi.
 - **Workflow opname sparepart** (stock/stnk/bpkb): sama dengan showroom, mengikuti role guard per tipe.
 - **Import stock/STNK/BPKB showroom diblokir** selama ada sesi opname tipe terkait yang belum `closed`.
 - **Label barcode**: ukuran 32mm x 64mm (Label No. 103), layout A4 3 kolom x 4 baris = 12 label/halaman, printer Epson L3250 + kertas sticker A4 precut. Encode `engine_number` untuk BPKB, header `BPKB - TDM Ketapang`.
@@ -158,3 +161,39 @@ sqlite3 api/prisma/dev.db ".tables"     # ad-hoc query
 - UI final: **V2 Clean Corporate** (default terang), toggle tema terang/gelap per browser (`localStorage.theme`, store di `web/src/stores/themeStore.js`).
 - Login page pakai branding `DXK Operation System` + headline `Satu sistem untuk semua alur kerja TDM Ketapang.`
 - Fix history panjang dipindah ke `docs/rencana_perbaikan.md` agar `AGENTS.md` tetap ringkas.
+
+## 14. Perubahan Terbaru (2026-06-17)
+
+### Role IT Master (Superadmin)
+- Role baru `IT_Master` ditambahkan sebagai superadmin sistem.
+- Backend `api/src/middleware/auth.js`: bypass `authorize()` untuk `req.user.role === 'IT_Master'` sehingga IT Master bisa akses semua endpoint tanpa terdaftar di role list manapun.
+- User default IT Master: username `it_master` / password `password` dibuat via script.
+- IT Master **tidak boleh dihapus** dari Manajemen User (validasi di backend `userController.js`).
+
+### Manajemen Akses Berbasis Database
+- Tabel `role_permissions` menyimpan pasangan `role_name` + `menu_key` yang diizinkan.
+- Frontend sidebar membaca permissions dari API (`GET /api/permissions`) dan hanya menampilkan menu yang diizinkan per role.
+- Halaman `/roles` (Manajemen Akses) memungkinkan IT Master mengatur centang akses menu per role via UI tabel.
+- IT Master bypass total — tidak memerlukan entri di `role_permissions`.
+
+### Field `phone` di Tabel `users`
+- Kolom `phone String?` ditambahkan ke model `users` via `prisma db push`.
+- Backend `userController.js` mendukung `phone` pada `createUser`, `updateUser`, `getUsers`, `getUserById`.
+- Frontend `Users.jsx` menampilkan kolom No. HP di tabel dan field input di form tambah/edit user.
+- Fungsi: persiapan integrasi notifikasi WhatsApp/Telegram di masa mendatang.
+
+### Sidebar Terstruktur Per Grup
+Menu sidebar kini dibagi menjadi **5 grup utama** yang terpisah dan jelas:
+1. **Workshop** → sub-folder: Operasional, Laporan & Target
+2. **CRM & Layanan** → flat: Data Konsumen, Follow-up KPB/STNK/BPKB, Program AHM
+3. **Showroom** → sub-folder: Penjualan, Marketing, Unit, STNK & BPKB
+4. **Stock Opname** → flat: Opname Sparepart, Unit, STNK, BPKB, PIC Users
+5. **Administrasi** → flat: Manajemen User, Manajemen Akses, Backup & Restore
+
+Sidebar memakai mode **Accordion (tutup otomatis)** — hanya sub-folder yang memiliki halaman aktif yang terbuka.
+
+### Hapus User Cascade (Hard Delete)
+- `DELETE /api/users/:id` sekarang melakukan cascade delete/null seluruh relasi user di semua tabel terkait sebelum menghapus record `users`.
+- IT Master tidak dapat dihapus (validasi backend).
+- Tabel yang di-null: `sync_logs.user_id`, `hotlines.state_updated_by`, `showroom_unit_ksu_checks.checked_by/handed_over_by`, `showroom_opname_items.scanned_by`, `showroom_notifications.user_id`, `showroom_opname_sessions.reviewed_by`, `showroom_ksu_standards.updated_by`.
+- Tabel yang di-delete: `opname_items`, `opname_sessions`, `showroom_user_locations`, `audit_logs`, `kpb_followups`, `showroom_document_followups`, `showroom_opname_sessions`, `showroom_sales_order_margins`, `showroom_opname_assignments`.

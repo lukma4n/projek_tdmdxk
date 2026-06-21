@@ -20,8 +20,96 @@ export const prismaTest = new PrismaClient({
   },
 })
 
+// Current static roles logic mapped to menu keys for testing
+const ROLES = Object.freeze({
+  ADMIN_SHOWROOM: 'Admin',
+  PIC_STOCK_OPNAME: 'PIC Stock opname',
+  ADH: 'ADH',
+  KEPALA_CABANG: 'Kepala Cabang',
+  KEPALA_BENGKEL: 'Kepala Bengkel',
+  FRONDESK: 'Frondesk',
+  SERVICE_ADVISOR: 'Service Advisor',
+  PARTMAN: 'Partman',
+  ADMIN_CRM: 'CRM',
+})
+
+const permissionSeedData = [
+  // Dashboard Bengkel
+  { menu_key: 'DASHBOARD_BENGKEL', roles: [ROLES.KEPALA_CABANG, ROLES.KEPALA_BENGKEL, ROLES.SERVICE_ADVISOR, ROLES.FRONDESK, ROLES.PARTMAN] },
+  // Part Hotline
+  { menu_key: 'HOTLINE', roles: [ROLES.KEPALA_BENGKEL, ROLES.SERVICE_ADVISOR, ROLES.PARTMAN] },
+  // Stock Sparepart
+  { menu_key: 'STOCK', roles: [ROLES.KEPALA_BENGKEL, ROLES.SERVICE_ADVISOR, ROLES.PARTMAN] },
+  // Workshop
+  { menu_key: 'WORKSHOP', roles: [ROLES.KEPALA_BENGKEL, ROLES.SERVICE_ADVISOR, ROLES.FRONDESK] },
+  // Laporan Bengkel
+  { menu_key: 'WORKSHOP_REPORT', roles: [ROLES.KEPALA_CABANG, ROLES.KEPALA_BENGKEL] },
+  // Master Program (AHM)
+  { menu_key: 'PROGRAM', roles: [ROLES.KEPALA_BENGKEL, ROLES.SERVICE_ADVISOR] },
+  // Data Konsumen
+  { menu_key: 'CUSTOMER', roles: [ROLES.KEPALA_BENGKEL, ROLES.ADMIN_CRM, ROLES.SERVICE_ADVISOR] },
+  // Follow-up KPB
+  { menu_key: 'FOLLOWUP', roles: [ROLES.KEPALA_BENGKEL, ROLES.ADMIN_CRM, ROLES.SERVICE_ADVISOR, ROLES.FRONDESK] },
+  // Follow-up STNK/BPKB
+  { menu_key: 'DOCUMENT_FOLLOWUP', roles: [ROLES.ADMIN_CRM] },
+  // Opname Sparepart
+  { menu_key: 'OPNAME', roles: [ROLES.KEPALA_CABANG, ROLES.KEPALA_BENGKEL, ROLES.PARTMAN] },
+  
+  // Showroom
+  { menu_key: 'SHOWROOM', roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM] },
+  { menu_key: 'SHOWROOM_SALES_ORDER', roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM] },
+  { menu_key: 'SHOWROOM_OPNAME', roles: [ROLES.KEPALA_CABANG, ROLES.PIC_STOCK_OPNAME, ROLES.ADH] },
+  { menu_key: 'SHOWROOM_DOCUMENT_STOCK', roles: [ROLES.ADMIN_SHOWROOM] },
+  { menu_key: 'SHOWROOM_LABEL_BUKU_SERVICE', roles: [ROLES.ADMIN_SHOWROOM] },
+  { menu_key: 'SHOWROOM_STNK_BPKB_MONITORING', roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM, ROLES.ADMIN_CRM, ROLES.ADH] },
+  { menu_key: 'SHOWROOM_STNK_BPKB_GROUP', roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM, ROLES.ADMIN_CRM, ROLES.ADH] },
+  { menu_key: 'SHOWROOM_PIC_USERS', roles: [ROLES.KEPALA_CABANG] },
+  
+  // Administrasi
+  { menu_key: 'ADMIN', roles: [ROLES.KEPALA_BENGKEL] },
+  { menu_key: 'MANAGEMENT', roles: [] },
+
+  // Import modules
+  { menu_key: 'IMPORT_HOTLINE', roles: [ROLES.KEPALA_BENGKEL, ROLES.SERVICE_ADVISOR, ROLES.PARTMAN] },
+  { menu_key: 'IMPORT_STOCK', roles: [ROLES.KEPALA_BENGKEL, ROLES.PARTMAN] },
+  { menu_key: 'IMPORT_WORKSHOP', roles: [ROLES.KEPALA_BENGKEL, ROLES.SERVICE_ADVISOR, ROLES.FRONDESK] },
+  { menu_key: 'IMPORT_SALES', roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM] },
+  { menu_key: 'IMPORT_SHOWROOM_STOCK_UNIT', roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM] },
+  { menu_key: 'IMPORT_SHOWROOM_OTR_PRICE', roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM] },
+  { menu_key: 'IMPORT_SHOWROOM_OFF_PURCHASE_PRICE', roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM] },
+  { menu_key: 'IMPORT_SHOWROOM_BBN', roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM] },
+  { menu_key: 'IMPORT_SHOWROOM_PROGRAM', roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM] },
+  { menu_key: 'IMPORT_SHOWROOM_STNK_BPKB_TRACK', roles: [ROLES.ADMIN_SHOWROOM] },
+]
+
 // Ensure test DB has some known seeded users for integration tests
 export async function seedKnownUsers() {
+  // Only seed if not already seeded to avoid race conditions during parallel test execution
+  const existingCount = await prismaTest.role_permissions.count()
+  if (existingCount < 71) {
+    try {
+      for (const group of permissionSeedData) {
+        for (const role of group.roles) {
+          await prismaTest.role_permissions.upsert({
+            where: {
+              role_name_menu_key: {
+                role_name: role,
+                menu_key: group.menu_key,
+              }
+            },
+            update: {},
+            create: {
+              role_name: role,
+              menu_key: group.menu_key,
+            }
+          })
+        }
+      }
+    } catch (err) {
+      // Ignore database locks or conflicts from parallel seeding
+    }
+  }
+
   const users = [
     { username: 'test_admin', password: 'password123', name: 'Test Admin', role: 'Admin' },
     { username: 'test_crm', password: 'password123', name: 'Test CRM', role: 'CRM' },
@@ -32,6 +120,7 @@ export async function seedKnownUsers() {
     { username: 'test_pico', password: 'password123', name: 'Test PIC Opname', role: 'PIC Stock opname' },
     { username: 'test_adh', password: 'password123', name: 'Test ADH', role: 'ADH' },
     { username: 'test_kacab', password: 'password123', name: 'Test Kepala Cabang', role: 'Kepala Cabang' },
+    { username: 'test_itmaster', password: 'password123', name: 'Test IT Master', role: 'IT Master' },
   ]
 
   for (const user of users) {

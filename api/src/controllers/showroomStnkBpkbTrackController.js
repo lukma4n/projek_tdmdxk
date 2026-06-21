@@ -9,11 +9,77 @@ import { applyCustomerTypeFilter, cleanupUpload, getCustomerType, getFinanceComp
 import { runShowroomSnapshotImport, getSnapshotPreviewMeta } from './showroomImport.js'
 import { formatForExcel } from '../utils/excelUtils.js'
 
+/**
+ * Enrich tracks records with mobile numbers from customers and sales orders tables
+ */
+export async function enrichTracksWithMobile(records) {
+  const engineNumbersWithNullMobile = records
+    .filter((r) => !r.mobile)
+    .map((r) => r.engine_number)
+    .filter(Boolean)
+
+  if (engineNumbersWithNullMobile.length === 0) return
+
+  const mobileMap = {}
+  const batchSize = 500
+
+  for (let i = 0; i < engineNumbersWithNullMobile.length; i += batchSize) {
+    const batch = engineNumbersWithNullMobile.slice(i, i + batchSize)
+
+    // 1. Ambil dari tabel customers
+    const matchedCustomers = await prisma.customers.findMany({
+      where: {
+        no_engine: { in: batch },
+        customer_mobile: { not: null }
+      },
+      select: {
+        no_engine: true,
+        customer_mobile: true
+      }
+    })
+
+    for (const c of matchedCustomers) {
+      if (c.customer_mobile && c.customer_mobile.trim()) {
+        mobileMap[c.no_engine] = c.customer_mobile.trim()
+      }
+    }
+
+    // 2. Jika ada yang masih belum didapat di batch ini, cari di margins
+    const batchRemaining = batch.filter((eng) => !mobileMap[eng])
+    if (batchRemaining.length > 0) {
+      const matchedMargins = await prisma.showroom_sales_order_margins.findMany({
+        where: {
+          engine_number: { in: batchRemaining },
+          customer_phone: { not: null }
+        },
+        select: {
+          engine_number: true,
+          customer_phone: true
+        }
+      })
+      for (const m of matchedMargins) {
+        if (m.customer_phone && m.customer_phone.trim()) {
+          mobileMap[m.engine_number] = m.customer_phone.trim()
+        }
+      }
+    }
+  }
+
+  // 3. Update records array
+  for (const record of records) {
+    if (!record.mobile && mobileMap[record.engine_number]) {
+      record.mobile = mobileMap[record.engine_number]
+    }
+  }
+}
+
 // ===== PREVIEW & IMPORT =====
+
 
 export async function previewStnkBpkbTrack(req, res, next) {
   try {
     const { records, errors } = parseStnkBpkbTrackFile(req.file.path)
+    await enrichTracksWithMobile(records)
     const snapshot = await getSnapshotPreviewMeta('showroom_stnk_bpkb_tracks', records)
     await cleanupUpload(req)
     res.json({
@@ -36,6 +102,7 @@ export async function uploadStnkBpkbTrack(req, res, next) {
     if (!req.file?.path) return res.status(400).json({ error: 'File wajib diupload' })
     await withImportLock('showroom:stnk-bpkb-track', async () => {
       const { records, errors } = parseStnkBpkbTrackFile(req.file.path)
+      await enrichTracksWithMobile(records)
       if (records.length === 0) {
         await cleanupUpload(req)
         return res.status(400).json({ error: 'File Track STNK/BPKB tidak berisi data DXK yang valid' })
@@ -82,6 +149,18 @@ function buildTrackWhere(query) {
   if (query.status_stnk) where.stnk_status = String(query.status_stnk)
   if (query.status_bpkb) where.bpkb_status = String(query.status_bpkb)
   applyCustomerTypeFilter(where, query.customer_type)
+
+  if (query.search) {
+    const s = String(query.search).trim()
+    where.OR = [
+      { engine_number: { contains: s } },
+      { chassis_number: { contains: s } },
+      { stnk_name: { contains: s } },
+      { no_so: { contains: s } },
+      { partner_name: { contains: s } },
+    ]
+  }
+
   return where
 }
 
@@ -339,10 +418,23 @@ function buildExportWhere(query) {
   const where = { branch_code: 'DXK' }
   if (query.series) where.series = String(query.series)
   if (query.finance_company) where.finance_company = String(query.finance_company)
+  if (query.birojasa) where.birojasa = String(query.birojasa)
   if (query.tahun) where.tahun = parseInt(query.tahun)
   if (query.status_stnk) where.stnk_status = String(query.status_stnk)
   if (query.status_bpkb) where.bpkb_status = String(query.status_bpkb)
   applyCustomerTypeFilter(where, query.customer_type)
+
+  if (query.search) {
+    const s = String(query.search).trim()
+    where.OR = [
+      { engine_number: { contains: s } },
+      { chassis_number: { contains: s } },
+      { stnk_name: { contains: s } },
+      { no_so: { contains: s } },
+      { partner_name: { contains: s } },
+    ]
+  }
+
   return where
 }
 

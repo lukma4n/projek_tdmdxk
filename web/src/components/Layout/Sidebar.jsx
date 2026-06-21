@@ -2,49 +2,24 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
-  Phone,
   Package,
-  Wrench,
-  Award,
   Users,
-  ScanBarcode,
-  LogOut,
-  ShieldCheck,
-  Contact,
   DatabaseBackup,
-  MessageCircle,
+  TrendingUp,
+  BadgeDollarSign,
   Bike,
   FileText,
   FileBadge,
-  BadgeDollarSign,
-  TrendingUp,
+  LogOut,
+  ShieldCheck,
+  MessageCircle,
   ChevronRight,
+  BarChart3,
+  Contact,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useThemeStore } from '../../stores/themeStore'
-import {
-  displayRole as displayRoleImpl,
-  HOTLINE_ROLES,
-  STOCK_ROLES,
-  WORKSHOP_ROLES,
-  PROGRAM_ROLES,
-  CUSTOMER_ROLES,
-  FOLLOWUP_ROLES,
-  OPNAME_ROLES,
-  ADMIN_ROLES,
-  MANAGEMENT_ROLES,
-  DASHBOARD_BENGKEL_ROLES,
-  SHOWROOM_ROLES,
-  SHOWROOM_WITH_LEAD_ROLES,
-  SHOWROOM_STNK_BPKB_MONITORING_ROLES,
-  SHOWROOM_STNK_BPKB_GROUP_ROLES,
-  SHOWROOM_DOCUMENT_STOCK_ROLES,
-  SHOWROOM_DOCUMENT_STOCK_WITH_LEAD_ROLES,
-  SHOWROOM_LABEL_BUKU_SERVICE_ROLES,
-  SHOWROOM_OPNAME_ROLES,
-  SHOWROOM_PIC_USERS_ROLES,
-  DOCUMENT_FOLLOWUP_ROLES,
-} from '../../config/roles'
+import { displayRole as displayRoleImpl } from '../../config/roles'
 
 // Skydash Admin design tokens
 const C = {
@@ -60,99 +35,135 @@ const C = {
 // Kalau ada `children`, parent hanya jadi label collapsible (tidak punya path sendiri)
 // Kecuali parent juga punya `path` → clickable + expandable (typical Skydash pattern)
 const navStructure = [
-  // Bengkel — flat (CRM = label alternatif)
+  // Bengkel — nested
   {
-    type: 'group', id: 'bengkel',
+    type: 'group', id: 'bengkel', label: 'Workshop',
     items: [
-      { path: '/', label: 'Dashboard Bengkel', icon: LayoutDashboard, roles: DASHBOARD_BENGKEL_ROLES },
-      { path: '/hotline', label: 'Part Hotline', icon: Phone, roles: HOTLINE_ROLES },
-      { path: '/stock', label: 'Stok Sparepart', icon: Package, roles: STOCK_ROLES },
-      { path: '/workshop', label: 'Workshop', icon: Wrench, roles: WORKSHOP_ROLES },
-      { path: '/monitor-kpb-lcr', label: 'Program AHM', icon: ShieldCheck, roles: PROGRAM_ROLES },
-      { path: '/customers', label: 'Data Konsumen', icon: Contact, roles: CUSTOMER_ROLES },
-      { path: '/follow-up-kpb', label: 'Follow-up KPB', icon: MessageCircle, roles: FOLLOWUP_ROLES },
-      { path: '/follow-up-stnk', label: 'Follow-up STNK', icon: FileText, roles: DOCUMENT_FOLLOWUP_ROLES },
-      { path: '/follow-up-bpkb', label: 'Follow-up BPKB', icon: FileBadge, roles: DOCUMENT_FOLLOWUP_ROLES },
-      { path: '/mechanics', label: 'Performa Mekanik', icon: Award, roles: ADMIN_ROLES },
-      { path: '/opname', label: 'Stock Opname', icon: ScanBarcode, roles: OPNAME_ROLES },
+      {
+        id: 'operasional', label: 'Operasional', icon: LayoutDashboard,
+        menuKey: 'DASHBOARD_BENGKEL',
+        children: [
+          { path: '/', label: 'Dashboard Bengkel', menuKey: 'DASHBOARD_BENGKEL' },
+          { path: '/workshop', label: 'Workshop', menuKey: 'WORKSHOP' },
+          { path: '/monitor-kpb-lcr', label: 'Program AHM', menuKey: 'PROGRAM' },
+        ],
+      },
+      {
+        id: 'sparepart', label: 'Sparepart', icon: Package,
+        menuKey: 'STOCK',
+        children: [
+          { path: '/stock', label: 'Stok Sparepart', menuKey: 'STOCK' },
+          { path: '/hotline', label: 'Part Hotline', menuKey: 'HOTLINE' },
+        ],
+      },
+      {
+        id: 'laporan-target', label: 'Laporan & Target', icon: BarChart3,
+        menuKey: 'WORKSHOP_REPORT',
+        children: [
+          { path: '/workshop-target', label: 'Target Bengkel', menuKey: 'WORKSHOP_REPORT' },
+          { path: '/workshop-dashboard', label: 'Dashboard Laporan & Target', menuKey: 'WORKSHOP_REPORT' },
+          { path: '/workshop-sales-analysis', label: 'Analisa Penjualan', menuKey: 'WORKSHOP_REPORT' },
+          { path: '/workshop-closing-daily', label: 'Laporan Harian', menuKey: 'WORKSHOP_REPORT' },
+          { path: '/mechanics', label: 'Performa Mekanik', menuKey: 'ADMIN' },
+        ],
+      },
     ],
   },
 
-  // Showroom — nested (Penjualan / Marketing / Unit / STNK & BPKB / Opname)
+  // CRM & Layanan — flat
+  {
+    type: 'group', id: 'crm', label: 'CRM & Layanan',
+    items: [
+      { path: '/customers', label: 'Data Konsumen', icon: Contact, menuKey: 'CUSTOMER' },
+      { path: '/follow-up-kpb', label: 'Follow-up KPB', icon: MessageCircle, menuKey: 'FOLLOWUP' },
+      { path: '/follow-up-stnk', label: 'Follow-up STNK', icon: FileText, menuKey: 'DOCUMENT_FOLLOWUP' },
+      { path: '/follow-up-bpkb', label: 'Follow-up BPKB', icon: FileBadge, menuKey: 'DOCUMENT_FOLLOWUP' },
+    ],
+  },
+
+  // Showroom — nested (Penjualan / Marketing / Unit / STNK & BPKB)
   {
     type: 'group', id: 'showroom', label: 'Showroom',
     items: [
       {
         id: 'penjualan', label: 'Penjualan', icon: TrendingUp,
-        roles: SHOWROOM_ROLES,
+        menuKey: 'SHOWROOM',
         children: [
-          { path: '/showroom/marketing-target', label: 'Target Marketing', roles: SHOWROOM_ROLES },
-          { path: '/showroom/dashboard-penjualan', label: 'Laporan Analisis Penjualan', roles: SHOWROOM_ROLES },
-          { path: '/showroom/closing-harian', label: 'Laporan Closing Harian', roles: SHOWROOM_ROLES },
+          { path: '/showroom/marketing-target', label: 'Target Marketing', menuKey: 'SHOWROOM' },
+          { path: '/showroom/dashboard-penjualan', label: 'Laporan Analisis Penjualan', menuKey: 'SHOWROOM' },
+          { path: '/showroom/closing-harian', label: 'Laporan Closing Harian', menuKey: 'SHOWROOM' },
         ],
       },
       {
         id: 'marketing', label: 'Marketing', icon: BadgeDollarSign,
-        roles: SHOWROOM_ROLES,
+        menuKey: 'SHOWROOM',
         children: [
-          { path: '/showroom/tabel-diskon', label: 'Tabel Diskon', roles: SHOWROOM_ROLES },
-          { path: '/showroom/tac-leasing', label: 'Master TAC', roles: SHOWROOM_ROLES },
-          { path: '/showroom/sales-order-margin', label: 'Kalkulator Margin', roles: SHOWROOM_ROLES },
-          { path: '/showroom/harga-otr', label: 'Master Harga', roles: SHOWROOM_ROLES },
-          { path: '/showroom/salespeople', label: 'Master Sales', roles: SHOWROOM_ROLES },
-          { path: '/showroom/team-leader', label: 'Master Team Leader', roles: SHOWROOM_ROLES },
-          { path: '/showroom/dealer-burden', label: 'Master Beban Dealer', roles: SHOWROOM_ROLES },
-          { path: '/showroom/program', label: 'Master Program', roles: SHOWROOM_ROLES },
-          { path: '/showroom/bbn', label: 'Master BBN', roles: SHOWROOM_ROLES },
+          { path: '/showroom/tabel-diskon', label: 'Tabel Diskon', menuKey: 'SHOWROOM' },
+          { path: '/showroom/tac-leasing', label: 'Master TAC', menuKey: 'SHOWROOM' },
+          { path: '/showroom/sales-order-margin', label: 'Kalkulator Margin', menuKey: 'SHOWROOM' },
+          { path: '/showroom/harga-otr', label: 'Master Harga', menuKey: 'SHOWROOM' },
+          { path: '/showroom/salespeople', label: 'Master Sales', menuKey: 'SHOWROOM' },
+          { path: '/showroom/team-leader', label: 'Master Team Leader', menuKey: 'SHOWROOM' },
+          { path: '/showroom/dealer-burden', label: 'Master Beban Dealer', menuKey: 'SHOWROOM' },
+          { path: '/showroom/program', label: 'Master Program', menuKey: 'SHOWROOM' },
+          { path: '/showroom/bbn', label: 'Master BBN', menuKey: 'SHOWROOM' },
         ],
       },
       {
         id: 'unit', label: 'Unit', icon: Bike,
-        roles: SHOWROOM_WITH_LEAD_ROLES,
+        menuKey: 'SHOWROOM',
         children: [
-          { path: '/showroom/dashboard', label: 'Dashboard Unit', roles: SHOWROOM_WITH_LEAD_ROLES },
-          { path: '/showroom/stock-unit', label: 'Stock Unit', roles: SHOWROOM_WITH_LEAD_ROLES },
-          { path: '/showroom/ksu', label: 'Master KSU', roles: SHOWROOM_ROLES },
+          { path: '/showroom/dashboard', label: 'Dashboard Unit', menuKey: 'SHOWROOM' },
+          { path: '/showroom/stock-unit', label: 'Stock Unit', menuKey: 'SHOWROOM' },
+          { path: '/showroom/ksu', label: 'Master KSU', menuKey: 'SHOWROOM' },
         ],
       },
       {
         id: 'stnk-bpkb', label: 'STNK & BPKB', icon: FileText,
-        roles: SHOWROOM_STNK_BPKB_GROUP_ROLES,
+        menuKey: 'SHOWROOM_STNK_BPKB_GROUP',
         children: [
-          { path: '/showroom/stnk', label: 'Stock STNK', roles: SHOWROOM_DOCUMENT_STOCK_WITH_LEAD_ROLES },
-          { path: '/showroom/bpkb', label: 'Stock BPKB', roles: SHOWROOM_DOCUMENT_STOCK_WITH_LEAD_ROLES },
-          { path: '/showroom/stnk-bpkb-monitoring', label: 'Monitoring STNK & BPKB', roles: SHOWROOM_STNK_BPKB_MONITORING_ROLES },
-          { path: '/showroom/label-buku-service', label: 'Label Buku Service', roles: SHOWROOM_LABEL_BUKU_SERVICE_ROLES },
+          { path: '/showroom/stnk', label: 'Stock STNK', menuKey: 'SHOWROOM_DOCUMENT_STOCK' },
+          { path: '/showroom/bpkb', label: 'Stock BPKB', menuKey: 'SHOWROOM_DOCUMENT_STOCK' },
+          { path: '/showroom/stnk-bpkb-monitoring', label: 'Monitoring STNK & BPKB', menuKey: 'SHOWROOM_STNK_BPKB_MONITORING' },
+          { path: '/showroom/label-buku-service', label: 'Label Buku Service', menuKey: 'SHOWROOM_LABEL_BUKU_SERVICE' },
+          { path: '/showroom/document-handover', label: 'Document Handling', menuKey: 'DOCUMENT_HANDOVER' },
         ],
       },
-      {
-        id: 'opname', label: 'Opname', icon: ScanBarcode,
-        roles: SHOWROOM_OPNAME_ROLES,
-        children: [
-          { path: '/showroom/opname-unit', label: 'Opname Unit', roles: SHOWROOM_OPNAME_ROLES },
-          { path: '/showroom/opname-stnk', label: 'Opname STNK', roles: SHOWROOM_OPNAME_ROLES },
-          { path: '/showroom/opname-bpkb', label: 'Opname BPKB', roles: SHOWROOM_OPNAME_ROLES },
-          { path: '/showroom/pic-users', label: 'PIC Opname Users', roles: SHOWROOM_PIC_USERS_ROLES },
-        ],
-      },
+    ],
+  },
+
+  // Stock Opname — flat
+  {
+    type: 'group', id: 'stock_opname', label: 'Stock Opname',
+    items: [
+      { path: '/opname', label: 'Opname Sparepart', icon: Package, menuKey: 'OPNAME' },
+      { path: '/showroom/opname-unit', label: 'Opname Unit', icon: Bike, menuKey: 'SHOWROOM_OPNAME' },
+      { path: '/showroom/opname-stnk', label: 'Opname STNK', icon: FileText, menuKey: 'SHOWROOM_OPNAME' },
+      { path: '/showroom/opname-bpkb', label: 'Opname BPKB', icon: FileBadge, menuKey: 'SHOWROOM_OPNAME' },
+      { path: '/showroom/pic-users', label: 'PIC Opname Users', icon: Users, menuKey: 'SHOWROOM_PIC_USERS' },
     ],
   },
 
   // Administrasi — flat
   {
-    type: 'group', id: 'administrasi',
+    type: 'group', id: 'administrasi', label: 'Administrasi',
     items: [
-      { path: '/users', label: 'Manajemen User', icon: Users, roles: MANAGEMENT_ROLES },
-      { path: '/backups', label: 'Backup & Restore', icon: DatabaseBackup, roles: MANAGEMENT_ROLES },
+      { path: '/users', label: 'Manajemen User', icon: Users, menuKey: 'MANAGEMENT' },
+      { path: '/roles', label: 'Manajemen Akses', icon: ShieldCheck, menuKey: 'MANAGEMENT' },
+      { path: '/backups', label: 'Backup & Restore', icon: DatabaseBackup, menuKey: 'MANAGEMENT' },
     ],
   },
 ]
 
-const CRM_LABEL_OVERRIDE = { bengkel: 'CRM' }
 
-function filterByRole(items, userRole) {
+function filterByPermission(items, userRole, permissionsMap) {
   if (!userRole) return []
-  return items.filter((item) => !item.roles || item.roles.includes(userRole))
+  if (userRole === 'IT Master') return items
+  return items.filter((item) => {
+    if (!item.menuKey) return true
+    const allowedRoles = permissionsMap[item.menuKey] || []
+    return allowedRoles.includes(userRole)
+  })
 }
 
 function isPathActive(location, item) {
@@ -166,7 +177,7 @@ function hasActiveChild(location, item) {
   return item.children.some((c) => isPathActive(location, c))
 }
 
-function SubMenuItem({ child, isActive, isDark, primaryColor }) {
+function SubMenuItem({ child, isActive, isDark, primaryColor, onNavigate }) {
   return (
     <li className="relative">
       <span
@@ -185,15 +196,15 @@ function SubMenuItem({ child, isActive, isDark, primaryColor }) {
       />
       <Link
         to={child.path}
-        className={`block py-[0.65rem] pl-10 pr-4 text-sm leading-none transition-colors duration-150 ${
-          isActive
+        onClick={onNavigate}
+        className={`block py-[0.65rem] pl-10 pr-4 text-sm leading-none transition-colors duration-150 ${isActive
             ? isDark
               ? 'text-white font-bold'
               : 'font-bold'
             : isDark
               ? 'text-slate-300 hover:text-white'
               : 'text-slate-500 hover:text-slate-800'
-        }`}
+          }`}
         style={{
           color: isActive && !isDark ? primaryColor : undefined,
           fontWeight: isActive ? 600 : 400,
@@ -212,13 +223,12 @@ function ParentNavItem({ item, isActive, isExpanded, onToggle, isDark, primaryCo
       <button
         type="button"
         onClick={onToggle}
-        className={`group mb-[0.2rem] flex w-full items-center gap-3 px-3 py-[0.8125rem] text-left text-sm transition-colors duration-300 ${
-          isActive
+        className={`group mb-[0.2rem] flex w-full items-center gap-3 px-3 py-[0.8125rem] text-left text-sm transition-colors duration-300 ${isActive
             ? 'text-white'
             : isDark
               ? 'text-slate-300'
               : 'text-[#6C7383]'
-        }`}
+          }`}
         style={{
           borderRadius: '8px',
           backgroundColor: isActive ? primaryColor : 'transparent',
@@ -233,9 +243,8 @@ function ParentNavItem({ item, isActive, isExpanded, onToggle, isDark, primaryCo
         aria-expanded={isExpanded}
       >
         <span
-          className={`flex shrink-0 items-center justify-center transition-colors ${
-            isActive ? 'text-white' : isDark ? 'text-slate-300 group-hover:text-white' : 'text-[#6C7383] group-hover:text-white'
-          }`}
+          className={`flex shrink-0 items-center justify-center transition-colors ${isActive ? 'text-white' : isDark ? 'text-slate-300 group-hover:text-white' : 'text-[#6C7383] group-hover:text-white'
+            }`}
           style={{ fontSize: '1rem' }}
         >
           <Icon size={17} />
@@ -257,9 +266,8 @@ function ParentNavItem({ item, isActive, isExpanded, onToggle, isDark, primaryCo
 function GroupLabel({ label, isDark, withBorder }) {
   return (
     <p
-      className={`mb-2 mt-5 px-6 text-[10px] font-black uppercase tracking-[0.18em] first:mt-2 ${
-        isDark ? 'text-slate-500' : 'text-slate-400'
-      }`}
+      className={`mb-2 mt-5 px-6 text-[10px] font-black uppercase tracking-[0.18em] first:mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'
+        }`}
       style={withBorder ? { borderTop: `1px solid ${C.border}`, paddingTop: '14px' } : undefined}
     >
       {label}
@@ -267,51 +275,38 @@ function GroupLabel({ label, isDark, withBorder }) {
   )
 }
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }) {
   const location = useLocation()
-  const { logout, user } = useAuthStore()
+  const { logout, user, permissions } = useAuthStore()
   const { theme } = useThemeStore()
   const isDark = theme === 'dark'
 
-  // Build list of "expandable" parent IDs (have children + user has access)
-  const expandableParents = navStructure
-    .flatMap((g) => g.items || [])
-    .filter((it) => it.children && filterByRole([it], user?.role).length > 0)
-
-  // Active children per current route — derived during render (no setState-in-effect).
-  // On first render after a route change, we ensure those parents are open.
-  // We track user-collapsed parents in a ref so the auto-expand respects manual close.
+  // Active parent per current route (derived, tidak perlu state).
   const activeParentIds = useMemo(
-    () => new Set(expandableParents.filter((p) => hasActiveChild(location, p)).map((p) => p.id)),
-    [expandableParents, location],
+    () => new Set(
+      navStructure
+        .flatMap((g) => g.items || [])
+        .filter((it) => it.children)
+        .filter((p) => hasActiveChild(location, p))
+        .map((p) => p.id)
+    ),
+    [location.pathname],
   )
 
-  // Lazy initial state: include active parents at mount.
+  // Lazy initial state: buka parent yang aktif saat mount.
   const [openIds, setOpenIds] = useState(() => new Set(activeParentIds))
 
-  // On route change, ensure active parents are open (multi-open: never auto-close).
-  // Legitimate "synchronize with external system" use case (react-router).
+  // Saat route berubah, sinkronkan dengan parent aktif (accordion: hanya 1 terbuka).
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOpenIds((prev) => {
-      let changed = false
-      const next = new Set(prev)
-      activeParentIds.forEach((id) => {
-        if (!next.has(id)) {
-          next.add(id)
-          changed = true
-        }
-      })
-      return changed ? next : prev
-    })
-  }, [location.pathname, activeParentIds])
+    setOpenIds(new Set(activeParentIds))
+  }, [location.pathname])
 
+  // Accordion: klik parent baru → tutup semua, buka hanya yang diklik.
+  // Klik parent yang sudah terbuka → tutup.
   const toggleParent = (id) => {
     setOpenIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
+      if (prev.has(id)) return new Set()
+      return new Set([id])
     })
   }
 
@@ -319,11 +314,10 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`relative flex w-72 shrink-0 flex-col overflow-hidden ${
-        isDark
+      className={`relative flex h-full w-72 shrink-0 flex-col overflow-hidden ${isDark
           ? 'bg-slate-950 text-white shadow-2xl shadow-slate-950/30'
           : 'border-r border-slate-200 bg-white text-slate-900 shadow-sm'
-      }`}
+        }`}
     >
       {isDark && (
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(37,99,235,0.28),transparent_32%),linear-gradient(180deg,#020617_0%,#0f172a_55%,#020617_100%)]" />
@@ -336,9 +330,8 @@ export default function Sidebar() {
       <div className={`relative border-b p-5 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
         <div className="flex items-center gap-3">
           <div
-            className={`flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm ${
-              isDark ? 'bg-white text-slate-950 shadow-blue-950/20' : 'bg-blue-600 text-white'
-            }`}
+            className={`flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm ${isDark ? 'bg-white text-slate-950 shadow-blue-950/20' : 'bg-blue-600 text-white'
+              }`}
           >
             <Bike size={22} />
           </div>
@@ -356,17 +349,15 @@ export default function Sidebar() {
       {/* User Info */}
       <div className="relative p-4">
         <div
-          className={`rounded-2xl border p-3 ${
-            isDark ? 'border-white/10 bg-white/[0.07] backdrop-blur' : 'border-slate-200 bg-slate-50'
-          }`}
+          className={`rounded-2xl border p-3 ${isDark ? 'border-white/10 bg-white/[0.07] backdrop-blur' : 'border-slate-200 bg-slate-50'
+            }`}
         >
           <p className={`text-sm font-bold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
             {user?.name || 'User'}
           </p>
           <p
-            className={`mt-0.5 text-xs capitalize ${
-              isDark ? 'text-slate-400' : 'text-slate-500'
-            }`}
+            className={`mt-0.5 text-xs capitalize ${isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}
           >
             {displayRole(user?.role)}
           </p>
@@ -379,10 +370,10 @@ export default function Sidebar() {
         style={{ fontFamily: '"Nunito", sans-serif' }}
       >
         {navStructure.map((group) => {
-          const visibleItems = filterByRole(group.items || [], user?.role)
+          const visibleItems = filterByPermission(group.items || [], user?.role, permissions)
           if (visibleItems.length === 0) return null
 
-          const groupLabel = CRM_LABEL_OVERRIDE[group.id] || group.label
+          const groupLabel = group.label
           const showGroupLabel = !!groupLabel
           // Separator untuk group Showroom saja (bukan Bengkel/Administrasi)
           const withBorder = group.id === 'showroom'
@@ -394,7 +385,7 @@ export default function Sidebar() {
                 {visibleItems.map((item) => {
                   // === Sub-menu parent (collapsible) ===
                   if (item.children) {
-                    const visibleChildren = filterByRole(item.children, user?.role)
+                    const visibleChildren = filterByPermission(item.children, user?.role, permissions)
                     if (visibleChildren.length === 0) return null
                     const isOpen = openIds.has(item.id)
                     const isActive = hasActiveChild(location, item)
@@ -425,6 +416,7 @@ export default function Sidebar() {
                                   isActive={childActive}
                                   isDark={isDark}
                                   primaryColor={C.primary}
+                                  onNavigate={onNavigate}
                                 />
                               )
                             })}
@@ -441,13 +433,13 @@ export default function Sidebar() {
                     <li key={item.path} className="px-4">
                       <Link
                         to={item.path}
-                        className={`group mb-[0.2rem] flex items-center gap-3 px-3 py-[0.8125rem] text-sm transition-colors duration-300 ${
-                          isActive
+                        onClick={onNavigate}
+                        className={`group mb-[0.2rem] flex items-center gap-3 px-3 py-[0.8125rem] text-sm transition-colors duration-300 ${isActive
                             ? 'text-white'
                             : isDark
                               ? 'text-slate-300'
                               : 'text-[#6C7383]'
-                        }`}
+                          }`}
                         style={{
                           borderRadius: '8px',
                           backgroundColor: isActive ? C.primary : 'transparent',
@@ -461,13 +453,12 @@ export default function Sidebar() {
                         }}
                       >
                         <span
-                          className={`flex shrink-0 items-center justify-center transition-colors ${
-                            isActive
+                          className={`flex shrink-0 items-center justify-center transition-colors ${isActive
                               ? 'text-white'
                               : isDark
                                 ? 'text-slate-300 group-hover:text-white'
                                 : 'text-[#6C7383] group-hover:text-white'
-                          }`}
+                            }`}
                           style={{ fontSize: '1rem' }}
                         >
                           <Icon size={17} />
@@ -487,11 +478,10 @@ export default function Sidebar() {
       <div className={`relative border-t p-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
         <button
           onClick={logout}
-          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all ${
-            isDark
+          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all ${isDark
               ? 'text-slate-400 hover:bg-white/10 hover:text-white'
               : 'text-slate-500 hover:bg-slate-100 hover:text-slate-950'
-          }`}
+            }`}
         >
           <LogOut size={18} />
           <span>Keluar</span>

@@ -1,6 +1,8 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { PrismaClient } from '@prisma/client'
+import { prisma } from '../config/db.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const prismaDir = path.resolve(__dirname, '../../prisma')
@@ -24,6 +26,8 @@ export async function createDatabaseBackup(reason = 'manual') {
   const filename = `dev.db.backup.${safeReason}.${timestamp()}`
   const target = path.join(backupDir, filename)
 
+  // Mode WAL: flush data dari dev.db-wal ke dev.db agar salinan file konsisten/komplit.
+  await prisma.$queryRawUnsafe('PRAGMA wal_checkpoint(TRUNCATE);').catch(() => {})
   await fs.copyFile(dbPath, target)
   return { filename, path: target, created_at: new Date().toISOString() }
 }
@@ -78,6 +82,20 @@ export async function restoreDatabaseBackup(filename) {
   const oldDbPath = `${dbPath}.restore_old`
 
   await fs.copyFile(source, tempTarget)
+
+  // Validasi integritas backup di lokasi temp SEBELUM swap ke database aktif
+  const tempClient = new PrismaClient({
+    datasources: { db: { url: `file:${tempTarget}` } },
+  })
+  try {
+    const rows = await tempClient.$queryRawUnsafe('PRAGMA integrity_check;')
+    const value = String(rows?.[0]?.integrity_check ?? '').toLowerCase()
+    if (value !== 'ok') {
+      throw Object.assign(new Error('File backup rusak: integrity_check gagal'), { status: 400 })
+    }
+  } finally {
+    await tempClient.$disconnect().catch(() => {})
+  }
 
   try {
     await fs.rename(dbPath, oldDbPath)

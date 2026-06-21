@@ -81,3 +81,26 @@ export const uploadImage = multer({
     fileSize: 5 * 1024 * 1024, // 5MB
   },
 })
+
+// Handover photo upload - dedicated folder
+const handoverDir = 'uploads/handovers/'
+
+const handoverStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    fs.mkdir(handoverDir, { recursive: true }, (err) => cb(err, handoverDir))
+  },
+  filename: (req, file, cb) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const uniqueSuffix = Math.round(Math.random() * 1E6)
+    cb(null, `handover-${timestamp}-${uniqueSuffix}${path.extname(file.originalname)}`)
+  },
+})
+
+export const uploadHandoverPhoto = multer({
+  storage: handoverStorage,
+  fileFilter: imageFileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+})
+

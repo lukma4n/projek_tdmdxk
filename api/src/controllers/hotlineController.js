@@ -1,5 +1,6 @@
 import { prisma } from '../config/db.js'
 import { delCache } from '../config/redis.js'
+import { clampLimit } from '../utils/pagination.js'
 
 export async function getHotlines(req, res, next) {
   try {
@@ -27,7 +28,7 @@ export async function getHotlines(req, res, next) {
       prisma.hotlines.findMany({
         where,
         skip,
-        take: parseInt(limit),
+        take: clampLimit(limit, 50),
         orderBy: { tgl_hotline: 'desc' },
       }),
       prisma.hotlines.count({ where }),

@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Bell, Clock, Moon, Sun, Upload, UserRound } from 'lucide-react'
+import { Bell, Clock, Moon, Sun, Upload, UserRound, Menu } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../../stores/appStore'
 import { useAuthStore } from '../../stores/authStore'
 import { useThemeStore } from '../../stores/themeStore'
 import UploadModal from '../common/UploadModal'
 import { api } from '../../services/api'
-import { IMPORT_ROLES, displayRole } from '../../config/roles'
+import { ROLES, displayRole } from '../../config/roles'
 
-export default function Header() {
+export default function Header({ onMenuClick }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { lastSync, alerts } = useAppStore()
-  const { user } = useAuthStore()
+  const { user, permissions } = useAuthStore()
   const { theme, toggleTheme } = useThemeStore()
   const [showUpload, setShowUpload] = useState(false)
   const [showTasks, setShowTasks] = useState(false)
@@ -20,6 +20,9 @@ export default function Header() {
   const [approvalTasks, setApprovalTasks] = useState([])
   const [taskFilter, setTaskFilter] = useState('all')
   const isDark = theme === 'dark'
+
+  const hasImportAccess = user?.role === ROLES.MASTER_IT || 
+    ['IMPORT_HOTLINE', 'IMPORT_STOCK', 'IMPORT_WORKSHOP', 'IMPORT_SALES', 'IMPORT_SHOWROOM_STOCK_UNIT', 'IMPORT_SHOWROOM_OTR_PRICE', 'IMPORT_SHOWROOM_OFF_PURCHASE_PRICE', 'IMPORT_SHOWROOM_BBN', 'IMPORT_SHOWROOM_PROGRAM', 'IMPORT_SHOWROOM_STNK_BPKB_TRACK'].some(key => (permissions[key] || []).includes(user?.role))
 
   const criticalCount = alerts?.critical?.length || 0
   const attentionCount = alerts?.attention?.length || 0
@@ -64,9 +67,17 @@ export default function Header() {
 
   return (
     <>
-      <header className={`border-b px-5 py-3 shadow-sm backdrop-blur-xl lg:px-6 ${isDark ? 'border-white/10 bg-slate-950/80 shadow-slate-950/30' : 'border-slate-200 bg-white shadow-slate-200/70'}`}>
+      <header className={`relative z-20 border-b px-5 py-3 shadow-sm backdrop-blur-xl lg:px-6 ${isDark ? 'border-white/10 bg-slate-950/80 shadow-slate-950/30' : 'border-slate-200 bg-white/80 shadow-slate-200/70'}`}>
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={onMenuClick}
+              className={`lg:hidden inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition ${isDark ? 'border-white/10 bg-white/5 text-slate-200 hover:bg-white/10' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}
+              title="Menu"
+            >
+              <Menu size={20} />
+            </button>
             <div className={`hidden rounded-xl border px-3 py-2 text-sm sm:flex sm:items-center sm:gap-2 ${isDark ? 'border-white/10 bg-white/5 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
               <Clock size={14} className={isDark ? 'text-blue-300' : 'text-slate-400'} />
               <span className="truncate">
@@ -76,13 +87,13 @@ export default function Header() {
               </span>
             </div>
 
-            {IMPORT_ROLES.includes(user?.role) && (
+            {hasImportAccess && (
               <button
                 onClick={() => setShowUpload(true)}
                 className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition ${isDark ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-600 hover:bg-blue-700'}`}
               >
                 <Upload size={15} />
-                Import Excel
+                Import Data
               </button>
             )}
           </div>

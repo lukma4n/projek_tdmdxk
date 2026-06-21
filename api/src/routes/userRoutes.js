@@ -11,7 +11,7 @@ import {
 } from '../controllers/userController.js'
 
 const router = Router()
-  const userAdminAccess = authorize('Kepala Bengkel', 'Kepala Cabang', 'PIC Stock opname', 'Lead PIC Stock opname')
+const userAdminAccess = authorize('IT Master')
 const userPicAccess = authorize('PIC Stock opname')
 
 router.get('/', authenticate, userAdminAccess, getUsers)

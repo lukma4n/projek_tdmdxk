@@ -2,6 +2,7 @@ import xlsx from 'xlsx'
 import { rmSync } from 'fs'
 import path from 'path'
 import os from 'os'
+import { clampLimit } from '../utils/pagination.js'
 import { prisma } from '../config/db.js'
 import { formatForExcel } from '../utils/excelUtils.js'
 import { applyCustomerTypeFilter, getCustomerType, getFinanceCompanyShort } from './showroomUtils.js'
@@ -63,7 +64,7 @@ export async function getStnks(req, res, next) {
   try {
     const { page = 1, limit = 50 } = req.query
     const pageInt = parseInt(page)
-    const limitInt = parseInt(limit)
+    const limitInt = clampLimit(limit, 50)
     const where = buildStnkStockWhere(req.query)
 
     const [data, total] = await Promise.all([

@@ -347,7 +347,7 @@ export default function Customers() {
           </button>
 
           {showAlerts && (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto scrollbar-hide">
               <table className="w-full">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
@@ -515,7 +515,7 @@ export default function Customers() {
             <p className="text-sm text-danger-600">{error}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
@@ -607,7 +607,7 @@ export default function Customers() {
           <div className="p-8 text-center">
             <Users className="mx-auto text-slate-300 mb-2" size={32} />
             <p className="text-sm text-slate-500">Tidak ada data konsumen</p>
-            <p className="text-xs text-slate-400 mt-1">Upload file Excel Report Penjualan untuk mengisi data</p>
+            <p className="text-xs text-slate-400 mt-1">Data penjualan belum tersedia atau belum di-upload oleh Admin</p>
           </div>
         )}
       </div>

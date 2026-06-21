@@ -131,7 +131,7 @@ export default function ShowroomDealerBurden() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Master Beban Dealer</h1>
           <p className="text-sm text-slate-500">
-            Beban dealer per series untuk CASH dan KREDIT. Data lama akan di-replace saat import Excel.
+            Beban dealer per series untuk CASH dan KREDIT. Data lama akan di-replace saat import data.
           </p>
         </div>
         <div className="flex gap-2">
@@ -143,7 +143,7 @@ export default function ShowroomDealerBurden() {
           </button>
           <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700">
             <Upload size={16} />
-            Import Excel
+            Import Data
             <input
               ref={fileInputRef}
               type="file"
@@ -186,7 +186,7 @@ export default function ShowroomDealerBurden() {
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-slate-800 flex items-center gap-2">
               <FileSpreadsheet size={18} />
-              Preview Import Excel
+              Preview Import Data
             </h2>
             <div className="flex gap-2">
               <button
@@ -300,7 +300,7 @@ export default function ShowroomDealerBurden() {
             <Loader2 className="animate-spin text-blue-600" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50">

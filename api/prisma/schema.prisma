@@ -13,6 +13,7 @@ model users {
   password_hash String
   name          String
   role          String
+  phone         String?
   created_at    DateTime @default(now())
 
   showroom_user_locations showroom_user_locations[]
@@ -32,6 +33,8 @@ model users {
   showroom_sales_order_margins showroom_sales_order_margins[]
   showroom_opname_assignments showroom_opname_assignments[]
   showroom_notifications showroom_notifications[]
+  document_handovers document_handovers[]
+  document_handover_steps document_handover_steps[]
 }
 
 model sync_logs {
@@ -880,4 +883,90 @@ model showroom_stnk_bpkb_tracks {
   @@index([finance_company])
   @@index([lokasi_stnk])
   @@index([lokasi_bpkb])
+  @@index([mobile])
+}
+
+model workshop_marketing_targets {
+  id           Int      @id @default(autoincrement())
+  period_year  Int
+  period_month Int
+  mechanic     String   // Nama mekanik atau 'ALL' untuk target cabang
+  target_unit  Int      @default(0)
+  target_revenue Float  @default(0)
+  target_jasa  Float    @default(0)
+  target_part  Float    @default(0)
+  target_oli   Float    @default(0)
+  target_lcr   Int      @default(0)
+  notes        String?
+  is_active    Boolean  @default(true)
+  created_by   Int?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@unique([period_year, period_month, mechanic])
+  @@index([period_year, period_month])
+  @@index([mechanic])
+}
+
+model role_permissions {
+  id         Int      @id @default(autoincrement())
+  role_name  String
+  menu_key   String
+  created_at DateTime @default(now())
+
+  @@unique([role_name, menu_key])
+  @@index([role_name])
+  @@index([menu_key])
+}
+
+model document_handovers {
+  id              Int       @id @default(autoincrement())
+  engine_number   String
+  document_type   String                           // STNK | BPKB | BUKU_SERVICE | PLAT
+  handover_mode   String    @default("langsung")   // "via_sales" | "langsung"
+  status          String    @default("tersedia")   // tersedia | diserahkan_ke_sales | diterima_sales | diserahkan_ke_konsumen | selesai
+
+  salesman_name   String?
+  consumer_name   String?
+  consumer_phone  String?
+
+  notes           String?
+
+  created_by      Int
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  creator         users     @relation(fields: [created_by], references: [id])
+  steps           document_handover_steps[]
+
+  @@unique([engine_number, document_type])
+  @@index([status])
+  @@index([document_type, status])
+  @@index([salesman_name])
+  @@index([created_at])
+}
+
+model document_handover_steps {
+  id               Int       @id @default(autoincrement())
+  handover_id      Int
+  step_type        String                           // "admin_ke_sales" | "sales_terima" | "serah_ke_konsumen"
+
+  given_by_name    String?
+  received_by_name String?
+
+  photo_url        String?                          // Path foto dokumen BA
+  photo_handover_url String?                        // Path foto serah terima fisik (orang pegang dokumen)
+  photo_drive_id   String?                          // File ID Google Drive (untuk future migration)
+  photo_handover_drive_id String?                   // File ID Google Drive foto fisik (untuk future migration)
+
+  notes            String?
+
+  performed_by     Int
+  performed_at     DateTime  @default(now())
+
+  handover         document_handovers @relation(fields: [handover_id], references: [id], onDelete: Cascade)
+  performer        users              @relation(fields: [performed_by], references: [id])
+
+  @@index([handover_id])
+  @@index([step_type])
 }

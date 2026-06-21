@@ -456,7 +456,7 @@ export default function Opname() {
           {/* Scanned Items Table */}
           {scannedItems.length > 0 && (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto scrollbar-hide">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
@@ -721,7 +721,7 @@ export default function Opname() {
                   <div>
                     <h3 className="font-semibold text-slate-800 mb-3">Detail Per Barang</h3>
                     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto scrollbar-hide">
                         <table className="w-full">
                           <thead>
                             <tr className="bg-slate-50 border-b border-slate-200">

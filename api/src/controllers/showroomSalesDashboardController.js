@@ -227,6 +227,32 @@ export async function getShowroomSalesDashboard(req, res, next) {
     const cashGrowthPercent = prevCash > 0 ? Math.round(((cashCount - prevCash) / prevCash) * 100) : 0
     const creditGrowthPercent = prevCredit > 0 ? Math.round(((creditCount - prevCredit) / prevCredit) * 100) : 0
 
+    // ─── Leasing Comparison (vs Previous Month) ───
+    const prevLeasingRaw = await prisma.customers.groupBy({
+      by: ['sales_type'],
+      where: { ...prevWhere, sales_type: { in: LEASING_TYPES } },
+      _count: true,
+    })
+    const prevLeasingMap = Object.fromEntries(prevLeasingRaw.map((r) => [r.sales_type, r._count]))
+    const leasingComparison = LEASING_TYPES.map((name) => {
+      const current = byLeasingPeriod.find((l) => l.name === name)?.count || 0
+      const prev = prevLeasingMap[name] || 0
+      const growth = prev > 0 ? Math.round(((current - prev) / prev) * 100) : 0
+      return { name, current, prev, growth }
+    })
+
+    // ─── Top Salespeople Leaderboard (Top 5) ───
+    const topSalespeopleRaw = await prisma.customers.groupBy({
+      by: ['salesman'],
+      where: { ...baseWhere, AND: [{ salesman: { not: null } }, { salesman: { not: '' } }] },
+      _count: true,
+    })
+    topSalespeopleRaw.sort((a, b) => b._count - a._count)
+    const topSalespeople = topSalespeopleRaw.slice(0, 5).map((d) => ({
+      name: d.salesman,
+      count: d._count,
+    }))
+
     // ─── Daily Trend (for Line Chart) ───
     const periodRecords = await prisma.customers.findMany({
       where: baseWhere,
@@ -273,6 +299,9 @@ export async function getShowroomSalesDashboard(req, res, next) {
     const projectedMonthEnd = isSameMonth ? Math.round(avgUnitsPerDay * (daysInPeriod + daysRemaining)) : closingDo
     const gap = target > 0 ? target - projectedMonthEnd : 0
     const dailyRequired = target > 0 && daysRemaining > 0 ? Math.ceil(gap / daysRemaining) : 0
+    const attainmentRate = target > 0 ? Math.round((closingDo / target) * 1000) / 10 : 0
+    const totalDaysInMonth = monthEnd.getDate()
+    const targetPace = target > 0 ? Math.round((target / totalDaysInMonth) * 100) / 100 : 0
 
     // ─── Detail Transaksi ──────────────────────────────────
     const transactions = await prisma.customers.findMany({
@@ -324,6 +353,8 @@ export async function getShowroomSalesDashboard(req, res, next) {
       byModelPeriod,
       byKabupatenPeriod,
       byKecamatanPeriod,
+      topSalespeople,
+      leasingComparison,
       period: {
         from: from.toISOString().split('T')[0],
         to: to.toISOString().split('T')[0],
@@ -347,6 +378,8 @@ export async function getShowroomSalesDashboard(req, res, next) {
         gap,
         daysRemaining,
         dailyRequired,
+        attainmentRate,
+        targetPace,
       },
     })
   } catch (error) {

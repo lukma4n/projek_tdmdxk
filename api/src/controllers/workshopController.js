@@ -1,4 +1,5 @@
 import { prisma } from '../config/db.js'
+import { clampLimit } from '../utils/pagination.js'
 
 export async function getWorkOrders(req, res, next) {
   try {
@@ -37,7 +38,7 @@ export async function getWorkOrders(req, res, next) {
       prisma.work_orders.findMany({
         where,
         skip,
-        take: parseInt(limit),
+        take: clampLimit(limit, 50),
         orderBy: { date_confirm: 'desc' },
       }),
       prisma.work_orders.count({ where }),
