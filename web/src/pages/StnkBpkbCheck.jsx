@@ -17,12 +17,15 @@ import {
   AlertCircle,
   User,
   Info,
-  Copy
+  Copy,
+  MessageCircle
 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { selfCheckUrl } from '../config/selfCheck'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
+// Nomor WhatsApp dealer untuk request pengambilan dokumen (format internasional, mis. 6281...).
+const DEALER_WA = (import.meta.env.VITE_DEALER_WA_PHONE || '').replace(/\D/g, '')
 
 export default function StnkBpkbCheck() {
   const { theme, toggleTheme } = useThemeStore()
@@ -267,6 +270,26 @@ export default function StnkBpkbCheck() {
                   <p className="text-xs mt-4 text-muted">
                     * Catatan: Harap membawa KTP asli pemilik sesuai nama STNK dan nota serah terima atau Sales Order asli.
                   </p>
+                  {DEALER_WA && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const msg = [
+                          'Halo TDM Ketapang,',
+                          'Saya ingin mengambil dokumen STNK / BPKB.',
+                          `No Mesin: ${result.engine_number || '-'}`,
+                          `Nama (STNK): ${result.stnk_name || '-'}`,
+                          'Mohon info jadwal pengambilan.',
+                          'Terima kasih.',
+                        ].join('\n')
+                        window.open(`https://wa.me/${DEALER_WA}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener')
+                      }}
+                      className="mt-4 inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-green-700"
+                    >
+                      <MessageCircle size={16} />
+                      Request via WhatsApp
+                    </button>
+                  )}
                 </div>
               </div>
             )}

@@ -86,10 +86,18 @@ REDIS_URL=redis://localhost:6379
 
 `REDIS_URL` optional. Jika Redis tidak tersedia, dashboard fallback langsung ke database.
 
-Frontend `.env` optional:
+Frontend `.env` optional (lihat `web/.env.example`):
 
 ```env
 VITE_API_URL=/api
+
+# URL publik untuk link & QR self-check STNK/BPKB (halaman /cek).
+# Kosong → fallback ke window.location.origin. Produksi: isi domain publik.
+VITE_PUBLIC_URL=
+
+# Nomor WhatsApp dealer untuk tombol "Request via WhatsApp" di /cek.
+# Format internasional tanpa + / 0 (mis. 6281234567890). Kosong → tombol disembunyikan.
+VITE_DEALER_WA_PHONE=
 ```
 
 ## Login
