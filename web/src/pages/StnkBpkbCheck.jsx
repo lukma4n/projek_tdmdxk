@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useThemeStore } from '../stores/themeStore'
 import {
   Search,
@@ -17,6 +17,7 @@ import {
   Lock,
   Camera,
   Upload,
+  RefreshCw,
   AlertCircle,
   User,
   Info,
@@ -85,6 +86,100 @@ export default function StnkBpkbCheck() {
   // FASE 2: lampiran foto KTP (wajib)
   const [ktpFile, setKtpFile] = useState(null)
   const [ktpPreview, setKtpPreview] = useState('')
+  // Kamera in-app (getUserMedia) — berfungsi di laptop (webcam) & mobile.
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [cameraError, setCameraError] = useState('')
+  const [capturedBlob, setCapturedBlob] = useState(null)
+  const [capturedUrl, setCapturedUrl] = useState('')
+  const videoRef = useRef(null)
+
+  // Mulai/stop stream kamera saat modal kamera terbuka (dan belum ada hasil tangkapan).
+  useEffect(() => {
+    if (!cameraOpen || capturedBlob) return
+    let cancelled = false
+    let stream
+    if (!navigator.mediaDevices?.getUserMedia) {
+      void Promise.resolve().then(() => {
+        if (!cancelled) setCameraError('Browser tidak mendukung akses kamera. Gunakan Pilih File.')
+      })
+      return
+    }
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+      .then((s) => {
+        if (cancelled) {
+          s.getTracks().forEach((t) => t.stop())
+          return
+        }
+        stream = s
+        if (videoRef.current) {
+          videoRef.current.srcObject = s
+          videoRef.current.play().catch(() => {})
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return
+        const name = err?.name
+        if (name === 'NotAllowedError' || name === 'SecurityError') {
+          setCameraError('Akses kamera ditolak. Izinkan kamera di pengaturan browser, atau gunakan Pilih File.')
+        } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+          setCameraError('Kamera tidak ditemukan. Gunakan Pilih File untuk mengunggah dari penyimpanan.')
+        } else {
+          setCameraError('Tidak dapat membuka kamera. Coba gunakan Pilih File.')
+        }
+      })
+    return () => {
+      cancelled = true
+      if (stream) stream.getTracks().forEach((t) => t.stop())
+    }
+  }, [cameraOpen, capturedBlob])
+
+  const openCamera = () => {
+    setCameraError('')
+    setCapturedBlob(null)
+    setCapturedUrl('')
+    setCameraOpen(true)
+  }
+
+  const captureFrame = () => {
+    const video = videoRef.current
+    if (!video || !video.videoWidth) return
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return
+        setCapturedBlob(blob)
+        setCapturedUrl(URL.createObjectURL(blob))
+      },
+      'image/jpeg',
+      0.9
+    )
+  }
+
+  const useCapturedPhoto = () => {
+    if (!capturedBlob) return
+    const file = new File([capturedBlob], `ktp-${Date.now()}.jpg`, { type: 'image/jpeg' })
+    setKtpFile(file)
+    setKtpPreview(capturedUrl) // pakai URL yang sudah dibuat
+    setCapturedBlob(null)
+    setCameraOpen(false)
+  }
+
+  const retakePhoto = () => {
+    if (capturedUrl) URL.revokeObjectURL(capturedUrl)
+    setCapturedBlob(null)
+    setCapturedUrl('')
+  }
+
+  const closeCamera = () => {
+    if (capturedUrl) URL.revokeObjectURL(capturedUrl)
+    setCapturedBlob(null)
+    setCapturedUrl('')
+    setCameraOpen(false)
+  }
 
   const handleCopyLink = async () => {
     const link = selfCheckUrl(engineNumber)
@@ -520,13 +615,14 @@ export default function StnkBpkbCheck() {
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-3">
-                        <label
-                          htmlFor="pickup-ktp-cam"
+                        <button
+                          type="button"
+                          onClick={openCamera}
                           className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-accent/40 bg-accent-soft px-3 py-3.5 text-sm font-bold text-accent transition hover:brightness-105 active:scale-[0.98]"
                         >
                           <Camera size={18} />
                           Ambil Foto
-                        </label>
+                        </button>
                         <label
                           htmlFor="pickup-ktp-file"
                           className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-hover px-3 py-3.5 text-sm font-semibold text-muted transition hover:border-accent hover:text-accent"
@@ -534,16 +630,7 @@ export default function StnkBpkbCheck() {
                           <Upload size={18} />
                           Pilih File
                         </label>
-                        {/* Ambil Foto: capture=environment membuka kamera belakang langsung di mobile */}
-                        <input
-                          id="pickup-ktp-cam"
-                          type="file"
-                          accept="image/jpeg,image/png,image/jpg"
-                          capture="environment"
-                          onChange={handleKtpChange}
-                          className="hidden"
-                        />
-                        {/* Pilih File: dari galeri/penyimpanan (tanpa capture) */}
+                        {/* Pilih File: dari galeri/penyimpanan */}
                         <input
                           id="pickup-ktp-file"
                           type="file"
@@ -701,6 +788,72 @@ export default function StnkBpkbCheck() {
           <p className="mt-1">DXK Operation System v1.0 • All Rights Reserved.</p>
         </div>
       </footer>
+
+      {/* Modal kamera in-app (getUserMedia) untuk foto KTP langsung */}
+      {cameraOpen && (
+        <div className="fixed inset-0 z-[80] flex flex-col bg-black/90">
+          <div className="flex items-center justify-between px-4 py-3 text-white">
+            <span className="text-sm font-bold">Ambil Foto KTP</span>
+            <button
+              type="button"
+              onClick={closeCamera}
+              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white/80 hover:bg-white/10"
+            >
+              Tutup
+            </button>
+          </div>
+          <div className="relative flex flex-1 items-center justify-center overflow-hidden">
+            {cameraError ? (
+              <div className="max-w-sm px-6 text-center text-white">
+                <AlertCircle size={36} className="mx-auto mb-3 text-danger" />
+                <p className="text-sm">{cameraError}</p>
+                <button
+                  type="button"
+                  onClick={closeCamera}
+                  className="mt-4 rounded-xl bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/25"
+                >
+                  Kembali
+                </button>
+              </div>
+            ) : capturedBlob ? (
+              <img src={capturedUrl} alt="Hasil tangkapan" className="max-h-full max-w-full object-contain" />
+            ) : (
+              <video ref={videoRef} playsInline muted className="max-h-full max-w-full object-contain" />
+            )}
+          </div>
+          {!cameraError && (
+            <div className="flex items-center justify-center gap-4 px-4 py-5">
+              {capturedBlob ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={retakePhoto}
+                    className="flex items-center gap-2 rounded-xl bg-white/15 px-5 py-3 text-sm font-bold text-white hover:bg-white/25"
+                  >
+                    <RefreshCw size={18} /> Ulangi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={useCapturedPhoto}
+                    className="flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white hover:brightness-110"
+                  >
+                    <Check size={18} /> Gunakan Foto
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={captureFrame}
+                  className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-white/20 transition active:scale-95"
+                  aria-label="Ambil foto"
+                >
+                  <span className="h-11 w-11 rounded-full bg-white" />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
