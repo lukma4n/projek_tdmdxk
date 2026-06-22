@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Lock,
   Camera,
+  Upload,
   AlertCircle,
   User,
   Info,
@@ -502,25 +503,56 @@ export default function StnkBpkbCheck() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="pickup-ktp" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
+                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
                       Foto KTP Pemilik (wajib)
                     </label>
                     <p className="mb-2 text-[11px] text-muted">JPG/PNG, maks 10MB. Bawa juga KTP asli saat pengambilan.</p>
-                    <label
-                      htmlFor="pickup-ktp"
-                      className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-hover px-4 py-3.5 text-sm font-semibold text-muted transition hover:border-accent hover:text-accent"
-                    >
-                      <Camera size={18} />
-                      {ktpFile ? ktpFile.name : 'Pilih / Foto KTP'}
-                    </label>
-                    <input
-                      id="pickup-ktp"
-                      type="file"
-                      accept="image/jpeg,image/png,image/jpg"
-                      capture="environment"
-                      onChange={handleKtpChange}
-                      className="hidden"
-                    />
+                    {ktpFile ? (
+                      <div className="flex items-center justify-between gap-2 rounded-xl border border-accent/40 bg-accent-soft px-4 py-3 text-sm font-semibold text-accent">
+                        <span className="truncate">{ktpFile.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => { setKtpFile(null); setKtpPreview('') }}
+                          className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold text-danger hover:bg-danger/10"
+                        >
+                          Ganti
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                        <label
+                          htmlFor="pickup-ktp-cam"
+                          className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-accent/40 bg-accent-soft px-3 py-3.5 text-sm font-bold text-accent transition hover:brightness-105 active:scale-[0.98]"
+                        >
+                          <Camera size={18} />
+                          Ambil Foto
+                        </label>
+                        <label
+                          htmlFor="pickup-ktp-file"
+                          className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-hover px-3 py-3.5 text-sm font-semibold text-muted transition hover:border-accent hover:text-accent"
+                        >
+                          <Upload size={18} />
+                          Pilih File
+                        </label>
+                        {/* Ambil Foto: capture=environment membuka kamera belakang langsung di mobile */}
+                        <input
+                          id="pickup-ktp-cam"
+                          type="file"
+                          accept="image/jpeg,image/png,image/jpg"
+                          capture="environment"
+                          onChange={handleKtpChange}
+                          className="hidden"
+                        />
+                        {/* Pilih File: dari galeri/penyimpanan (tanpa capture) */}
+                        <input
+                          id="pickup-ktp-file"
+                          type="file"
+                          accept="image/jpeg,image/png,image/jpg"
+                          onChange={handleKtpChange}
+                          className="hidden"
+                        />
+                      </div>
+                    )}
                     {ktpPreview && (
                       <img
                         src={ktpPreview}
