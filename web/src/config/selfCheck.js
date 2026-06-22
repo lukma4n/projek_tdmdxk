@@ -1,5 +1,3 @@
-import QRCode from 'qrcode'
-
 // Sumber URL publik tunggal untuk self-check STNK/BPKB.
 // Env produksi (VITE_PUBLIC_URL), fallback origin saat ini → jalan tanpa konfigurasi.
 export const PUBLIC_URL =
@@ -11,8 +9,10 @@ export function selfCheckUrl(engine) {
   return `${PUBLIC_URL}/cek?engine_number=${encodeURIComponent((engine || '').trim())}`
 }
 
-// QR (data URL PNG) berisi selfCheckUrl, untuk disisipkan di label cetak.
-export function selfCheckQrDataUrl(engine) {
+// QR (data URL PNG) berisi selfCheckUrl, untuk disisipkan di kartu cetak.
+// qrcode di-lazy-import agar tidak ikut bundle utama (hanya dimuat saat cetak kartu).
+export async function selfCheckQrDataUrl(engine) {
+  const { default: QRCode } = await import('qrcode')
   return QRCode.toDataURL(selfCheckUrl(engine), {
     margin: 1,
     width: 160,

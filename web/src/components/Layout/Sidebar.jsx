@@ -16,9 +16,11 @@ import {
   ChevronRight,
   BarChart3,
   Contact,
+  QrCode,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
-import { displayRole as displayRoleImpl } from '../../config/roles'
+import { displayRole as displayRoleImpl, ROLES } from '../../config/roles'
+import { PUBLIC_URL } from '../../config/selfCheck'
 
 // Struktur menu: top-level item bisa punya `children` (sub-menu)
 // Kalau ada `children`, parent hanya jadi label collapsible (tidak punya path sendiri)
@@ -142,6 +144,22 @@ const navStructure = [
       { path: '/backups', label: 'Backup & Restore', icon: DatabaseBackup, menuKey: 'MANAGEMENT' },
     ],
   },
+
+  // Layanan Publik — link halaman konsumen (buka tab baru). Gate via `roles`
+  // (bukan menuKey DB) karena ini hanya pintasan ke halaman publik.
+  {
+    type: 'group', id: 'publik', label: 'Layanan Publik',
+    items: [
+      {
+        id: 'self-check-publik',
+        label: 'Self-Check Publik',
+        icon: QrCode,
+        external: true,
+        href: `${PUBLIC_URL}/cek`,
+        roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM, ROLES.ADMIN_CRM],
+      },
+    ],
+  },
 ]
 
 
@@ -149,6 +167,7 @@ function filterByPermission(items, userRole, permissionsMap) {
   if (!userRole) return []
   if (userRole === 'IT Master') return items
   return items.filter((item) => {
+    if (item.roles) return item.roles.includes(userRole)
     if (!item.menuKey) return true
     const allowedRoles = permissionsMap[item.menuKey] || []
     return allowedRoles.includes(userRole)
@@ -345,25 +364,33 @@ export default function Sidebar({ onNavigate }) {
                     )
                   }
 
-                  // Flat nav item
+                  // Flat nav item — internal Link, atau external (buka tab baru)
                   const isActive = isPathActive(location, item)
                   const Icon = item.icon
+                  const flatClass = `group mb-[0.2rem] flex items-center gap-3 px-3 py-[0.8125rem] text-sm transition-colors duration-200 rounded-lg ${
+                    isActive
+                      ? 'bg-accent-soft text-accent font-semibold'
+                      : 'text-muted hover:bg-hover hover:text-text-strong'
+                  }`
+                  const flatInner = (
+                    <>
+                      <span className="flex shrink-0 items-center justify-center transition-colors" style={{ fontSize: '1rem' }}>
+                        <Icon size={17} />
+                      </span>
+                      <span className="menu-title inline-block leading-none">{item.label}</span>
+                    </>
+                  )
                   return (
-                    <li key={item.path} className="px-4">
-                      <Link
-                        to={item.path}
-                        onClick={onNavigate}
-                        className={`group mb-[0.2rem] flex items-center gap-3 px-3 py-[0.8125rem] text-sm transition-colors duration-200 rounded-lg ${
-                          isActive
-                            ? 'bg-accent-soft text-accent font-semibold'
-                            : 'text-muted hover:bg-hover hover:text-text-strong'
-                        }`}
-                      >
-                        <span className="flex shrink-0 items-center justify-center transition-colors" style={{ fontSize: '1rem' }}>
-                          <Icon size={17} />
-                        </span>
-                        <span className="menu-title inline-block leading-none">{item.label}</span>
-                      </Link>
+                    <li key={item.path || item.id} className="px-4">
+                      {item.external ? (
+                        <a href={item.href} target="_blank" rel="noopener noreferrer" onClick={onNavigate} className={flatClass}>
+                          {flatInner}
+                        </a>
+                      ) : (
+                        <Link to={item.path} onClick={onNavigate} className={flatClass}>
+                          {flatInner}
+                        </Link>
+                      )}
                     </li>
                   )
                 })}
