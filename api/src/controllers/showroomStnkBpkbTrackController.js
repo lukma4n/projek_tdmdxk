@@ -497,3 +497,36 @@ export async function exportStnkBpkbTrackExcel(req, res, next) {
     next(error)
   }
 }
+
+/**
+ * Update nomor HP (mobile) konsumen pada track STNK/BPKB.
+ * Untuk koreksi nomor saat HP konsumen sudah berganti (Opsi C self-check).
+ * PATCH /api/showroom/stnk-bpkb-tracks/:engineNumber/mobile  body { mobile }
+ */
+export async function updateStnkBpkbTrackMobile(req, res, next) {
+  try {
+    const engineNumber = String(req.params.engineNumber || '').trim().toUpperCase()
+    const raw = String(req.body?.mobile ?? '').trim()
+    const clean = raw.replace(/[^\d+]/g, '')
+
+    if (clean.replace(/\D/g, '').length < 8) {
+      return res.status(400).json({ error: 'Nomor HP tidak valid' })
+    }
+
+    const track = await prisma.showroom_stnk_bpkb_tracks.findUnique({
+      where: { engine_number: engineNumber },
+    })
+    if (!track) {
+      return res.status(404).json({ error: 'Data unit tidak ditemukan' })
+    }
+
+    await prisma.showroom_stnk_bpkb_tracks.update({
+      where: { engine_number: track.engine_number },
+      data: { mobile: clean },
+    })
+
+    res.json({ engine_number: track.engine_number, mobile: clean })
+  } catch (error) {
+    next(error)
+  }
+}

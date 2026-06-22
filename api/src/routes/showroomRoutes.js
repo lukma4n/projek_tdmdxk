@@ -49,6 +49,7 @@ import {
 } from '../controllers/showroomTeamLeaderController.js'
 import {
   getStnkBpkbTrackMonitoring, previewStnkBpkbTrack, uploadStnkBpkbTrack, exportStnkBpkbTrackExcel,
+  updateStnkBpkbTrackMobile,
 } from '../controllers/showroomStnkBpkbTrackController.js'
 import {
   getStnks, exportStnksExcel, getStnkSummary, getStnkFilters,
@@ -223,6 +224,7 @@ const stnkBpkbTrackAdminAccess = authorize('Admin')
 const stnkBpkbTrackReadAccess = authorize('Admin', 'CRM', 'Kepala Cabang')
 router.get('/stnk-bpkb-tracks/monitoring', authenticate, stnkBpkbTrackReadAccess, getStnkBpkbTrackMonitoring)
 router.get('/stnk-bpkb-tracks/export', authenticate, stnkBpkbTrackReadAccess, exportStnkBpkbTrackExcel)
+router.patch('/stnk-bpkb-tracks/:engineNumber/mobile', authenticate, stnkBpkbTrackReadAccess, updateStnkBpkbTrackMobile)
 router.post('/stnk-bpkb-tracks/preview', authenticate, authorizeMenu('IMPORT_SHOWROOM_STNK_BPKB_TRACK'), upload.single('file'), previewStnkBpkbTrack)
 router.post('/stnk-bpkb-tracks/import', authenticate, authorizeMenu('IMPORT_SHOWROOM_STNK_BPKB_TRACK'), upload.single('file'), uploadStnkBpkbTrack)
 

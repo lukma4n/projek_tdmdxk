@@ -127,15 +127,36 @@ test('Public Check: Success check with correct engine_number and phone', async (
 
   assert.equal(res.status, 200)
   assert.equal(res.body.engine_number, 'MH1JM1111TEST1234')
-  assert.equal(res.body.stnk_name, 'B**I S*****O') // Masked
-  assert.equal(res.body.faktur.no_faktur, '***4567') // Masked
+  assert.equal(res.body.stnk_name, 'BUDI SANTOSO') // full (tanpa masking)
+  assert.equal(res.body.chassis_number, 'MHR12345678901234') // full
+  assert.equal(res.body.faktur.no_faktur, 'FAK-1234567') // full
   assert.equal(res.body.faktur.is_done, true)
-  assert.equal(res.body.stnk.no_stnk, '***4321') // Masked
+  assert.equal(res.body.stnk.no_stnk, 'STNK-7654321') // full
   assert.equal(res.body.stnk.is_done, true)
   assert.equal(res.body.stnk.is_delivered, true)
   assert.equal(res.body.bpkb.is_done, true)
   assert.equal(res.body.bpkb.is_delivered, false)
-  assert.equal(res.body.bpkb.penerima, 'B**I S*****O') // Masked
+  assert.equal(res.body.bpkb.penerima, 'BUDI SANTOSO') // full
+})
+
+test('Public Check: Success via 4 digit terakhir Nomor Rangka (fallback HP)', async () => {
+  const res = await request(app)
+    .get('/api/public/stnk-bpkb/check')
+    .query({
+      engine_number: 'MH1JM1111TEST1234',
+      chassis: '1234' // 4 digit terakhir dari MHR12345678901234, tanpa phone
+    })
+
+  assert.equal(res.status, 200)
+  assert.equal(res.body.engine_number, 'MH1JM1111TEST1234')
+  assert.equal(res.body.stnk_name, 'BUDI SANTOSO')
+})
+
+test('Public Check: 404 untuk 4 digit Nomor Rangka salah', async () => {
+  const res = await request(app)
+    .get('/api/public/stnk-bpkb/check')
+    .query({ engine_number: 'MH1JM1111TEST1234', chassis: '9999' })
+  assert.equal(res.status, 404)
 })
 
 test('Public Check: Success check with matching suffix only (flexible formatting)', async () => {
@@ -181,7 +202,7 @@ test('Public Check: Return 400 for missing query parameters', async () => {
       engine_number: 'MH1JM1111TEST1234'
     })
   assert.equal(res1.status, 400)
-  assert.equal(res1.body.error, 'Nomor Mesin dan Nomor HP wajib diisi')
+  assert.ok(res1.body.error.includes('wajib diisi'))
 
   const res2 = await request(app)
     .get('/api/public/stnk-bpkb/check')
@@ -189,18 +210,18 @@ test('Public Check: Return 400 for missing query parameters', async () => {
       phone: '081234567890'
     })
   assert.equal(res2.status, 400)
-  assert.equal(res2.body.error, 'Nomor Mesin dan Nomor HP wajib diisi')
+  assert.ok(res2.body.error.includes('wajib diisi'))
 })
 
-test('Public Check: Return 400 for too short phone number input', async () => {
+test('Public Check: 404 untuk HP terlalu pendek tanpa rangka (tidak terverifikasi)', async () => {
   const res = await request(app)
     .get('/api/public/stnk-bpkb/check')
     .query({
       engine_number: 'MH1JM1111TEST1234',
       phone: '123'
     })
-  assert.equal(res.status, 400)
-  assert.equal(res.body.error, 'Nomor HP tidak valid')
+  assert.equal(res.status, 404)
+  assert.ok(res.body.error.includes('Data tidak ditemukan'))
 })
 
 test('Auto-Enrichment: enrichTracksWithMobile correctly populates mobile numbers from database', async () => {

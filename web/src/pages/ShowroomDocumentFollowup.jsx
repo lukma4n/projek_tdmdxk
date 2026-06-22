@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { API_BASE, api } from '../services/api'
-import { Bike, CheckCircle2, Download, FileBadge, FileText, Loader2, MapPin, MessageCircle, Phone, QrCode, RefreshCw, Search, User, XCircle } from 'lucide-react'
+import { Bike, Check, CheckCircle2, Download, FileBadge, FileText, Loader2, MapPin, MessageCircle, Pencil, Phone, QrCode, RefreshCw, Search, User, XCircle } from 'lucide-react'
 import { selfCheckUrl } from '../config/selfCheck'
 import SelfCheckCard from '../components/common/SelfCheckCard'
 
@@ -111,6 +111,23 @@ export default function ShowroomDocumentFollowup({ type }) {
   const [savingKey, setSavingKey] = useState('')
   const [error, setError] = useState('')
   const [cardItems, setCardItems] = useState(null)
+  const [editMobileFor, setEditMobileFor] = useState(null)
+  const [mobileDraft, setMobileDraft] = useState('')
+  const [savingMobile, setSavingMobile] = useState(false)
+
+  const startEditMobile = (item) => { setEditMobileFor(item.engine_number); setMobileDraft(item.mobile || '') }
+  const saveMobile = async (item) => {
+    setSavingMobile(true)
+    try {
+      const res = await api.updateStnkBpkbTrackMobile(item.engine_number, mobileDraft)
+      setItems((prev) => prev.map((it) => (it.engine_number === item.engine_number ? { ...it, mobile: res.mobile } : it)))
+      setEditMobileFor(null)
+    } catch (err) {
+      setError(err.message || 'Gagal memperbarui Nomor HP')
+    } finally {
+      setSavingMobile(false)
+    }
+  }
 
   const loadData = async () => {
     try {
@@ -278,7 +295,21 @@ export default function ShowroomDocumentFollowup({ type }) {
                       </div>
                       <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
                         <div className="flex items-center gap-2 min-w-0"><User size={15} className="text-faint shrink-0" /><div className="min-w-0"><p className="text-sm font-semibold text-text truncate">{item.stnk_name || '-'}</p><p className="text-xs text-faint truncate">Pemohon: {item.applicant_name || item.requestor_name || '-'}</p></div></div>
-                        <div className="flex items-center gap-2 min-w-0"><Phone size={15} className="text-faint shrink-0" /><p className="text-sm text-muted truncate">{item.mobile || item.customer_phone || '-'}</p></div>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Phone size={15} className="text-faint shrink-0" />
+                          {editMobileFor === item.engine_number ? (
+                            <div className="flex items-center gap-1 min-w-0">
+                              <input value={mobileDraft} onChange={(e) => setMobileDraft(e.target.value)} placeholder="0811..." className="w-32 rounded-lg border border-border bg-panel px-2 py-1 text-xs text-text focus:outline-none focus:ring-2 focus:ring-accent-soft" />
+                              <button onClick={() => saveMobile(item)} disabled={savingMobile} className="shrink-0 rounded p-1 text-success hover:bg-success-50 disabled:opacity-50" title="Simpan">{savingMobile ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}</button>
+                              <button onClick={() => setEditMobileFor(null)} disabled={savingMobile} className="shrink-0 rounded p-1 text-muted hover:bg-hover" title="Batal"><XCircle size={14} /></button>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-sm text-muted truncate">{item.mobile || item.customer_phone || '-'}</p>
+                              <button onClick={() => startEditMobile(item)} className="shrink-0 rounded p-1 text-faint hover:text-accent" title="Ubah Nomor HP konsumen"><Pencil size={13} /></button>
+                            </>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 min-w-0"><Bike size={15} className="text-faint shrink-0" /><p className="text-sm text-muted truncate">{item.engine_number || '-'}</p></div>
                         <div className="flex items-center gap-2 min-w-0"><MapPin size={15} className="text-faint shrink-0" /><p className="text-sm text-muted truncate">{isStnk ? item.stnk_location || '-' : item.bpkb_location || '-'}</p></div>
                       </div>

@@ -74,6 +74,7 @@ export const getShowroomDocumentFollowups = (type, params = {}) => {
   return fetchWithAuth(`/showroom/document-followups/${type}${query ? '?' + query : ''}`)
 }
 export const createShowroomDocumentFollowup = (type, engineNumber, data) => fetchWithAuth(`/showroom/document-followups/${type}/${encodeURIComponent(engineNumber)}`, { method: 'POST', body: data })
+export const updateStnkBpkbTrackMobile = (engineNumber, mobile) => fetchWithAuth(`/showroom/stnk-bpkb-tracks/${encodeURIComponent(engineNumber)}/mobile`, { method: 'PATCH', body: { mobile } })
 
 // OTR Prices
 export const getShowroomOtrPrices = (params = {}) => {

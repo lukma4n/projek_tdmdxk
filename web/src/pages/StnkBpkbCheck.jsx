@@ -35,6 +35,7 @@ export default function StnkBpkbCheck() {
   // Prefill dari URL (mis. dari QR/link WA: /cek?engine_number=...)
   const [engineNumber, setEngineNumber] = useState(() => (searchParams.get('engine_number') || '').toUpperCase())
   const [phone, setPhone] = useState(() => searchParams.get('phone') || '')
+  const [chassis, setChassis] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
@@ -53,8 +54,8 @@ export default function StnkBpkbCheck() {
 
   const handleSearch = async (e) => {
     e.preventDefault()
-    if (!engineNumber || !phone) {
-      setError('Nomor Mesin dan Nomor HP wajib diisi')
+    if (!engineNumber || (!phone && !chassis)) {
+      setError('Isi Nomor Mesin, lalu Nomor HP atau 4 digit terakhir Nomor Rangka')
       return
     }
 
@@ -63,10 +64,9 @@ export default function StnkBpkbCheck() {
     setResult(null)
 
     try {
-      const queryParams = new URLSearchParams({
-        engine_number: engineNumber.trim(),
-        phone: phone.trim()
-      })
+      const queryParams = new URLSearchParams({ engine_number: engineNumber.trim() })
+      if (phone.trim()) queryParams.set('phone', phone.trim())
+      if (chassis.trim()) queryParams.set('chassis', chassis.trim())
       const res = await fetch(`${API_BASE}/public/stnk-bpkb/check?${queryParams.toString()}`)
       const data = await res.json()
 
@@ -157,6 +157,24 @@ export default function StnkBpkbCheck() {
                 autoFocus={!!engineNumber}
                 className="w-full rounded-xl border px-4 py-3.5 text-sm transition-all duration-300 focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
               />
+            </div>
+            <div className="md:col-span-2">
+              <div className="my-1 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-faint">
+                <span className="h-px flex-1 bg-border" /> atau <span className="h-px flex-1 bg-border" />
+              </div>
+              <label htmlFor="chassis" className="mb-2 block text-xs font-bold uppercase tracking-wider text-accent">
+                4 Digit Terakhir Nomor Rangka
+              </label>
+              <input
+                id="chassis"
+                type="text"
+                value={chassis}
+                onChange={(e) => setChassis(e.target.value)}
+                placeholder="Contoh: 1234"
+                maxLength={6}
+                className="w-full rounded-xl border px-4 py-3.5 text-sm transition-all duration-300 focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
+              />
+              <p className="mt-1.5 text-[11px] text-muted">Pakai ini jika Nomor HP Anda sudah berganti dari saat pembelian.</p>
             </div>
             <div className="md:col-span-2 mt-2">
               <button
