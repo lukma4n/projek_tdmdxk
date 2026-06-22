@@ -35,7 +35,7 @@ export default function ShowroomPickupRequests() {
     try {
       const params = filterStatus ? { status: filterStatus } : {}
       const res = await api.getPickupRequests(params)
-      setRows(res.data || [])
+      setRows(Array.isArray(res) ? res : (res?.data || []))
     } catch (err) {
       setError(err.message || 'Gagal memuat data')
     } finally {
@@ -51,7 +51,7 @@ export default function ShowroomPickupRequests() {
     setUpdatingId(id)
     try {
       const res = await api.updatePickupRequest(id, { status })
-      setRows((prev) => prev.map((r) => (r.id === id ? res.data : r)))
+      setRows((prev) => prev.map((r) => (r.id === id ? res : r)))
     } catch (err) {
       setError(err.message || 'Gagal memperbarui status')
     } finally {
