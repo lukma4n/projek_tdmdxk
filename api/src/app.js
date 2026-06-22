@@ -3,6 +3,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import cookieParser from 'cookie-parser'
+import crypto from 'node:crypto'
 import path from 'path'
 import dotenv from 'dotenv'
 import { connectDB, prisma } from './config/db.js'
@@ -35,12 +36,18 @@ dotenv.config()
 function validateEnv() {
   const isProd = process.env.NODE_ENV === 'production'
   const problems = []
-  // Secret lemah yang pernah bocor di histori git — jangan pernah dipakai lagi.
-  const LEAKED_SECRETS = ['***REMOVED-SECRET***', 'your-secret-key-here']
   const secret = process.env.JWT_SECRET
+  // Placeholder publik dari template *.example (tidak sensitif).
+  const PLACEHOLDERS = ['your-secret-key-here']
+  // Hash SHA-256 dari secret yang pernah bocor & sudah di-scrub dari histori git.
+  // Disimpan sebagai hash agar nilai aslinya tak pernah kembali muncul di source.
+  const LEAKED_SECRET_HASHES = new Set([
+    '63cf0b490fefe668f4ccbdd09eb5a92bbf0ee4b14acc2c2b0e0e2893fe30d137',
+  ])
+  const isLeaked = secret && LEAKED_SECRET_HASHES.has(crypto.createHash('sha256').update(secret).digest('hex'))
 
   if (!secret) problems.push('JWT_SECRET belum di-set')
-  else if (LEAKED_SECRETS.includes(secret)) problems.push('JWT_SECRET memakai nilai default/bocor — ganti dengan `openssl rand -hex 32`')
+  else if (PLACEHOLDERS.includes(secret) || isLeaked) problems.push('JWT_SECRET memakai nilai default/bocor — ganti dengan `openssl rand -hex 32`')
   else if (secret.length < 32) problems.push('JWT_SECRET terlalu pendek (minimal 32 karakter)')
 
   if (!process.env.DATABASE_URL) problems.push('DATABASE_URL belum di-set')
