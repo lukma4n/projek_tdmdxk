@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 import Layout from './components/Layout/Layout'
 import Login from './pages/Login'
+import PublicLanding from './pages/PublicLanding'
 import Dashboard from './pages/Dashboard'
 import NotFound from './pages/NotFound'
 
@@ -145,8 +146,11 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
+      {/* Self-check publik: alias pendek /cek + path lama (backward compat) */}
+      <Route path="/cek" element={<LazyPage><StnkBpkbCheck /></LazyPage>} />
       <Route path="/public/stnk-bpkb-check" element={<LazyPage><StnkBpkbCheck /></LazyPage>} />
-      <Route path="/" element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
+      {/* Root: guest → landing 2 pintu; user login → app shell */}
+      <Route path="/" element={isAuthenticated ? <Layout /> : <PublicLanding />}>
 
         <Route index element={<DefaultRoute />} />
         <Route

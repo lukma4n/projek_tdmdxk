@@ -16,21 +16,38 @@ import {
   Lock,
   AlertCircle,
   User,
-  Info
+  Info,
+  Copy
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
+// Sumber URL publik tunggal: env produksi, fallback origin saat ini (jalan tanpa konfigurasi).
+const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || (typeof window !== 'undefined' ? window.location.origin : '')
 
 export default function StnkBpkbCheck() {
   const { theme, toggleTheme } = useThemeStore()
   const isDark = theme === 'dark'
 
-  const [engineNumber, setEngineNumber] = useState('')
-  const [phone, setPhone] = useState('')
+  const [searchParams] = useSearchParams()
+  // Prefill dari URL (mis. dari QR/link WA: /cek?engine_number=...)
+  const [engineNumber, setEngineNumber] = useState(() => (searchParams.get('engine_number') || '').toUpperCase())
+  const [phone, setPhone] = useState(() => searchParams.get('phone') || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyLink = async () => {
+    const link = `${PUBLIC_URL}/cek?engine_number=${encodeURIComponent(engineNumber.trim())}`
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // clipboard tak tersedia (mis. non-HTTPS) — abaikan diam-diam
+    }
+  }
 
   const handleSearch = async (e) => {
     e.preventDefault()
@@ -121,6 +138,7 @@ export default function StnkBpkbCheck() {
                 value={engineNumber}
                 onChange={(e) => setEngineNumber(e.target.value)}
                 placeholder="Contoh: MH1JM1111..."
+                autoFocus={!engineNumber}
                 className="w-full rounded-xl border px-4 py-3.5 text-sm transition-all duration-300 focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
               />
             </div>
@@ -134,6 +152,7 @@ export default function StnkBpkbCheck() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Contoh: 081234567..."
+                autoFocus={!!engineNumber}
                 className="w-full rounded-xl border px-4 py-3.5 text-sm transition-all duration-300 focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
               />
             </div>
@@ -181,6 +200,18 @@ export default function StnkBpkbCheck() {
         {/* Result Area */}
         {result && (
           <div className="space-y-8 animate-fadeIn">
+            {/* Toolbar: bagikan link cek (engine ter-prefill) */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-panel px-3.5 py-2 text-xs font-semibold text-muted transition hover:bg-hover hover:text-text-strong"
+              >
+                {copied ? <Check size={15} className="text-success" /> : <Copy size={15} />}
+                {copied ? 'Link Tersalin' : 'Salin Link Cek'}
+              </button>
+            </div>
+
             {/* Info Unit */}
             <div className="rounded-3xl border p-6 shadow-lg border-border bg-panel">
               <div className="flex items-center gap-2.5 pb-4 border-b border-dashed border-border">
