@@ -97,6 +97,9 @@ export async function checkStnkBpkb(req, res, next) {
       },
 
       // BPKB Milestone
+      // BPKB hanya untuk konsumen CASH. Bila ada finance_company (leasing/finance
+      // company apa pun: FIF, Adira, IMFI, OTO, dll), BPKB diserahkan cabang ke
+      // leasing → bukan untuk diambil konsumen.
       bpkb: {
         status: track.bpkb_status || 'PROSES',
         tgl_selesai: track.tgl_terima_bpkb,
@@ -104,6 +107,8 @@ export async function checkStnkBpkb(req, res, next) {
         no_bpkb: track.no_bpkb || null,
         lokasi: track.lokasi_bpkb || null,
         penerima: track.nama_penerima_bpkb || null,
+        finance_company: track.finance_company || null,
+        for_consumer: !(track.finance_company && String(track.finance_company).trim()),
         is_done: !!track.tgl_terima_bpkb,
         is_delivered: !!track.tgl_penyerahan_bpkb
       }

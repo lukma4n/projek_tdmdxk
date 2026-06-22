@@ -262,8 +262,8 @@ export default function StnkBpkbCheck() {
               </div>
             </div>
 
-            {/* Status Penjemputan / Callout Banner */}
-            {((result.stnk.is_done && !result.stnk.is_delivered) || (result.bpkb.is_done && !result.bpkb.is_delivered)) && (
+            {/* Status Penjemputan / Callout Banner — BPKB leasing tidak diambil konsumen */}
+            {((result.stnk.is_done && !result.stnk.is_delivered) || (result.bpkb.is_done && !result.bpkb.is_delivered && result.bpkb.for_consumer)) && (
               <div className="flex gap-4 rounded-3xl border border-accent/20 bg-accent/10 p-6 shadow-md shadow-accent/5">
                 <Info size={24} className="shrink-0 text-accent mt-1" />
                 <div>
@@ -278,7 +278,7 @@ export default function StnkBpkbCheck() {
                         STNK & Plat Nomor (Lokasi: {result.stnk.lokasi || 'Kassa/Frontdesk'})
                       </li>
                     )}
-                    {result.bpkb.is_done && !result.bpkb.is_delivered && (
+                    {result.bpkb.is_done && !result.bpkb.is_delivered && result.bpkb.for_consumer && (
                       <li className="flex items-center gap-2 text-text">
                         <div className="h-2 w-2 rounded-full bg-accent" />
                         BPKB (Lokasi: {result.bpkb.lokasi || 'Admin BPKB'})
@@ -292,12 +292,20 @@ export default function StnkBpkbCheck() {
                     <button
                       type="button"
                       onClick={() => {
+                        // Daftar dokumen yang BENAR-BENAR siap diambil konsumen (real dari sistem).
+                        // BPKB hanya jika cash (for_consumer); leasing diserahkan ke finance company.
+                        const docs = [
+                          result.stnk?.is_done && !result.stnk?.is_delivered ? 'STNK' : null,
+                          result.plat?.is_done && !result.plat?.is_delivered ? 'Plat Nomor' : null,
+                          result.bpkb?.is_done && !result.bpkb?.is_delivered && result.bpkb?.for_consumer ? 'BPKB' : null,
+                        ].filter(Boolean)
+                        const docList = docs.length ? docs.join(', ') : 'dokumen'
                         const msg = [
                           'Halo TDM Ketapang,',
-                          'Saya ingin mengambil dokumen STNK / BPKB.',
+                          `Saya ingin mengambil dokumen: ${docList}.`,
                           `No Mesin: ${result.engine_number || '-'}`,
                           `Nama (STNK): ${result.stnk_name || '-'}`,
-                          'Mohon info jadwal pengambilan.',
+                          'Apakah sudah bisa saya ambil?',
                           'Terima kasih.',
                         ].join('\n')
                         window.open(`https://wa.me/${DEALER_WA}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener')
@@ -375,7 +383,9 @@ export default function StnkBpkbCheck() {
                 <TimelineStep
                   title="Penerbitan BPKB"
                   description={
-                    result.bpkb.is_delivered
+                    !result.bpkb.for_consumer
+                      ? `BPKB atas pembiayaan leasing (${result.bpkb.finance_company}). Diserahkan cabang ke pihak leasing — tidak diambil konsumen.`
+                      : result.bpkb.is_delivered
                       ? `BPKB diserahkan kepada ${result.bpkb.penerima || 'Konsumen'}`
                       : result.bpkb.is_done
                       ? `BPKB telah selesai diterbitkan (No. ${result.bpkb.no_bpkb})`

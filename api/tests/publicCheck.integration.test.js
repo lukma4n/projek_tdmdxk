@@ -90,6 +90,22 @@ test.before(async () => {
       lokasi_bpkb: 'RACK-BPKB-B'
     }
   })
+
+  // Unit LEASING — BPKB milik finance company (bukan untuk konsumen)
+  await prismaTest.showroom_stnk_bpkb_tracks.create({
+    data: {
+      branch_code: 'DXK',
+      branch_name: 'TDM KETAPANG',
+      engine_number: 'MH1JM2222TEST5678',
+      chassis_number: 'MHR99999999999999',
+      mobile: '081200001111',
+      stnk_name: 'SITI AMINAH',
+      finance_company: 'PT Federal International Finance',
+      tgl_terima_bpkb: new Date('2026-06-15T00:00:00Z'),
+      no_bpkb: 'BPKB-999999',
+      bpkb_status: 'SELESAI'
+    }
+  })
 })
 
 test.after(async () => {
@@ -137,6 +153,18 @@ test('Public Check: Success check with correct engine_number and phone', async (
   assert.equal(res.body.bpkb.is_done, true)
   assert.equal(res.body.bpkb.is_delivered, false)
   assert.equal(res.body.bpkb.penerima, 'BUDI SANTOSO') // full
+  assert.equal(res.body.bpkb.for_consumer, true) // cash → BPKB untuk konsumen
+})
+
+test('Public Check: BPKB leasing → for_consumer=false (tidak untuk konsumen)', async () => {
+  const res = await request(app)
+    .get('/api/public/stnk-bpkb/check')
+    .query({ engine_number: 'MH1JM2222TEST5678', phone: '081200001111' })
+
+  assert.equal(res.status, 200)
+  assert.equal(res.body.bpkb.is_done, true)
+  assert.equal(res.body.bpkb.for_consumer, false)
+  assert.equal(res.body.bpkb.finance_company, 'PT Federal International Finance')
 })
 
 test('Public Check: Success via 4 digit terakhir Nomor Rangka (fallback HP)', async () => {
