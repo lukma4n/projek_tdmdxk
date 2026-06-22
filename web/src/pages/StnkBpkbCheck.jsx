@@ -14,6 +14,7 @@ import {
   Calendar,
   ArrowRight,
   Lock,
+  Camera,
   AlertCircle,
   User,
   Info,
@@ -48,6 +49,9 @@ export default function StnkBpkbCheck() {
   const [pickupSubmitting, setPickupSubmitting] = useState(false)
   const [pickupSuccess, setPickupSuccess] = useState(null)
   const [pickupError, setPickupError] = useState('')
+  // FASE 2: lampiran foto KTP (wajib)
+  const [ktpFile, setKtpFile] = useState(null)
+  const [ktpPreview, setKtpPreview] = useState('')
 
   const handleCopyLink = async () => {
     const link = selfCheckUrl(engineNumber)
@@ -97,29 +101,54 @@ export default function StnkBpkbCheck() {
       setPickupError('Sesi permintaan telah berakhir. Silakan periksa ulang status dokumen Anda.')
       return
     }
+    if (!ktpFile) {
+      setPickupError('Foto KTP wajib dilampirkan. Unggah foto KTP pemilik (JPG/PNG, maks 10MB).')
+      return
+    }
     setPickupSubmitting(true)
     setPickupError('')
     setPickupSuccess(null)
     try {
+      const formData = new FormData()
+      formData.append('engine_number', result.engine_number)
+      formData.append('pickup_token', result.pickup_token)
+      formData.append('consumer_phone', pickupPhone.trim())
+      formData.append('preferred_time', pickupTime.trim())
+      formData.append('notes', pickupNotes.trim())
+      formData.append('ktp_photo', ktpFile)
+
       const res = await fetch(`${API_BASE}/public/stnk-bpkb/request-pickup`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          engine_number: result.engine_number,
-          pickup_token: result.pickup_token,
-          consumer_phone: pickupPhone.trim(),
-          preferred_time: pickupTime.trim(),
-          notes: pickupNotes.trim(),
-        }),
+        body: formData,
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Gagal mengirim permintaan')
       setPickupSuccess(data.message || 'Permintaan berhasil dikirim.')
+      setKtpFile(null)
+      setKtpPreview('')
     } catch (err) {
       setPickupError(err.message || 'Gagal mengirim permintaan. Coba lagi atau hubungi dealer.')
     } finally {
       setPickupSubmitting(false)
     }
+  }
+
+  // FASE 2: pilih & validasi foto KTP (client-side: tipe + ukuran)
+  const handleKtpChange = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // reset agar bisa pilih file yang sama lagi
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+      setPickupError('Foto KTP harus berformat JPG atau PNG.')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setPickupError('Ukuran foto KTP melebihi 10MB.')
+      return
+    }
+    setPickupError('')
+    setKtpFile(file)
+    setKtpPreview(URL.createObjectURL(file))
   }
 
   return (
@@ -413,6 +442,34 @@ export default function StnkBpkbCheck() {
                       rows={2}
                       className="w-full rounded-xl border px-4 py-3 text-sm transition-all focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
                     />
+                  </div>
+                  <div>
+                    <label htmlFor="pickup-ktp" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
+                      Foto KTP Pemilik (wajib)
+                    </label>
+                    <p className="mb-2 text-[11px] text-muted">JPG/PNG, maks 10MB. Bawa juga KTP asli saat pengambilan.</p>
+                    <label
+                      htmlFor="pickup-ktp"
+                      className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-hover px-4 py-3.5 text-sm font-semibold text-muted transition hover:border-accent hover:text-accent"
+                    >
+                      <Camera size={18} />
+                      {ktpFile ? ktpFile.name : 'Pilih / Foto KTP'}
+                    </label>
+                    <input
+                      id="pickup-ktp"
+                      type="file"
+                      accept="image/jpeg,image/png,image/jpg"
+                      capture="environment"
+                      onChange={handleKtpChange}
+                      className="hidden"
+                    />
+                    {ktpPreview && (
+                      <img
+                        src={ktpPreview}
+                        alt="Pratinjau KTP"
+                        className="mt-3 max-h-40 w-auto rounded-xl border border-border object-contain"
+                      />
+                    )}
                   </div>
                   {pickupError && (
                     <div className="flex gap-2 rounded-xl border border-danger/20 bg-danger-soft p-3 text-xs text-danger">

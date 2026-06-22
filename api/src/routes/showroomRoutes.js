@@ -49,7 +49,7 @@ import {
 } from '../controllers/showroomTeamLeaderController.js'
 import {
   getStnkBpkbTrackMonitoring, previewStnkBpkbTrack, uploadStnkBpkbTrack, exportStnkBpkbTrackExcel,
-  updateStnkBpkbTrackMobile, getPickupRequests, updatePickupRequest,
+  updateStnkBpkbTrackMobile, getPickupRequests, updatePickupRequest, getPickupRequestKtp,
 } from '../controllers/showroomStnkBpkbTrackController.js'
 import {
   getStnks, exportStnksExcel, getStnkSummary, getStnkFilters,
@@ -231,6 +231,7 @@ router.post('/stnk-bpkb-tracks/import', authenticate, authorizeMenu('IMPORT_SHOW
 // FASE 2 Self-Check: manajemen permintaan ambil dokumen (pickup requests)
 router.get('/pickup-requests', authenticate, stnkBpkbTrackReadAccess, getPickupRequests)
 router.patch('/pickup-requests/:id', authenticate, stnkBpkbTrackReadAccess, updatePickupRequest)
+router.get('/pickup-requests/:id/ktp', authenticate, stnkBpkbTrackReadAccess, getPickupRequestKtp)
 
 // Marketing Target (per Team Leader, bulanan)
 const marketingTargetReadAccess = authorize('Admin', 'Kepala Cabang')

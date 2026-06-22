@@ -10,6 +10,10 @@ const NONE_ENGINE = 'MH1PICKUPTEST002'
 const PHONE = '081234567890'
 const CHASSIS = 'MHR12345678901234'
 
+// Buffer KTP palsu untuk upload multipart. Isi tidak diperiksa server — multer
+// hanya memvalidasi ekstensi/mime (image/jpeg) via imageFileFilter.
+const KTP_PHOTO = Buffer.from('fake-jpg-content-for-pickup-ktp-test')
+
 async function loginAs(agent, username, password = 'password123') {
   const res = await agent.post('/api/auth/login').send({ username, password })
   assert.equal(res.status, 200, `Login failed for ${username}`)
@@ -102,19 +106,18 @@ test('Pickup: /check pickup_eligible=false bila tak ada dokumen siap diambil', a
   assert.ok(!res.body.pickup_token, 'no token when not eligible')
 })
 
-test('Pickup: POST request-pickup dengan token valid → 201 + status PENDING', async () => {
+test('Pickup: POST request-pickup dengan token valid + KTP → 201 + status PENDING', async () => {
   const check = await checkEligible()
   const token = check.body.pickup_token
 
   const res = await request(app)
     .post('/api/public/stnk-bpkb/request-pickup')
-    .send({
-      engine_number: ELIGIBLE_ENGINE,
-      pickup_token: token,
-      consumer_phone: '081234567890',
-      preferred_time: 'Senin pagi',
-      notes: 'diwakilkan keluarga',
-    })
+    .attach('ktp_photo', KTP_PHOTO, 'ktp.jpg')
+    .field('engine_number', ELIGIBLE_ENGINE)
+    .field('pickup_token', token)
+    .field('consumer_phone', '081234567890')
+    .field('preferred_time', 'Senin pagi')
+    .field('notes', 'diwakilkan keluarga')
 
   assert.equal(res.status, 201)
   assert.equal(res.body.status, 'PENDING')
@@ -145,6 +148,17 @@ test('Pickup: POST request-pickup dengan token untuk engine lain → 401', async
   assert.ok(res.body.error.includes('tidak sesuai'))
 })
 
+test('Pickup: POST request-pickup token valid TANPA foto KTP → 400', async () => {
+  const check = await checkEligible()
+  const res = await request(app)
+    .post('/api/public/stnk-bpkb/request-pickup')
+    .field('engine_number', ELIGIBLE_ENGINE)
+    .field('pickup_token', check.body.pickup_token)
+    .field('consumer_phone', PHONE)
+  assert.equal(res.status, 400)
+  assert.ok(res.body.error.includes('KTP'), 'pesan error menyebut KTP')
+})
+
 test('Pickup: 409 bila dokumen sudah tak eligible lagi saat request (status berubah)', async () => {
   const check = await checkEligible()
   const token = check.body.pickup_token
@@ -157,7 +171,10 @@ test('Pickup: 409 bila dokumen sudah tak eligible lagi saat request (status beru
 
   const res = await request(app)
     .post('/api/public/stnk-bpkb/request-pickup')
-    .send({ engine_number: ELIGIBLE_ENGINE, pickup_token: token, consumer_phone: PHONE })
+    .attach('ktp_photo', KTP_PHOTO, 'ktp.jpg')
+    .field('engine_number', ELIGIBLE_ENGINE)
+    .field('pickup_token', token)
+    .field('consumer_phone', PHONE)
   assert.equal(res.status, 409)
 
   // Kembalikan ke kondisi eligible untuk tes berikutnya
@@ -172,7 +189,10 @@ test('Pickup: staff GET /showroom/pickup-requests (Admin) → 200 berisi request
   const check = await checkEligible()
   await request(app)
     .post('/api/public/stnk-bpkb/request-pickup')
-    .send({ engine_number: ELIGIBLE_ENGINE, pickup_token: check.body.pickup_token, consumer_phone: PHONE })
+    .attach('ktp_photo', KTP_PHOTO, 'ktp.jpg')
+    .field('engine_number', ELIGIBLE_ENGINE)
+    .field('pickup_token', check.body.pickup_token)
+    .field('consumer_phone', PHONE)
 
   const agent = request.agent(app)
   await loginAs(agent, 'test_admin')
@@ -217,12 +237,33 @@ test('Pickup: PATCH status invalid → 400', async () => {
   assert.equal(res.status, 400)
 })
 
+test('Pickup: staff GET /pickup-requests/:id/ktp → 200 (serve foto KTP)', async () => {
+  const agent = request.agent(app)
+  await loginAs(agent, 'test_admin')
+  const list = await agent.get('/api/showroom/pickup-requests').query({ status: 'PENDING' })
+  const target = list.body.find((r) => r.engine_number === ELIGIBLE_ENGINE)
+  if (!target) return // skip bila tak ada baris
+  const res = await agent.get(`/api/showroom/pickup-requests/${target.id}/ktp`)
+  assert.equal(res.status, 200)
+  assert.ok(res.headers['content-type'] && res.headers['content-type'].startsWith('image/'), 'content-type image/*')
+})
+
+test('Pickup: GET /pickup-requests/:id/ktp ditolak untuk role tanpa akses', async () => {
+  const agent = request.agent(app)
+  await loginAs(agent, 'test_partman')
+  const res = await agent.get('/api/showroom/pickup-requests/1/ktp')
+  assert.equal(res.status, 403)
+})
+
 test('Pickup: feed notifikasi memuat tugas pickup PENDING untuk Admin', async () => {
   // Pastikan ada setidaknya satu PENDING
   const check = await checkEligible()
   await request(app)
     .post('/api/public/stnk-bpkb/request-pickup')
-    .send({ engine_number: ELIGIBLE_ENGINE, pickup_token: check.body.pickup_token, consumer_phone: PHONE })
+    .attach('ktp_photo', KTP_PHOTO, 'ktp.jpg')
+    .field('engine_number', ELIGIBLE_ENGINE)
+    .field('pickup_token', check.body.pickup_token)
+    .field('consumer_phone', PHONE)
 
   const agent = request.agent(app)
   await loginAs(agent, 'test_admin')

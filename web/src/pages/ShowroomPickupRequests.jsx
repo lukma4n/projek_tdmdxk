@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../services/api'
-import { Loader2, RefreshCw, MessageCircle, AlertCircle } from 'lucide-react'
+import { Loader2, RefreshCw, MessageCircle, AlertCircle, IdCard } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import Table from '../components/ui/Table'
 import Badge from '../components/ui/Badge'
+
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 // Status pickup request — urutan alur tindak lanjut.
 const STATUS_FLOW = [
@@ -125,19 +127,30 @@ export default function ShowroomPickupRequests() {
       label: 'Aksi',
       align: 'left',
       render: (_v, row) => (
-        <div className="flex items-center gap-1.5">
-          {STATUS_FLOW.filter((s) => s.key !== row.status).map((s) => (
-            <button
-              key={s.key}
-              type="button"
-              disabled={updatingId === row.id}
-              onClick={() => handleUpdateStatus(row.id, s.key)}
-              className="rounded-lg border border-border bg-panel px-2 py-1 text-[10.5px] font-semibold text-muted transition hover:bg-hover hover:text-text-strong disabled:opacity-50"
-              title={`Tandai ${s.label}`}
-            >
-              {updatingId === row.id ? <Loader2 size={11} className="animate-spin" /> : s.label}
-            </button>
-          ))}
+        <div className="flex flex-col items-start gap-1.5">
+          <a
+            href={`${API_BASE}/showroom/pickup-requests/${row.id}/ktp`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-accent/30 bg-accent-soft px-2 py-1 text-[10.5px] font-semibold text-accent transition hover:bg-accent hover:text-white"
+            title="Lihat foto KTP konsumen"
+          >
+            <IdCard size={12} /> Lihat KTP
+          </a>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {STATUS_FLOW.filter((s) => s.key !== row.status).map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                disabled={updatingId === row.id}
+                onClick={() => handleUpdateStatus(row.id, s.key)}
+                className="rounded-lg border border-border bg-panel px-2 py-1 text-[10.5px] font-semibold text-muted transition hover:bg-hover hover:text-text-strong disabled:opacity-50"
+                title={`Tandai ${s.label}`}
+              >
+                {updatingId === row.id ? <Loader2 size={11} className="animate-spin" /> : s.label}
+              </button>
+            ))}
+          </div>
         </div>
       ),
     },

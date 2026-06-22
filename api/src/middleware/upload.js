@@ -104,3 +104,26 @@ export const uploadHandoverPhoto = multer({
   },
 })
 
+// Pickup request KTP photo - dedicated folder. Diunggah konsumen (publik) saat
+// mengajukan ambil dokumen dari /cek. Disajikan ke staf via route auth.
+const pickupKtpDir = 'uploads/pickup-ktp/'
+
+const pickupKtpStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    fs.mkdir(pickupKtpDir, { recursive: true }, (err) => cb(err, pickupKtpDir))
+  },
+  filename: (req, file, cb) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const uniqueSuffix = Math.round(Math.random() * 1E6)
+    cb(null, `ktp-${timestamp}-${uniqueSuffix}${path.extname(file.originalname)}`)
+  },
+})
+
+export const uploadPickupKtp = multer({
+  storage: pickupKtpStorage,
+  fileFilter: imageFileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+})
+

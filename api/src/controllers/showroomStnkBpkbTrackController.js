@@ -594,3 +594,30 @@ export async function updatePickupRequest(req, res, next) {
     next(error)
   }
 }
+
+/**
+ * Sajikan foto KTP yang dilampirkan konsumen saat mengajukan pickup request.
+ * Auth-protected (Admin/CRM/Kepala Cabang) — KTP adalah data pribadi sensitif,
+ * tidak disajikan secara publik.
+ */
+export async function getPickupRequestKtp(req, res, next) {
+  try {
+    const id = Number(req.params.id)
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: 'ID tidak valid' })
+    }
+
+    const request = await prisma.showroom_pickup_requests.findUnique({
+      where: { id },
+      select: { ktp_photo_url: true },
+    })
+    if (!request || !request.ktp_photo_url) {
+      return res.status(404).json({ error: 'Foto KTP tidak ditemukan' })
+    }
+
+    const filePath = request.ktp_photo_url.replace(/^\//, '')
+    res.sendFile(filePath, { root: process.cwd() })
+  } catch (error) {
+    next(error)
+  }
+}

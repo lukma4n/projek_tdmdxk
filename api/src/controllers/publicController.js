@@ -161,19 +161,21 @@ export async function checkStnkBpkb(req, res, next) {
 
 /**
  * FASE 2: permintaan ambil dokumen yang diajukan konsumen dari /cek.
- * Body: { engine_number, pickup_token, consumer_phone, preferred_time?, notes?, requested_docs? }
+ * Multipart form: field { engine_number, pickup_token, consumer_phone, preferred_time?, notes? }
+ * + file `ktp_photo` (WAJIB, JPEG/PNG, max 10MB).
  * Token harus valid (dikeluarkan /check untuk engine_number yang sama, belum kedaluwarsa).
  * Membuat baris showroom_pickup_requests berstatus PENDING — masuk feed notifikasi staf.
  */
 export async function requestPickup(req, res, next) {
   try {
-    const { engine_number, pickup_token, consumer_phone, preferred_time, notes, requested_docs } = req.body || {}
+    const { engine_number, pickup_token, consumer_phone, preferred_time, notes } = req.body || {}
 
     if (!engine_number || !pickup_token) {
       return res.status(400).json({ error: 'Nomor Mesin dan token permintaan wajib diisi' })
     }
 
-    // Verifikasi token — pastikan dikeluarkan /check untuk engine yang sama.
+    // Verifikasi token DULU — pastikan dikeluarkan /check untuk engine yang sama.
+    // (File sudah tersimpan via multer; tolak token invalid sebelum memproses lebih jauh.)
     let payload
     try {
       payload = jwt.verify(pickup_token, process.env.JWT_SECRET)
@@ -183,6 +185,11 @@ export async function requestPickup(req, res, next) {
 
     if (payload.purpose !== 'pickup' || payload.engine_number !== String(engine_number).trim().toUpperCase()) {
       return res.status(401).json({ error: 'Token permintaan tidak sesuai dengan Nomor Mesin.' })
+    }
+
+    // Foto KTP wajib dilampirkan — staf memverifikasi identitas saat pengambilan.
+    if (!req.file) {
+      return res.status(400).json({ error: 'Foto KTP wajib dilampirkan (format JPG/PNG, maks 10MB).' })
     }
 
     const cleanEngine = String(engine_number).trim().toUpperCase()
@@ -216,6 +223,7 @@ export async function requestPickup(req, res, next) {
         requested_docs: eligibleDocs.join(', '),
         preferred_time: preferred_time ? String(preferred_time).slice(0, 120) : null,
         notes: notes ? String(notes).slice(0, 1000) : null,
+        ktp_photo_url: `/uploads/pickup-ktp/${req.file.filename}`,
         status: 'PENDING',
       }
     })

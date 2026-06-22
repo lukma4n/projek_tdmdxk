@@ -987,6 +987,9 @@ model showroom_pickup_requests {
   requested_docs String?
   preferred_time String?
   notes          String?
+  // Path foto KTP yang dilampirkan konsumen saat mengajukan (wajib).
+  // Disajikan ke staf via route auth GET /showroom/pickup-requests/:id/ktp.
+  ktp_photo_url  String?
   // PENDING | CONTACTED | DONE | CANCELLED
   status         String    @default("PENDING")
   created_at     DateTime  @default(now())
