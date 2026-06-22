@@ -18,7 +18,8 @@ import {
   User,
   Info,
   Copy,
-  MessageCircle
+  MessageCircle,
+  Send
 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { selfCheckUrl } from '../config/selfCheck'
@@ -40,6 +41,13 @@ export default function StnkBpkbCheck() {
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
   const [copied, setCopied] = useState(false)
+  // FASE 2: form permintaan ambil dokumen
+  const [pickupPhone, setPickupPhone] = useState(() => searchParams.get('phone') || '')
+  const [pickupTime, setPickupTime] = useState('')
+  const [pickupNotes, setPickupNotes] = useState('')
+  const [pickupSubmitting, setPickupSubmitting] = useState(false)
+  const [pickupSuccess, setPickupSuccess] = useState(null)
+  const [pickupError, setPickupError] = useState('')
 
   const handleCopyLink = async () => {
     const link = selfCheckUrl(engineNumber)
@@ -79,6 +87,38 @@ export default function StnkBpkbCheck() {
       setError(err.message || 'Data tidak ditemukan. Silakan periksa kembali Nomor Mesin dan Nomor HP Anda.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // FASE 2: kirim permintaan ambil dokumen ke server (pakai pickup_token dari /check)
+  const handleRequestPickup = async (e) => {
+    e.preventDefault()
+    if (!result?.pickup_token) {
+      setPickupError('Sesi permintaan telah berakhir. Silakan periksa ulang status dokumen Anda.')
+      return
+    }
+    setPickupSubmitting(true)
+    setPickupError('')
+    setPickupSuccess(null)
+    try {
+      const res = await fetch(`${API_BASE}/public/stnk-bpkb/request-pickup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          engine_number: result.engine_number,
+          pickup_token: result.pickup_token,
+          consumer_phone: pickupPhone.trim(),
+          preferred_time: pickupTime.trim(),
+          notes: pickupNotes.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Gagal mengirim permintaan')
+      setPickupSuccess(data.message || 'Permintaan berhasil dikirim.')
+    } catch (err) {
+      setPickupError(err.message || 'Gagal mengirim permintaan. Coba lagi atau hubungi dealer.')
+    } finally {
+      setPickupSubmitting(false)
     }
   }
 
@@ -139,7 +179,7 @@ export default function StnkBpkbCheck() {
                 type="text"
                 value={engineNumber}
                 onChange={(e) => setEngineNumber(e.target.value)}
-                placeholder="Contoh: MH1JM1111..."
+                placeholder="Contoh: JBK1E1234567"
                 autoFocus={!engineNumber}
                 className="w-full rounded-xl border px-4 py-3.5 text-sm transition-all duration-300 focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
               />
@@ -316,6 +356,95 @@ export default function StnkBpkbCheck() {
                       Request via WhatsApp
                     </button>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* FASE 2: Form permintaan ambil dokumen — tampil bila ada dokumen eligible */}
+            {result.pickup_eligible && !pickupSuccess && (
+              <div className="rounded-3xl border border-accent/30 bg-accent/5 p-6 shadow-lg">
+                <div className="flex items-center gap-2.5 pb-4 border-b border-dashed border-border">
+                  <Send size={18} className="text-accent" />
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-faint">Ajukan Permintaan Ambil Dokumen</h3>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-muted">
+                  Dokumen siap diambil: <strong className="text-text-strong">{result.pickup_docs.join(', ')}</strong>.
+                  Isi data di bawah agar staf kami dapat menghubungi Anda untuk penjadwalan pengambilan.
+                </p>
+                <form onSubmit={handleRequestPickup} className="mt-4 grid gap-4">
+                  <div>
+                    <label htmlFor="pickup-phone" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
+                      Nomor Handphone (untuk dihubungi)
+                    </label>
+                    <input
+                      id="pickup-phone"
+                      type="tel"
+                      value={pickupPhone}
+                      onChange={(e) => setPickupPhone(e.target.value)}
+                      placeholder="Contoh: 081234567..."
+                      required
+                      className="w-full rounded-xl border px-4 py-3 text-sm transition-all focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="pickup-time" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
+                      Waktu Preferensi Pengambilan (opsional)
+                    </label>
+                    <input
+                      id="pickup-time"
+                      type="text"
+                      value={pickupTime}
+                      onChange={(e) => setPickupTime(e.target.value)}
+                      placeholder="Contoh: Senin pagi, tanggal 24 Juni"
+                      maxLength={120}
+                      className="w-full rounded-xl border px-4 py-3 text-sm transition-all focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="pickup-notes" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
+                      Catatan (opsional)
+                    </label>
+                    <textarea
+                      id="pickup-notes"
+                      value={pickupNotes}
+                      onChange={(e) => setPickupNotes(e.target.value)}
+                      placeholder="Contoh: akan diwakilkan oleh keluarga, bawa fotokopi KTP pemilik"
+                      maxLength={500}
+                      rows={2}
+                      className="w-full rounded-xl border px-4 py-3 text-sm transition-all focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
+                    />
+                  </div>
+                  {pickupError && (
+                    <div className="flex gap-2 rounded-xl border border-danger/20 bg-danger-soft p-3 text-xs text-danger">
+                      <AlertCircle size={16} className="shrink-0" />
+                      <span>{pickupError}</span>
+                    </div>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={pickupSubmitting}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-all shadow-md bg-accent hover:brightness-110 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {pickupSubmitting ? (
+                      <><Loader2 size={18} className="animate-spin" /> Mengirim Permintaan...</>
+                    ) : (
+                      <><Send size={18} /> Kirim Permintaan Ambil Dokumen</>
+                    )}
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* Konfirmasi sukses permintaan pickup */}
+            {pickupSuccess && (
+              <div className="flex gap-4 rounded-3xl border border-success/30 bg-success/10 p-6 shadow-md">
+                <CheckCircle2 size={24} className="shrink-0 text-success mt-1" />
+                <div>
+                  <h4 className="font-bold text-success text-base">Permintaan Terkirim</h4>
+                  <p className="text-sm mt-1 leading-relaxed text-muted">{pickupSuccess}</p>
+                  <p className="text-xs mt-3 text-muted">
+                    Dokumen yang diminta: <strong className="text-text-strong">{result.pickup_docs.join(', ')}</strong> • No. Mesin {result.engine_number}
+                  </p>
                 </div>
               </div>
             )}

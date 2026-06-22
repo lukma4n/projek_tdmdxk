@@ -970,3 +970,31 @@ model document_handover_steps {
   @@index([handover_id])
   @@index([step_type])
 }
+
+// FASE 2 Self-Check: permintaan ambil dokumen yang diajukan konsumen dari /cek.
+// Dibuat setelah konsumen terverifikasi via /api/public/stnk-bpkb/check (token
+// pickup disematkan di response check). Staf menindak lanjuti via halaman
+// manajemen pickup-requests; tugas PENDING masuk feed notifikasi (badge Header).
+model showroom_pickup_requests {
+  id             Int       @id @default(autoincrement())
+  engine_number  String
+  branch_code    String?
+  branch_name    String?
+  consumer_name  String?
+  consumer_phone String?
+  // Daftar dokumen yang diminta konsumen (mis. "STNK,PLAT" — hanya dokumen
+  // yang siap diambil & untuk konsumen, BPKB leasing dikeluarkan di /cek).
+  requested_docs String?
+  preferred_time String?
+  notes          String?
+  // PENDING | CONTACTED | DONE | CANCELLED
+  status         String    @default("PENDING")
+  created_at     DateTime  @default(now())
+  handled_by     Int?
+  handled_at     DateTime?
+
+  @@index([status])
+  @@index([branch_code, status])
+  @@index([engine_number])
+  @@index([created_at])
+}

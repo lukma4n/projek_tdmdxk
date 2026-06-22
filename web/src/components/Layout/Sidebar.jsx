@@ -17,6 +17,7 @@ import {
   BarChart3,
   Contact,
   QrCode,
+  Inbox,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { displayRole as displayRoleImpl, ROLES } from '../../config/roles'
@@ -156,6 +157,13 @@ const navStructure = [
         icon: QrCode,
         external: true,
         href: `${PUBLIC_URL}/cek`,
+        roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM, ROLES.ADMIN_CRM],
+      },
+      {
+        id: 'pickup-requests',
+        label: 'Permintaan Ambil Dokumen',
+        icon: Inbox,
+        path: '/showroom/pickup-requests',
         roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM, ROLES.ADMIN_CRM],
       },
     ],

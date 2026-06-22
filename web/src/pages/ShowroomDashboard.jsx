@@ -189,16 +189,16 @@ export default function ShowroomDashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <SectionCard title="Stock Per Lokasi" icon={MapPin}>
           <div className="space-y-4">
-            {(summary?.byLocation || []).map((item) => (
-              <CountBar key={item.location || 'unknown'} label={item.location} value={item._count} total={maxLocation} />
+            {(summary?.byLocation || []).map((item, i) => (
+              <CountBar key={`${i}-${item.location || 'unknown'}`} label={item.location} value={item._count} total={maxLocation} />
             ))}
           </div>
         </SectionCard>
 
         <SectionCard title="Stock Per Series" icon={Bike}>
           <div className="space-y-4">
-            {(summary?.bySeries || []).map((item) => (
-              <CountBar key={item.series || 'unknown'} label={item.series} value={item._count} total={maxSeries} color="bg-success" />
+            {(summary?.bySeries || []).map((item, i) => (
+              <CountBar key={`${i}-${item.series || 'unknown'}`} label={item.series} value={item._count} total={maxSeries} color="bg-success" />
             ))}
           </div>
         </SectionCard>
@@ -208,16 +208,16 @@ export default function ShowroomDashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <SectionCard title="STNK Per Lokasi" icon={FileText}>
           <div className="space-y-4">
-            {(summary?.documents?.stnkByLocation || []).map((item) => (
-              <CountBar key={item.stnk_location || 'unknown'} label={item.stnk_location} value={item._count} total={maxStnkLocation} color="bg-accent" />
+            {(summary?.documents?.stnkByLocation || []).map((item, i) => (
+              <CountBar key={`${i}-${item.stnk_location || 'unknown'}`} label={item.stnk_location} value={item._count} total={maxStnkLocation} color="bg-accent" />
             ))}
           </div>
         </SectionCard>
 
         <SectionCard title="BPKB Per Lokasi" icon={FileBadge}>
           <div className="space-y-4">
-            {(summary?.documents?.bpkbByLocation || []).map((item) => (
-              <CountBar key={item.bpkb_location || 'unknown'} label={item.bpkb_location} value={item._count} total={maxBpkbLocation} color="bg-warning" />
+            {(summary?.documents?.bpkbByLocation || []).map((item, i) => (
+              <CountBar key={`${i}-${item.bpkb_location || 'unknown'}`} label={item.bpkb_location} value={item._count} total={maxBpkbLocation} color="bg-warning" />
             ))}
           </div>
         </SectionCard>

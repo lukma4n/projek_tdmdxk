@@ -64,6 +64,51 @@ function mapFollowupTask(item, action, priority = 'normal') {
   }
 }
 
+// FASE 2 Self-Check: permintaan ambil dokumen dari konsumen yang menunggu
+// tindakan staf. area 'pickup' — satu tugas per baris PENDING (dibatasi 20
+// terbaru; sisa diringkas dalam satu tugas aggregate bila lebih).
+function mapPickupTask(req, action = 'Hubungi konsumen', priority = 'high') {
+  return {
+    id: `pickup-${req.id}`,
+    area: 'pickup',
+    title: 'Permintaan ambil dokumen menunggu tindakan',
+    description: `${req.consumer_name || 'Konsumen'} • ${req.engine_number}${req.requested_docs ? ` • ${req.requested_docs}` : ''}${req.consumer_phone ? ` • ${req.consumer_phone}` : ''}`,
+    status: 'pickup_pending',
+    action,
+    priority,
+    path: '/showroom/pickup-requests',
+    created_at: req.created_at,
+  }
+}
+
+async function getPickupTasksByRole(role) {
+  // Staf yang boleh menindak lanjuti pickup = same roles as staff endpoint
+  // (Admin/CRM/Kepala Cabang). Role lain dapat daftar kosong.
+  if (!['Admin', 'CRM', 'Kepala Cabang'].includes(role)) return []
+
+  const pending = await prisma.showroom_pickup_requests.findMany({
+    where: { status: 'PENDING' },
+    orderBy: { created_at: 'desc' },
+    take: 20,
+  })
+
+  const tasks = pending.map((r) => mapPickupTask(r))
+  if (pending.length === 20) {
+    const total = await prisma.showroom_pickup_requests.count({ where: { status: 'PENDING' } })
+    if (total > 20) {
+      tasks.push(mapFollowupTask({
+        id: 'pickup-more',
+        title: `${total} permintaan ambil dokumen menunggu`,
+        description: `${total - 20} lainnya belum ditampilkan — buka halaman manajemen pickup.`,
+        status: 'pickup_pending',
+        path: '/showroom/pickup-requests',
+        created_at: new Date(),
+      }, 'Lihat semua', 'high'))
+    }
+  }
+  return tasks
+}
+
 async function getSyncTasksForManagement(role) {
   if (!['Kepala Bengkel', 'Kepala Cabang'].includes(role)) return []
 
@@ -280,11 +325,12 @@ export async function getOpnameNotifications(req, res, next) {
     }
 
 
-    const [syncTasks, followupTasks] = await Promise.all([
+    const [syncTasks, followupTasks, pickupTasks] = await Promise.all([
       getSyncTasksForManagement(role),
       getFollowupTasksByRole(role),
+      getPickupTasksByRole(role),
     ])
-    tasks.push(...syncTasks, ...followupTasks)
+    tasks.push(...syncTasks, ...followupTasks, ...pickupTasks)
 
     tasks.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 

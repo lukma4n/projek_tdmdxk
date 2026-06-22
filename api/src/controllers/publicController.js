@@ -1,4 +1,25 @@
+import jwt from 'jsonwebtoken'
 import { prisma } from '../config/db.js'
+
+// Umur token permintaan ambil dokumen yang dikeluarkan /check setelah verifikasi.
+// Konsumen sudah terverifikasi identitasnya saat /check — token ini hanya
+// membuktikan bahwa permintaan pickup datang dari sesi verifikasi yang valid,
+// tanpa perlu OTP/gateway WhatsApp terpisah.
+const PICKUP_TOKEN_TTL = '15m'
+
+/**
+ * Daftar dokumen yang siap diambil konsumen (sudah jadi, belum diserahkan,
+ * dan untuk konsumen — BPKB leasing dikeluarkan). Konsisten dengan logika
+ * banner "Dokumen Siap Diambil" di halaman /cek (frontend).
+ */
+function eligiblePickupDocs(track) {
+  const docs = []
+  if (track.tgl_terima_stnk && !track.tgl_penyerahan_stnk) docs.push('STNK')
+  if (track.tgl_terima_plat && !track.tgl_penyerahan_plat) docs.push('Plat Nomor')
+  const forConsumer = !(track.finance_company && String(track.finance_company).trim())
+  if (forConsumer && track.tgl_terima_bpkb && !track.tgl_penyerahan_bpkb) docs.push('BPKB')
+  return docs
+}
 
 /**
  * Normalize phone number: strip all non-digits
@@ -114,7 +135,97 @@ export async function checkStnkBpkb(req, res, next) {
       }
     }
 
+    // FASE 2: keluarkan token pickup + daftar dokumen yang siap diambil.
+    // Hanya bila ada dokumen eligible (sudah jadi, belum diserahkan, untuk
+    // konsumen). Frontend menampilkan form permintaan ambil dokumen bila
+    // pickup_eligible true. Token berumur pendek, signed JWT_SECRET.
+    const pickupDocs = eligiblePickupDocs(track)
+    if (pickupDocs.length) {
+      responseData.pickup_eligible = true
+      responseData.pickup_docs = pickupDocs
+      responseData.pickup_token = jwt.sign(
+        { engine_number: track.engine_number, purpose: 'pickup' },
+        process.env.JWT_SECRET,
+        { expiresIn: PICKUP_TOKEN_TTL }
+      )
+    } else {
+      responseData.pickup_eligible = false
+      responseData.pickup_docs = []
+    }
+
     res.json(responseData)
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
+ * FASE 2: permintaan ambil dokumen yang diajukan konsumen dari /cek.
+ * Body: { engine_number, pickup_token, consumer_phone, preferred_time?, notes?, requested_docs? }
+ * Token harus valid (dikeluarkan /check untuk engine_number yang sama, belum kedaluwarsa).
+ * Membuat baris showroom_pickup_requests berstatus PENDING — masuk feed notifikasi staf.
+ */
+export async function requestPickup(req, res, next) {
+  try {
+    const { engine_number, pickup_token, consumer_phone, preferred_time, notes, requested_docs } = req.body || {}
+
+    if (!engine_number || !pickup_token) {
+      return res.status(400).json({ error: 'Nomor Mesin dan token permintaan wajib diisi' })
+    }
+
+    // Verifikasi token — pastikan dikeluarkan /check untuk engine yang sama.
+    let payload
+    try {
+      payload = jwt.verify(pickup_token, process.env.JWT_SECRET)
+    } catch {
+      return res.status(401).json({ error: 'Token permintaan tidak valid atau kedaluwarsa. Silakan periksa ulang status dokumen Anda.' })
+    }
+
+    if (payload.purpose !== 'pickup' || payload.engine_number !== String(engine_number).trim().toUpperCase()) {
+      return res.status(401).json({ error: 'Token permintaan tidak sesuai dengan Nomor Mesin.' })
+    }
+
+    const cleanEngine = String(engine_number).trim().toUpperCase()
+    const cleanPhone = normalizePhone(consumer_phone)
+
+    // Ambil data track untuk nama konsumen + cabang + dokumen eligible saat ini
+    // (status bisa berubah sejak token dikeluarkan). Jika tidak ada dokumen
+    // eligible lagi, tolak — tidak ada yang bisa diambil.
+    const track = await prisma.showroom_stnk_bpkb_tracks.findUnique({
+      where: { engine_number: cleanEngine }
+    })
+    if (!track) {
+      return res.status(404).json({ error: 'Data unit tidak ditemukan.' })
+    }
+
+    const eligibleDocs = eligiblePickupDocs(track)
+    if (!eligibleDocs.length) {
+      return res.status(409).json({ error: 'Saat ini tidak ada dokumen yang siap diambil. Status dokumen mungkin sudah berubah — silakan periksa ulang.' })
+    }
+
+    // Gunakan daftar dokumen dari server (eligibleDocs) sebagai sumber kebenaran;
+    // abaikan requested_docs dari klien untuk mencegah permintaan dokumen yang
+    // belum siap / di luar eligible.
+    const request = await prisma.showroom_pickup_requests.create({
+      data: {
+        engine_number: cleanEngine,
+        branch_code: track.branch_code || null,
+        branch_name: track.branch_name || null,
+        consumer_name: track.stnk_name || null,
+        consumer_phone: cleanPhone || track.mobile || null,
+        requested_docs: eligibleDocs.join(', '),
+        preferred_time: preferred_time ? String(preferred_time).slice(0, 120) : null,
+        notes: notes ? String(notes).slice(0, 1000) : null,
+        status: 'PENDING',
+      }
+    })
+
+    res.status(201).json({
+      id: request.id,
+      status: request.status,
+      requested_docs: request.requested_docs,
+      message: 'Permintaan ambil dokumen berhasil dikirim. Staf kami akan menghubungi Anda untuk penjadwalan pengambilan.'
+    })
   } catch (err) {
     next(err)
   }

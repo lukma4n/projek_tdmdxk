@@ -530,3 +530,67 @@ export async function updateStnkBpkbTrackMobile(req, res, next) {
     next(error)
   }
 }
+
+// === FASE 2 Self-Check: manajemen permintaan ambil dokumen (pickup requests) ===
+
+const PICKUP_STATUSES = ['PENDING', 'CONTACTED', 'DONE', 'CANCELLED']
+
+/**
+ * Daftar permintaan ambil dokumen untuk staf (Admin/CRM/Kepala Cabang).
+ * Query opsional: status, branch_code. Default urut terbaru lebih dulu.
+ */
+export async function getPickupRequests(req, res, next) {
+  try {
+    const { status, branch_code } = req.query
+    const where = {}
+    if (status && PICKUP_STATUSES.includes(status)) where.status = status
+    if (branch_code) where.branch_code = String(branch_code).trim()
+
+    const rows = await prisma.showroom_pickup_requests.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      take: 200,
+    })
+
+    res.json(rows)
+  } catch (error) {
+    next(error)
+  }
+}
+
+/**
+ * Update status permintaan pickup. Staf menandai CONTACTED/DONE/CANCELLED
+ * saat menindak lanjuti. handled_by/handled_at terisi saat status berubah
+ * dari PENDING (atau di-update ulang).
+ */
+export async function updatePickupRequest(req, res, next) {
+  try {
+    const id = Number(req.params.id)
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: 'ID tidak valid' })
+    }
+
+    const status = String(req.body?.status || '').trim().toUpperCase()
+    if (!PICKUP_STATUSES.includes(status)) {
+      return res.status(400).json({ error: 'Status tidak valid. Pilih: PENDING, CONTACTED, DONE, CANCELLED.' })
+    }
+
+    const existing = await prisma.showroom_pickup_requests.findUnique({ where: { id } })
+    if (!existing) {
+      return res.status(404).json({ error: 'Permintaan tidak ditemukan' })
+    }
+
+    const updated = await prisma.showroom_pickup_requests.update({
+      where: { id },
+      data: {
+        status,
+        handled_by: req.user?.userId ?? null,
+        handled_at: new Date(),
+      },
+    })
+
+    res.json(updated)
+  } catch (error) {
+    next(error)
+  }
+}

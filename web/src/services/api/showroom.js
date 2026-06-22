@@ -307,3 +307,10 @@ export const getHandoverSteps = (id) => fetchWithAuth(`/showroom/document-handov
 export const addHandoverStep = (id, formData) => fetchWithAuth(`/showroom/document-handovers/${id}/steps`, { method: 'POST', body: formData, headers: {} })
 export const updateDocumentHandover = (id, data) => fetchWithAuth(`/showroom/document-handovers/${id}`, { method: 'PUT', body: data })
 export const deleteDocumentHandover = (id) => fetchWithAuth(`/showroom/document-handovers/${id}`, { method: 'DELETE' })
+
+// FASE 2 Self-Check: manajemen permintaan ambil dokumen (pickup requests)
+export const getPickupRequests = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/pickup-requests${query ? '?' + query : ''}`)
+}
+export const updatePickupRequest = (id, data) => fetchWithAuth(`/showroom/pickup-requests/${id}`, { method: 'PATCH', body: data })

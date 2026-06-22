@@ -28,6 +28,7 @@ const ShowroomStockUnit = lazy(() => import('./pages/ShowroomStockUnit'))
 const ShowroomStnk = lazy(() => import('./pages/ShowroomStnk'))
 const ShowroomBpkb = lazy(() => import('./pages/ShowroomBpkb'))
 const ShowroomStnkBpkbMonitoring = lazy(() => import('./pages/ShowroomStnkBpkbMonitoring'))
+const ShowroomPickupRequests = lazy(() => import('./pages/ShowroomPickupRequests'))
 const ShowroomOtrPrice = lazy(() => import('./pages/ShowroomOtrPrice'))
 const ShowroomBbnPrice = lazy(() => import('./pages/ShowroomBbnPrice'))
 const ShowroomProgram = lazy(() => import('./pages/ShowroomProgram'))
@@ -49,7 +50,7 @@ const StnkBpkbCheck = lazy(() => import('./pages/StnkBpkbCheck'))
 
 import { ROLES } from './config/roles'
 
-function RoleGuard({ children, menuKey }) {
+function RoleGuard({ children, menuKey, roles }) {
   const { user, permissions, permissionsLoaded, permissionsError } = useAuthStore()
 
   if (!user?.role) {
@@ -58,6 +59,12 @@ function RoleGuard({ children, menuKey }) {
 
   // IT Master bypass semua guard
   if (user.role === ROLES.MASTER_IT) return children
+
+  // Gate berbasis roles eksplisit (mis. menu "Layanan Publik" yang bukan menuKey DB).
+  if (roles) {
+    if (roles.includes(user.role)) return children
+    return <Navigate to="/" replace />
+  }
 
   // Tunggu hingga permissions selesai dimuat sebelum memberi akses
   if (!permissionsLoaded) return <PageLoader />
@@ -330,6 +337,14 @@ function App() {
           element={
               <RoleGuard menuKey="SHOWROOM_STNK_BPKB_MONITORING">
               <LazyPage><ShowroomStnkBpkbMonitoring /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="showroom/pickup-requests"
+          element={
+            <RoleGuard roles={[ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM, ROLES.ADMIN_CRM]}>
+              <LazyPage><ShowroomPickupRequests /></LazyPage>
             </RoleGuard>
           }
         />
