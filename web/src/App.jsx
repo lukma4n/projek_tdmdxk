@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 import Layout from './components/Layout/Layout'
@@ -119,7 +119,23 @@ function LazyPage({ children }) {
 }
 
 function App() {
-  const { isAuthenticated, permissionsLoaded, permissionsError, fetchPermissions, retryPermissions } = useAuthStore()
+  const { isAuthenticated, login, permissionsLoaded, permissionsError, fetchPermissions, retryPermissions } = useAuthStore()
+  // Pulihkan sesi dari cookie httpOnly saat app dimuat (mis. refresh deep-link).
+  // Tanpa ini, reload halaman terproteksi akan jatuh ke landing/guest.
+  const [authChecked, setAuthChecked] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    const apiBase = import.meta.env.VITE_API_URL || '/api'
+    // Probe sesi langsung (bukan via fetchWithAuth) supaya 401 untuk guest TIDAK
+    // memicu redirect global ke /login — halaman publik (/, /cek) harus tetap terbuka.
+    fetch(`${apiBase}/auth/me`, { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (!cancelled && data?.user) login(data.user) })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setAuthChecked(true) })
+    return () => { cancelled = true }
+  }, [login])
 
   useEffect(() => {
     if (isAuthenticated && !permissionsLoaded && !permissionsError) {
@@ -149,8 +165,8 @@ function App() {
       {/* Self-check publik: alias pendek /cek + path lama (backward compat) */}
       <Route path="/cek" element={<LazyPage><StnkBpkbCheck /></LazyPage>} />
       <Route path="/public/stnk-bpkb-check" element={<LazyPage><StnkBpkbCheck /></LazyPage>} />
-      {/* Root: guest → landing 2 pintu; user login → app shell */}
-      <Route path="/" element={isAuthenticated ? <Layout /> : <PublicLanding />}>
+      {/* Root: tunggu cek sesi → user login: app shell; guest: landing 2 pintu */}
+      <Route path="/" element={!authChecked ? <PageLoader /> : isAuthenticated ? <Layout /> : <PublicLanding />}>
 
         <Route index element={<DefaultRoute />} />
         <Route

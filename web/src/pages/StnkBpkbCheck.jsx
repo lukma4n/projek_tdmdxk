@@ -20,10 +20,9 @@ import {
   Copy
 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { selfCheckUrl } from '../config/selfCheck'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
-// Sumber URL publik tunggal: env produksi, fallback origin saat ini (jalan tanpa konfigurasi).
-const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || (typeof window !== 'undefined' ? window.location.origin : '')
 
 export default function StnkBpkbCheck() {
   const { theme, toggleTheme } = useThemeStore()
@@ -39,7 +38,7 @@ export default function StnkBpkbCheck() {
   const [copied, setCopied] = useState(false)
 
   const handleCopyLink = async () => {
-    const link = `${PUBLIC_URL}/cek?engine_number=${encodeURIComponent(engineNumber.trim())}`
+    const link = selfCheckUrl(engineNumber)
     try {
       await navigator.clipboard.writeText(link)
       setCopied(true)

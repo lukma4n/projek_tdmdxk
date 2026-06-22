@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Printer, X } from 'lucide-react'
+import { selfCheckQrDataUrl } from '../../config/selfCheck'
 
 function escapeHtml(value) {
   return String(value ?? '-')
@@ -12,6 +13,7 @@ function escapeHtml(value) {
 
 export default function ServiceBookLabel({ item, onClose }) {
   const svgRef = useRef(null)
+  const [qrUrl, setQrUrl] = useState('')
 
   useEffect(() => {
     if (svgRef.current && item?.no_engine && item.no_engine !== '-') {
@@ -25,24 +27,30 @@ export default function ServiceBookLabel({ item, onClose }) {
         })
       })
     }
+    if (item?.no_engine && item.no_engine !== '-') {
+      selfCheckQrDataUrl(item.no_engine).then(setQrUrl).catch(() => setQrUrl(''))
+    }
   }, [item])
 
   const renderLabelContent = () => {
     return `
-      <div class="header">BUKU SERVICE - TDM KETAPANG</div>
-      <div class="meta">
-        <span class="meta-label">NO MESIN / RANGKA</span>
-        <span class="meta-value">${escapeHtml(item.no_engine)} / ${escapeHtml(item.no_frame)}</span>
-        <span class="meta-label">TYPE</span>
-        <span class="meta-value">${escapeHtml(item.model && item.model !== '-' ? item.model : '-')}</span>
-        <span class="meta-label">NAMA</span>
-        <span class="name-value">${escapeHtml(item.customer_name)}</span>
-        <span class="meta-label">ALAMAT</span>
-        <span class="meta-value">${escapeHtml(item.alamat)}</span>
-        <span class="meta-label">TGL PEMBELIAN</span>
-        <span class="meta-value">${escapeHtml(item.so_date)}</span>
+      <div class="label-body">
+        <div class="header">BUKU SERVICE - TDM KETAPANG</div>
+        <div class="meta">
+          <span class="meta-label">NO MESIN / RANGKA</span>
+          <span class="meta-value">${escapeHtml(item.no_engine)} / ${escapeHtml(item.no_frame)}</span>
+          <span class="meta-label">TYPE</span>
+          <span class="meta-value">${escapeHtml(item.model && item.model !== '-' ? item.model : '-')}</span>
+          <span class="meta-label">NAMA</span>
+          <span class="name-value">${escapeHtml(item.customer_name)}</span>
+          <span class="meta-label">ALAMAT</span>
+          <span class="meta-value">${escapeHtml(item.alamat)}</span>
+          <span class="meta-label">TGL PEMBELIAN</span>
+          <span class="meta-value">${escapeHtml(item.so_date)}</span>
+        </div>
+        ${svgRef.current?.outerHTML || ''}
       </div>
-      ${svgRef.current?.outerHTML || ''}
+      ${qrUrl ? `<div class="label-qr"><img src="${qrUrl}" alt="QR cek dokumen" /><div class="qr-cap">Scan cek<br/>STNK/BPKB</div></div>` : ''}
     `
   }
 
@@ -59,13 +67,17 @@ export default function ServiceBookLabel({ item, onClose }) {
           @page { size: A4 portrait; margin: 0; }
           body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
           .page { display: grid; grid-template-columns: repeat(3, 64mm); grid-auto-rows: 32mm; width: 192mm; margin-left: 9mm; margin-top: 2mm; }
-          .label { width: 64mm; height: 32mm; padding: 4.5mm 4.5mm 2mm; box-sizing: border-box; overflow: hidden; }
+          .label { width: 64mm; height: 32mm; padding: 4.5mm 4.5mm 2mm; box-sizing: border-box; overflow: hidden; display: flex; gap: 1.5mm; }
+          .label-body { flex: 1; min-width: 0; }
+          .label-qr { width: 14mm; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+          .label-qr img { width: 13mm; height: 13mm; display: block; }
+          .label-qr .qr-cap { font-size: 5px; line-height: 1.1; text-align: center; color: #374151; margin-top: 0.4mm; }
           .header { font-size: 8px; font-weight: bold; color: #1e40af; margin-bottom: 0.8mm; }
           .meta { font-size: 7px; color: #111827; display: grid; grid-template-columns: 20mm 1fr; gap: 0.3mm 0.8mm; }
           .meta-label { color: #111827; }
           .meta-value { font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           .name-value { font-weight: bold; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-          svg { width: 100%; height: 12mm; margin-top: 0.8mm; }
+          svg { width: 100%; height: 11mm; margin-top: 0.8mm; }
           @media print { body { -webkit-print-color-adjust: exact; } }
         </style>
       </head>
@@ -100,7 +112,8 @@ export default function ServiceBookLabel({ item, onClose }) {
           {/* Label Preview - 3 Labels */}
           <div className="space-y-3">
             {[1, 2, 3].map((num) => (
-              <div key={num} className="mx-auto max-w-[280px] rounded-lg border border-slate-300 bg-white p-4">
+              <div key={num} className="mx-auto flex max-w-[320px] gap-3 rounded-lg border border-slate-300 bg-white p-4">
+                <div className="min-w-0 flex-1">
                 <div className="mb-1 text-xs font-bold text-blue-600">BUKU SERVICE - TDM KETAPANG</div>
                 <div className="mt-1 space-y-0.5 text-[9px] text-slate-900 leading-tight">
                   <div className="flex">
@@ -125,6 +138,13 @@ export default function ServiceBookLabel({ item, onClose }) {
                   </div>
                 </div>
                 <svg ref={num === 1 ? svgRef : undefined} className="mt-2 w-full" />
+                </div>
+                {qrUrl && (
+                  <div className="flex w-14 shrink-0 flex-col items-center justify-center">
+                    <img src={qrUrl} alt="QR cek dokumen" className="h-12 w-12" />
+                    <span className="mt-0.5 text-center text-[8px] leading-tight text-slate-500">Scan cek STNK/BPKB</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>

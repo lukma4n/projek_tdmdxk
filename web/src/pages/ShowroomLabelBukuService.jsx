@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '../services/api'
 import ServiceBookLabel from '../components/common/ServiceBookLabel'
+import { selfCheckQrDataUrl } from '../config/selfCheck'
 import {
   Loader2,
   AlertTriangle,
@@ -82,24 +83,37 @@ export default function ShowroomLabelBukuService() {
       pages.push(allLabels.slice(i, i + labelsPerPage))
     }
 
+    // QR self-check per Nomor Mesin unik (generate sekali, dipakai ulang).
+    const uniqueEngines = [...new Set(allLabels.map((i) => i.no_engine).filter((e) => e && e !== '-'))]
+    const qrEntries = await Promise.all(
+      uniqueEngines.map(async (e) => {
+        try { return [e, await selfCheckQrDataUrl(e)] } catch { return [e, ''] }
+      }),
+    )
+    const qrMap = Object.fromEntries(qrEntries)
+
     const renderLabel = (item, idx) => {
       const svgId = `barcode-${idx}`
+      const qr = qrMap[item.no_engine]
       return `
         <div class="label">
-          <div class="header">BUKU SERVICE - TDM KETAPANG</div>
-          <div class="meta">
-            <span class="meta-label">NO MESIN / RANGKA</span>
-            <span class="meta-value">${escapeHtml(item.no_engine)} / ${escapeHtml(item.no_frame)}</span>
-            <span class="meta-label">TYPE</span>
-            <span class="meta-value">${escapeHtml(item.model && item.model !== '-' ? item.model : '-')}</span>
-            <span class="meta-label">NAMA</span>
-            <span class="name-value">${escapeHtml(item.customer_name)}</span>
-            <span class="meta-label">ALAMAT</span>
-            <span class="meta-value">${escapeHtml(item.alamat)}</span>
-            <span class="meta-label">TGL PEMBELIAN</span>
-            <span class="meta-value">${escapeHtml(item.so_date)}</span>
+          <div class="label-body">
+            <div class="header">BUKU SERVICE - TDM KETAPANG</div>
+            <div class="meta">
+              <span class="meta-label">NO MESIN / RANGKA</span>
+              <span class="meta-value">${escapeHtml(item.no_engine)} / ${escapeHtml(item.no_frame)}</span>
+              <span class="meta-label">TYPE</span>
+              <span class="meta-value">${escapeHtml(item.model && item.model !== '-' ? item.model : '-')}</span>
+              <span class="meta-label">NAMA</span>
+              <span class="name-value">${escapeHtml(item.customer_name)}</span>
+              <span class="meta-label">ALAMAT</span>
+              <span class="meta-value">${escapeHtml(item.alamat)}</span>
+              <span class="meta-label">TGL PEMBELIAN</span>
+              <span class="meta-value">${escapeHtml(item.so_date)}</span>
+            </div>
+            <svg id="${svgId}" class="barcode"></svg>
           </div>
-          <svg id="${svgId}" class="barcode"></svg>
+          ${qr ? `<div class="label-qr"><img src="${qr}" alt="QR cek dokumen" /><div class="qr-cap">Scan cek<br/>STNK/BPKB</div></div>` : ''}
         </div>
       `
     }
@@ -120,13 +134,17 @@ export default function ShowroomLabelBukuService() {
           body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
           .page { display: grid; grid-template-columns: repeat(3, 64mm); grid-auto-rows: 32mm; width: 192mm; margin-left: 9mm; margin-top: 2mm; page-break-after: always; }
           .page:last-child { page-break-after: auto; }
-          .label { width: 64mm; height: 32mm; padding: 4.5mm 4.5mm 2mm; box-sizing: border-box; overflow: hidden; }
+          .label { width: 64mm; height: 32mm; padding: 4.5mm 4.5mm 2mm; box-sizing: border-box; overflow: hidden; display: flex; gap: 1.5mm; }
+          .label-body { flex: 1; min-width: 0; }
+          .label-qr { width: 14mm; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+          .label-qr img { width: 13mm; height: 13mm; display: block; }
+          .label-qr .qr-cap { font-size: 5px; line-height: 1.1; text-align: center; color: #374151; margin-top: 0.4mm; }
           .header { font-size: 8px; font-weight: bold; color: #1e40af; margin-bottom: 0.8mm; }
           .meta { font-size: 7px; color: #111827; display: grid; grid-template-columns: 20mm 1fr; gap: 0.3mm 0.8mm; }
           .meta-label { color: #111827; }
           .meta-value { font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           .name-value { font-weight: bold; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-          .barcode { width: 100%; height: 12mm; margin-top: 0.8mm; }
+          .barcode { width: 100%; height: 11mm; margin-top: 0.8mm; }
           @media print { body { -webkit-print-color-adjust: exact; } }
         </style>
       </head>

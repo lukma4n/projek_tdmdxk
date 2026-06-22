@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { API_BASE, api } from '../services/api'
 import { Bike, CheckCircle2, Download, FileBadge, FileText, Loader2, MapPin, MessageCircle, Phone, RefreshCw, Search, User, XCircle } from 'lucide-react'
+import { selfCheckUrl } from '../config/selfCheck'
 
 const statuses = [
   { value: 'all', label: 'Semua' },
@@ -32,7 +33,7 @@ function normalizePhone(phone) {
   return digits
 }
 
-function buildStnkMessage() {
+function buildStnkMessage(item) {
   return [
     'Salam Satu Hati Pelanggan Setia Honda',
     '',
@@ -49,11 +50,14 @@ function buildStnkMessage() {
     'Sabtu               : 09.00-14.00',
     'Istirahat          : 12.00-13.30',
     '',
+    'Cek status dokumen Anda kapan saja:',
+    selfCheckUrl(item?.engine_number),
+    '',
     'Terimakasih',
   ].join('\n')
 }
 
-function buildBpkbMessage() {
+function buildBpkbMessage(item) {
   return [
     'Salam Satu Hati Pelanggan Setia Honda',
     '',
@@ -73,6 +77,9 @@ function buildBpkbMessage() {
     'Senin-Jumat : 09.00-16.00',
     'Sabtu                : 09.00-14.00',
     'Istirahat          : 12.00-13.30',
+    '',
+    'Cek status dokumen Anda kapan saja:',
+    selfCheckUrl(item?.engine_number),
     '',
     'Terimakasih',
   ].join('\n')
