@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { API_BASE, api } from '../services/api'
-import { Bike, CheckCircle2, Download, FileBadge, FileText, Loader2, MapPin, MessageCircle, Phone, RefreshCw, Search, User, XCircle } from 'lucide-react'
+import { Bike, CheckCircle2, Download, FileBadge, FileText, Loader2, MapPin, MessageCircle, Phone, QrCode, RefreshCw, Search, User, XCircle } from 'lucide-react'
 import { selfCheckUrl } from '../config/selfCheck'
+import SelfCheckCard from '../components/common/SelfCheckCard'
 
 const statuses = [
   { value: 'all', label: 'Semua' },
@@ -109,6 +110,7 @@ export default function ShowroomDocumentFollowup({ type }) {
   const [exporting, setExporting] = useState(false)
   const [savingKey, setSavingKey] = useState('')
   const [error, setError] = useState('')
+  const [cardItems, setCardItems] = useState(null)
 
   const loadData = async () => {
     try {
@@ -203,6 +205,9 @@ export default function ShowroomDocumentFollowup({ type }) {
           <button onClick={loadData} className="flex items-center gap-2 px-3 py-2 bg-panel border border-border rounded-lg text-sm font-medium text-muted hover:bg-hover">
             <RefreshCw size={15} /> Refresh
           </button>
+          <button onClick={() => setCardItems(filteredItems)} disabled={filteredItems.length === 0} className="flex items-center gap-2 px-3 py-2 bg-accent hover:brightness-110 disabled:opacity-50 text-white rounded-lg text-sm font-medium shadow-lg shadow-accent/20">
+            <QrCode size={15} /> Cetak Kartu ({filteredItems.length})
+          </button>
           <button onClick={handleExport} disabled={exporting || filteredItems.length === 0} className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-lg text-sm font-medium shadow-lg shadow-green-600/20">
             {exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} Export
           </button>
@@ -282,6 +287,7 @@ export default function ShowroomDocumentFollowup({ type }) {
                     </div>
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <button onClick={() => openWhatsapp(item)} disabled={!waUrl || savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-lg text-xs font-medium transition-colors">{savingKey === `${item.engine_number}:sudah_dihubungi` ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />} WhatsApp</button>
+                      <button onClick={() => setCardItems([item])} disabled={!item.engine_number} className="inline-flex items-center gap-1.5 px-3 py-2 bg-accent-soft border border-accent-soft text-accent rounded-lg text-xs font-medium hover:bg-accent-soft disabled:opacity-50" title="Cetak kartu self-check"><QrCode size={14} /> Kartu</button>
                       <button onClick={() => saveStatus(item, 'diambil', `Ditandai diambil dari halaman ${title}`)} disabled={savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-success-50 border border-success-200 text-success-700 rounded-lg text-xs font-medium hover:bg-success-100 disabled:opacity-50">Diambil</button>
                       <button onClick={() => saveStatus(item, 'pending', `Ditandai pending dari halaman ${title}`)} disabled={savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-warning-50 border border-warning-200 text-warning-700 rounded-lg text-xs font-medium hover:bg-warning-100 disabled:opacity-50">Pending</button>
                       <button onClick={() => saveStatus(item, 'batal', `Ditandai batal dari halaman ${title}`)} disabled={savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-danger-50 border border-danger-200 text-danger-700 rounded-lg text-xs font-medium hover:bg-danger-100 disabled:opacity-50"><XCircle size={14} /> Batal</button>
@@ -293,6 +299,7 @@ export default function ShowroomDocumentFollowup({ type }) {
           </div>
         )}
       </div>
+      {cardItems && <SelfCheckCard items={cardItems} onClose={() => setCardItems(null)} />}
     </div>
   )
 }
