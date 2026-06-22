@@ -82,9 +82,11 @@ function mapPickupTask(req, action = 'Hubungi konsumen', priority = 'high') {
 }
 
 async function getPickupTasksByRole(role) {
-  // Staf yang boleh menindak lanjuti pickup = same roles as staff endpoint
-  // (Admin/CRM/Kepala Cabang). Role lain dapat daftar kosong.
-  if (!['Admin', 'CRM', 'Kepala Cabang'].includes(role)) return []
+  // Staf yang menindak lanjuti pickup = same roles as staff endpoint
+  // (Admin/CRM/Kepala Cabang). IT Master (superadmin) juga melihat feed pickup
+  // karena bypass semua guard & dapat membuka halaman pickup-requests —
+  // konsisten dengan perlakuan IT Master di tempat lain. Role lain: daftar kosong.
+  if (!['Admin', 'CRM', 'Kepala Cabang', 'IT Master'].includes(role)) return []
 
   const pending = await prisma.showroom_pickup_requests.findMany({
     where: { status: 'PENDING' },

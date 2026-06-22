@@ -232,3 +232,13 @@ test('Pickup: feed notifikasi memuat tugas pickup PENDING untuk Admin', async ()
   const pickupTasks = tasks.filter((t) => t.area === 'pickup' && t.path === '/showroom/pickup-requests')
   assert.ok(pickupTasks.length > 0, 'feed berisi tugas pickup untuk Admin')
 })
+
+test('Pickup: feed notifikasi juga tampil untuk IT Master (superadmin)', async () => {
+  const agent = request.agent(app)
+  await loginAs(agent, 'test_itmaster')
+  const res = await agent.get('/api/notifications/approvals')
+  assert.equal(res.status, 200)
+  const tasks = res.body.data || []
+  const pickupTasks = tasks.filter((t) => t.area === 'pickup' && t.path === '/showroom/pickup-requests')
+  assert.ok(pickupTasks.length > 0, 'feed berisi tugas pickup untuk IT Master')
+})
