@@ -12,6 +12,7 @@ import {
   Sun,
   Moon,
   Calendar,
+  Clock,
   ArrowRight,
   Lock,
   Camera,
@@ -29,6 +30,36 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api'
 // Nomor WhatsApp dealer untuk request pengambilan dokumen (format internasional, mis. 6281...).
 const DEALER_WA = (import.meta.env.VITE_DEALER_WA_PHONE || '').replace(/\D/g, '')
 
+// Tanggal hari ini (lokal) dalam format YYYY-MM-DD untuk atribut min pada input date.
+function todayLocalStr() {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+// Gabungkan tanggal + jam terpilih menjadi string ramah-baca untuk preferred_time.
+// Contoh: "Senin, 24 Jun 2026 pukul 09:30". Salah satu boleh kosong (opsional).
+function formatPreferredTime(dateStr, timeStr) {
+  const parts = []
+  if (dateStr) {
+    const d = new Date(`${dateStr}T00:00:00`)
+    if (!Number.isNaN(d.getTime())) {
+      parts.push(
+        new Intl.DateTimeFormat('id-ID', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        }).format(d)
+      )
+    }
+  }
+  if (timeStr) parts.push(`pukul ${timeStr}`)
+  return parts.join(' ')
+}
+
 export default function StnkBpkbCheck() {
   const { theme, toggleTheme } = useThemeStore()
   const isDark = theme === 'dark'
@@ -44,7 +75,8 @@ export default function StnkBpkbCheck() {
   const [copied, setCopied] = useState(false)
   // FASE 2: form permintaan ambil dokumen
   const [pickupPhone, setPickupPhone] = useState(() => searchParams.get('phone') || '')
-  const [pickupTime, setPickupTime] = useState('')
+  const [pickupDate, setPickupDate] = useState('')
+  const [pickupHour, setPickupHour] = useState('')
   const [pickupNotes, setPickupNotes] = useState('')
   const [pickupSubmitting, setPickupSubmitting] = useState(false)
   const [pickupSuccess, setPickupSuccess] = useState(null)
@@ -113,7 +145,7 @@ export default function StnkBpkbCheck() {
       formData.append('engine_number', result.engine_number)
       formData.append('pickup_token', result.pickup_token)
       formData.append('consumer_phone', pickupPhone.trim())
-      formData.append('preferred_time', pickupTime.trim())
+      formData.append('preferred_time', formatPreferredTime(pickupDate, pickupHour))
       formData.append('notes', pickupNotes.trim())
       formData.append('ktp_photo', ktpFile)
 
@@ -126,6 +158,8 @@ export default function StnkBpkbCheck() {
       setPickupSuccess(data.message || 'Permintaan berhasil dikirim.')
       setKtpFile(null)
       setKtpPreview('')
+      setPickupDate('')
+      setPickupHour('')
     } catch (err) {
       setPickupError(err.message || 'Gagal mengirim permintaan. Coba lagi atau hubungi dealer.')
     } finally {
@@ -416,18 +450,42 @@ export default function StnkBpkbCheck() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="pickup-time" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
+                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
                       Waktu Preferensi Pengambilan (opsional)
                     </label>
-                    <input
-                      id="pickup-time"
-                      type="text"
-                      value={pickupTime}
-                      onChange={(e) => setPickupTime(e.target.value)}
-                      placeholder="Contoh: Senin pagi, tanggal 24 Juni"
-                      maxLength={120}
-                      className="w-full rounded-xl border px-4 py-3 text-sm transition-all focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
-                    />
+                    <p className="mb-2 text-[11px] text-muted">
+                      Pilih tanggal & perkiraan jam. Jam operasional pengambilan 08.00–17.00.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <Calendar size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                        <input
+                          id="pickup-date"
+                          type="date"
+                          value={pickupDate}
+                          min={todayLocalStr()}
+                          onChange={(e) => setPickupDate(e.target.value)}
+                          className="w-full rounded-xl border border-border bg-hover px-4 py-3 pl-9 text-sm transition-all focus:outline-none focus:border-accent focus:ring-4 focus:ring-accent/10 text-text"
+                        />
+                      </div>
+                      <div className="relative">
+                        <Clock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                        <input
+                          id="pickup-hour"
+                          type="time"
+                          value={pickupHour}
+                          min="08:00"
+                          max="17:00"
+                          onChange={(e) => setPickupHour(e.target.value)}
+                          className="w-full rounded-xl border border-border bg-hover px-4 py-3 pl-9 text-sm transition-all focus:outline-none focus:border-accent focus:ring-4 focus:ring-accent/10 text-text"
+                        />
+                      </div>
+                    </div>
+                    {(pickupDate || pickupHour) && (
+                      <p className="mt-2 text-[11px] font-semibold text-accent">
+                        {formatPreferredTime(pickupDate, pickupHour)}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label htmlFor="pickup-notes" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
