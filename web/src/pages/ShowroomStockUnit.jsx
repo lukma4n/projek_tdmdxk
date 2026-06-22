@@ -22,10 +22,10 @@ function getAgingTagByIncomingDate(value) {
 
 function agingTagYearClass(yearValue) {
   const year = parseInt(yearValue)
-  if (!Number.isFinite(year)) return 'bg-slate-100 text-slate-700 border-slate-200'
+  if (!Number.isFinite(year)) return 'bg-hover text-text border-border'
   if (year <= 2023) return 'bg-danger-50 text-danger-700 border-danger-200'
   if (year === 2024) return 'bg-warning-50 text-warning-700 border-warning-200'
-  if (year === 2025) return 'bg-blue-50 text-blue-700 border-blue-200'
+  if (year === 2025) return 'bg-accent-soft text-accent-text border-accent-soft'
   return 'bg-success-50 text-success-700 border-success-200'
 }
 
@@ -74,9 +74,9 @@ const AGING_TAG_OPTIONS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'
 
 function ksuBadgeClass(status) {
   if (status === 'lengkap') return 'bg-success-50 text-success-600 border-success-200'
-  if (status === 'sudah_diserahkan') return 'bg-blue-50 text-blue-600 border-blue-200'
+  if (status === 'sudah_diserahkan') return 'bg-accent-soft text-accent border-accent-soft'
   if (status === 'belum_lengkap') return 'bg-warning-50 text-warning-600 border-warning-200'
-  return 'bg-slate-50 text-slate-600 border-slate-200'
+  return 'bg-hover text-muted border-border'
 }
 
 function ksuStandardText(ksu) {
@@ -363,21 +363,21 @@ export default function ShowroomStockUnit() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Stock Unit Showroom</h1>
-          <p className="text-sm text-slate-500">Monitoring unit fisik showroom cabang DXK</p>
+          <h1 className="text-2xl font-bold text-text-strong">Stock Unit Showroom</h1>
+          <p className="text-sm text-muted">Monitoring unit fisik showroom cabang DXK</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={handleExport} disabled={exporting} className="flex items-center gap-2 px-4 py-2 bg-success-600 text-white rounded-lg text-sm hover:bg-success-700 disabled:opacity-60">
             {exporting ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />} Export Excel
           </button>
-          <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+          <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 bg-panel border border-border rounded-lg text-sm text-muted hover:bg-hover">
             <RefreshCw size={16} /> Refresh
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        <div className="p-4 rounded-xl border border-blue-200 bg-blue-50 text-blue-700">
+        <div className="p-4 rounded-xl border border-accent-soft bg-accent-soft text-accent-text">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Total Unit</p><Package size={18} /></div>
           <p className="text-2xl font-bold mt-1">{summary?.total || 0}</p>
         </div>
@@ -393,41 +393,41 @@ export default function ShowroomStockUnit() {
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Series Terbanyak</p><Bike size={18} /></div>
           <p className="text-xl font-bold mt-1 truncate">{summary?.bySeries?.[0]?.series || '-'}</p>
         </div>
-        <div className="p-4 rounded-xl border border-purple-200 bg-purple-50 text-purple-700">
+        <div className="p-4 rounded-xl border border-purple-200 bg-accent-soft text-accent">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">KSU Perlu Tindakan</p><BatteryCharging size={18} /></div>
           <p className="text-2xl font-bold mt-1">{(summary?.ksu?.belum_dicek || 0) + (summary?.ksu?.belum_lengkap || 0) + (summary?.ksu?.battery_mismatch || 0)}</p>
         </div>
-        <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-700">
+        <div className="p-4 rounded-xl border border-border bg-hover text-text">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Kebutuhan Aki</p><BatteryCharging size={18} /></div>
           <p className="text-2xl font-bold mt-1">{summary?.ksu?.required_items?.battery || 0}</p>
-          <p className="text-xs text-slate-500">Item lain {summary?.ksu?.total || 0}</p>
+          <p className="text-xs text-muted">Item lain {summary?.ksu?.total || 0}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-wrap gap-3">
+      <div className="bg-panel rounded-xl border border-border shadow-sm p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[220px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari engine, chassis, series..." className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari engine, chassis, series..." className="w-full pl-9 pr-4 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
         </div>
-        <select value={series} onChange={(e) => setSeries(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+        <select value={series} onChange={(e) => setSeries(e.target.value)} className="px-3 py-2 bg-hover border border-border rounded-lg text-sm">
           <option value="all">Semua Series</option>
           {filters.series?.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <select value={state} onChange={(e) => setState(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+        <select value={state} onChange={(e) => setState(e.target.value)} className="px-3 py-2 bg-hover border border-border rounded-lg text-sm">
           <option value="all">Semua State</option>
           {filters.states?.map((item) => <option key={item} value={item}>{normalizeUnitStateLabel(item)}</option>)}
         </select>
-        <select value={agingMin} onChange={(e) => setAgingMin(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+        <select value={agingMin} onChange={(e) => setAgingMin(e.target.value)} className="px-3 py-2 bg-hover border border-border rounded-lg text-sm">
           <option value="all">Semua Aging</option>
           <option value="30">Aging &gt;= 30 Hari</option>
           <option value="60">Aging &gt;= 60 Hari</option>
           <option value="90">Aging &gt;= 90 Hari</option>
         </select>
-        <select value={agingTag} onChange={(e) => setAgingTag(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+        <select value={agingTag} onChange={(e) => setAgingTag(e.target.value)} className="px-3 py-2 bg-hover border border-border rounded-lg text-sm">
           <option value="all">Semua Tag Aging</option>
           {AGING_TAG_OPTIONS.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
         </select>
-        <select value={location} onChange={(e) => setLocation(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm max-w-xs">
+        <select value={location} onChange={(e) => setLocation(e.target.value)} className="px-3 py-2 bg-hover border border-border rounded-lg text-sm max-w-xs">
           <option value="all">Semua Lokasi</option>
           {filters.locations?.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
@@ -435,71 +435,71 @@ export default function ShowroomStockUnit() {
 
       {error && <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg text-sm text-danger-600">{error}</div>}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+      <div className="bg-panel rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-slate-700">Daftar Stock Unit</span>
-            <span className="text-xs text-slate-400">{(pagination.total || 0).toLocaleString('id-ID')} total data</span>
+            <span className="text-sm font-semibold text-text">Daftar Stock Unit</span>
+            <span className="text-xs text-faint">{(pagination.total || 0).toLocaleString('id-ID')} total data</span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrintSelected}
               disabled={selectedMap.size === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-soft text-accent-text text-xs font-medium hover:bg-accent-soft disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Printer size={13} /> Print Terpilih ({selectedMap.size})
             </button>
             <button
               onClick={handlePrintAll}
               disabled={printingAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-medium hover:bg-slate-50 disabled:opacity-40"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-panel text-muted text-xs font-medium hover:bg-hover disabled:opacity-40"
             >
               {printingAll ? <Loader2 className="animate-spin" size={13} /> : <Printer size={13} />} Print Semua
             </button>
           </div>
         </div>
         {loading ? (
-          <div className="flex items-center justify-center p-12"><Loader2 className="animate-spin text-blue-600" size={24} /></div>
+          <div className="flex items-center justify-center p-12"><Loader2 className="animate-spin text-accent" size={24} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px]">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
+                <tr className="bg-hover border-b border-border">
                   <th className="px-4 py-3 text-left">
                     <input
                       type="checkbox"
                       checked={allPageSelected}
                       ref={(el) => { if (el) el.indeterminate = somePageSelected }}
                       onChange={toggleSelectAll}
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-border-strong text-accent focus:ring-accent"
                     />
                   </th>
-                  {['Unit', 'Engine/Chassis', 'Lokasi', 'Aging', 'State', 'KSU', 'Tahun', 'Harga OTR', 'Label'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">{h}</th>)}
+                  {['Unit', 'Engine/Chassis', 'Lokasi', 'Aging', 'State', 'KSU', 'Tahun', 'Harga OTR', 'Label'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase whitespace-nowrap">{h}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {units.map((unit) => {
                   const fifoDays = getAgingFifoDays(unit)
 
-                  return <tr key={unit.id} className="hover:bg-slate-50/50">
+                  return <tr key={unit.id} className="hover:bg-hover/50">
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
                         checked={selectedMap.has(unit.id)}
                         onChange={() => toggleSelect(unit)}
-                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-border-strong text-accent focus:ring-accent"
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-sm font-semibold text-slate-800">{unit.series || '-'}</p>
-                      <p className="text-xs text-slate-500">{unit.product_type || '-'} / {unit.color || '-'}</p>
+                      <p className="text-sm font-semibold text-text">{unit.series || '-'}</p>
+                      <p className="text-xs text-muted">{unit.product_type || '-'} / {unit.color || '-'}</p>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-600">
+                    <td className="px-4 py-3 font-mono text-xs text-muted">
                       <p>{unit.engine_number}</p>
-                      <p className="text-slate-400">{unit.chassis_number || '-'}</p>
+                      <p className="text-faint">{unit.chassis_number || '-'}</p>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 max-w-xs">
-                      <div className="flex items-start gap-1"><MapPin size={13} className="mt-0.5 shrink-0 text-slate-400" /><span>{unit.location || '-'}</span></div>
+                    <td className="px-4 py-3 text-sm text-muted max-w-xs">
+                      <div className="flex items-start gap-1"><MapPin size={13} className="mt-0.5 shrink-0 text-faint" /><span>{unit.location || '-'}</span></div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -507,23 +507,23 @@ export default function ShowroomStockUnit() {
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${agingTagYearClass(unit.year)}`}>Tag {getAgingTagByIncomingDate(unit.incoming_date)}</span>
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium border ${agingToneClass(fifoDays)}`}>FIFO {fifoDays} hari</span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-1">Masuk {formatDate(unit.incoming_date)}</p>
+                      <p className="text-xs text-faint mt-1">Masuk {formatDate(unit.incoming_date)}</p>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{normalizeUnitStateLabel(unit.engine_state)}</td>
+                    <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{normalizeUnitStateLabel(unit.engine_state)}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <button onClick={() => openKsuModal(unit)} className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${ksuBadgeClass(unit.ksu?.status)}`} title="Klik untuk cek KSU unit">
                         {KSU_LABELS[unit.ksu?.status] || 'Belum dicek'}
                       </button>
-                      <p className={`text-xs mt-1 ${unit.ksu?.standard?.is_verified ? 'text-slate-400' : 'text-warning-600'}`}>{ksuStandardText(unit.ksu)}</p>
+                      <p className={`text-xs mt-1 ${unit.ksu?.standard?.is_verified ? 'text-faint' : 'text-warning-600'}`}>{ksuStandardText(unit.ksu)}</p>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{unit.year || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
+                    <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{unit.year || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">
                       {unit.otr_price ? formatCurrency(unit.otr_price) : <span className="text-warning-600">Belum ada OTR</span>}
                     </td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => setSelectedItem(unit)}
-                        className="rounded-lg bg-slate-100 p-1.5 text-slate-500 transition-colors hover:bg-blue-100 hover:text-blue-600"
+                        className="rounded-lg bg-hover p-1.5 text-muted transition-colors hover:bg-accent-soft hover:text-accent"
                         title="Print label barcode"
                       >
                         <Printer size={14} />
@@ -540,14 +540,14 @@ export default function ShowroomStockUnit() {
       {selectedItem && <StockUnitBarcodeLabel item={selectedItem} onClose={() => setSelectedItem(null)} />}
 
       {ksuModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl">
-            <div className="border-b border-slate-100 p-5">
-              <h2 className="text-lg font-bold text-slate-900">Cek Fisik KSU Unit</h2>
-              <p className="text-sm text-slate-500">{ksuModal.unit.series} / {ksuModal.unit.product_type} / {ksuModal.unit.engine_number}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-deep/80 p-4">
+          <div className="w-full max-w-2xl rounded-xl bg-panel shadow-xl">
+            <div className="border-b border-border p-5">
+              <h2 className="text-lg font-bold text-text-strong">Cek Fisik KSU Unit</h2>
+              <p className="text-sm text-muted">{ksuModal.unit.series} / {ksuModal.unit.product_type} / {ksuModal.unit.engine_number}</p>
             </div>
             <div className="space-y-4 p-5">
-              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-700">
+              <div className="rounded-xl border border-accent-soft bg-accent-soft p-3 text-sm text-accent-text">
                 {ksuStandardText(ksuModal.ksu)}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -557,37 +557,37 @@ export default function ShowroomStockUnit() {
                   ['has_tool_kit', 'Tools'],
                   ['has_mirror', 'Spion'],
                 ].map(([key, label]) => (
-                  <label key={key} className="flex items-center gap-2 rounded-xl border border-slate-200 p-3 text-sm text-slate-700">
-                    <input type="checkbox" checked={ksuForm[key]} onChange={(e) => setKsuForm((form) => ({ ...form, [key]: e.target.checked }))} className="h-4 w-4 rounded border-slate-300" /> {label}
+                  <label key={key} className="flex items-center gap-2 rounded-xl border border-border p-3 text-sm text-text">
+                    <input type="checkbox" checked={ksuForm[key]} onChange={(e) => setKsuForm((form) => ({ ...form, [key]: e.target.checked }))} className="h-4 w-4 rounded border-border-strong" /> {label}
                   </label>
                 ))}
                 {ksuModal.ksu?.standard?.battery_required && (
-                  <label className="flex items-center gap-2 rounded-xl border border-slate-200 p-3 text-sm text-slate-700">
-                    <input type="checkbox" checked={ksuForm.has_battery} onChange={(e) => setKsuForm((form) => ({ ...form, has_battery: e.target.checked }))} className="h-4 w-4 rounded border-slate-300" /> Aki
+                  <label className="flex items-center gap-2 rounded-xl border border-border p-3 text-sm text-text">
+                    <input type="checkbox" checked={ksuForm.has_battery} onChange={(e) => setKsuForm((form) => ({ ...form, has_battery: e.target.checked }))} className="h-4 w-4 rounded border-border-strong" /> Aki
                   </label>
                 )}
               </div>
               {ksuModal.ksu?.standard?.battery_required && (
                 <div>
-                  <label className="text-xs font-semibold text-slate-500">Tipe Aki Aktual</label>
-                  <select value={ksuForm.actual_battery_type} onChange={(e) => setKsuForm((form) => ({ ...form, actual_battery_type: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                  <label className="text-xs font-semibold text-muted">Tipe Aki Aktual</label>
+                  <select value={ksuForm.actual_battery_type} onChange={(e) => setKsuForm((form) => ({ ...form, actual_battery_type: e.target.value }))} className="mt-1 w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm">
                     <option value="">Pilih tipe aki</option>
                     {(ksuModal.batteryTypes || []).map((type) => <option key={type} value={type}>{type}</option>)}
                   </select>
                 </div>
               )}
               <div>
-                <label className="text-xs font-semibold text-slate-500">Status</label>
-                <select value={ksuForm.status} onChange={(e) => setKsuForm((form) => ({ ...form, status: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                <label className="text-xs font-semibold text-muted">Status</label>
+                <select value={ksuForm.status} onChange={(e) => setKsuForm((form) => ({ ...form, status: e.target.value }))} className="mt-1 w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm">
                   <option value="belum_lengkap">Simpan hasil checklist</option>
                   <option value="sudah_diserahkan">KSU sudah diserahkan</option>
                 </select>
               </div>
-              <textarea value={ksuForm.notes} onChange={(e) => setKsuForm((form) => ({ ...form, notes: e.target.value }))} placeholder="Catatan kekurangan / keterangan" className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" rows={3} />
+              <textarea value={ksuForm.notes} onChange={(e) => setKsuForm((form) => ({ ...form, notes: e.target.value }))} placeholder="Catatan kekurangan / keterangan" className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm" rows={3} />
             </div>
-            <div className="flex justify-end gap-2 border-t border-slate-100 p-5">
-              <button onClick={() => setKsuModal(null)} className="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">Batal</button>
-              <button onClick={saveKsu} disabled={ksuSaving} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-60">
+            <div className="flex justify-end gap-2 border-t border-border p-5">
+              <button onClick={() => setKsuModal(null)} className="px-4 py-2 rounded-lg border border-border text-sm text-muted hover:bg-hover">Batal</button>
+              <button onClick={saveKsu} disabled={ksuSaving} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm hover:brightness-110 disabled:opacity-60">
                 {ksuSaving && <Loader2 className="animate-spin" size={14} />} Simpan KSU
               </button>
             </div>

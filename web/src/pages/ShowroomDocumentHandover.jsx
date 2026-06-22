@@ -38,18 +38,18 @@ import {
 } from 'lucide-react'
 
 const DOC_TYPE_LABELS = {
-  STNK: { label: 'STNK', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: FileText },
-  BPKB: { label: 'BPKB', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: FileBadge },
-  BUKU_SERVICE: { label: 'Buku Service', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: Package },
-  PLAT: { label: 'Plat Nomor', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: Truck },
+  STNK: { label: 'STNK', color: 'bg-accent-soft text-accent-text border-accent-soft', icon: FileText },
+  BPKB: { label: 'BPKB', color: 'bg-accent-soft text-accent border-purple-200', icon: FileBadge },
+  BUKU_SERVICE: { label: 'Buku Service', color: 'bg-success-soft text-success border-emerald-200', icon: Package },
+  PLAT: { label: 'Plat Nomor', color: 'bg-warning-soft text-warning border-amber-200', icon: Truck },
 }
 
 const STATUS_CONFIG = {
-  tersedia: { label: 'Tersedia', color: 'bg-slate-100 text-slate-700 border-slate-200', step: 1 },
-  diserahkan_ke_sales: { label: 'Di Salesman', color: 'bg-blue-100 text-blue-700 border-blue-200', step: 2 },
+  tersedia: { label: 'Tersedia', color: 'bg-hover text-text border-border', step: 1 },
+  diserahkan_ke_sales: { label: 'Di Salesman', color: 'bg-accent-soft text-accent-text border-accent-soft', step: 2 },
   diterima_sales: { label: 'Diterima Sales', color: 'bg-indigo-100 text-indigo-700 border-indigo-200', step: 3 },
-  diserahkan_ke_konsumen: { label: 'Diserahkan', color: 'bg-amber-100 text-amber-700 border-amber-200', step: 4 },
-  selesai: { label: 'Selesai', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', step: 5 },
+  diserahkan_ke_konsumen: { label: 'Diserahkan', color: 'bg-warning-soft text-warning border-amber-200', step: 4 },
+  selesai: { label: 'Selesai', color: 'bg-success-soft text-success border-emerald-200', step: 5 },
 }
 
 const STEP_LABELS = {
@@ -71,13 +71,13 @@ function formatDateShort(value) {
 // ─── Summary Card ───
 function SummaryCard({ label, value, icon: Icon, colorClass, borderClass, iconBg }) {
   return (
-    <div className={`relative overflow-hidden rounded-2xl border ${borderClass} bg-white p-5 shadow-sm hover:shadow-md transition-all duration-300`}>
+    <div className={`relative overflow-hidden rounded-xl border ${borderClass} bg-panel p-5 shadow-sm hover:shadow-md transition-all duration-300`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted">{label}</p>
           <p className={`text-3xl font-black mt-1 tabular-nums ${colorClass}`}>{(value || 0).toLocaleString('id-ID')}</p>
         </div>
-        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${iconBg} shadow-sm`}>
+        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconBg} shadow-sm`}>
           <Icon size={22} />
         </div>
       </div>
@@ -144,35 +144,35 @@ function HandoverStepModal({ handover, type, salespeople, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 py-5 border-b border-slate-100">
+      <div className="bg-panel rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 py-5 border-b border-border">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Serah Terima {docLabel}</h3>
-              <p className="text-sm text-slate-500 mt-0.5">
+              <h3 className="text-lg font-bold text-text-strong">Serah Terima {docLabel}</h3>
+              <p className="text-sm text-muted mt-0.5">
                 {handover.engine_number} · {handover.track?.stnk_name || handover.consumer_name || '-'}
               </p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors"><X size={20} /></button>
+            <button onClick={onClose} className="p-2 hover:bg-hover rounded-xl transition-colors"><X size={20} /></button>
           </div>
         </div>
         <div className="px-6 py-5 space-y-5">
           {/* Step type */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Jenis Serah Terima</label>
+            <label className="block text-sm font-semibold text-text mb-2">Jenis Serah Terima</label>
             <div className="grid grid-cols-2 gap-2">
               {handover.status === 'tersedia' && (
                 <>
                   <button
                     onClick={() => setStepType('admin_ke_sales')}
-                    className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${stepType === 'admin_ke_sales' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
+                    className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${stepType === 'admin_ke_sales' ? 'border-accent bg-accent-soft text-accent-text' : 'border-border text-muted hover:border-border-strong'}`}
                   >
                     <Users size={18} className="mx-auto mb-1" />
                     Ke Salesman
                   </button>
                   <button
                     onClick={() => setStepType('serah_ke_konsumen')}
-                    className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${stepType === 'serah_ke_konsumen' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
+                    className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${stepType === 'serah_ke_konsumen' ? 'border-emerald-500 bg-success-soft text-success' : 'border-border text-muted hover:border-border-strong'}`}
                   >
                     <User size={18} className="mx-auto mb-1" />
                     Langsung Konsumen
@@ -182,7 +182,7 @@ function HandoverStepModal({ handover, type, salespeople, onClose, onSaved }) {
               {(handover.status === 'diserahkan_ke_sales' || handover.status === 'diterima_sales') && (
                 <button
                   onClick={() => setStepType('serah_ke_konsumen')}
-                  className="col-span-2 p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-700 text-sm font-medium"
+                  className="col-span-2 p-3 rounded-xl border-2 border-emerald-500 bg-success-soft text-success text-sm font-medium"
                 >
                   <User size={18} className="mx-auto mb-1" />
                   Serahkan ke Konsumen
@@ -193,24 +193,24 @@ function HandoverStepModal({ handover, type, salespeople, onClose, onSaved }) {
 
           {/* Given by */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Diserahkan Oleh</label>
+            <label className="block text-sm font-semibold text-text mb-1.5">Diserahkan Oleh</label>
             <input
               value={user?.name || ''}
               disabled
-              className="w-full px-4 py-2.5 border border-slate-200 bg-slate-50 text-slate-500 rounded-xl text-sm focus:outline-none cursor-not-allowed font-medium"
+              className="w-full px-4 py-2.5 border border-border bg-hover text-muted rounded-xl text-sm focus:outline-none cursor-not-allowed font-medium"
             />
           </div>
 
           {/* Received by */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            <label className="block text-sm font-semibold text-text mb-1.5">
               {stepType === 'admin_ke_sales' ? 'Nama Salesman Penerima' : 'Nama Konsumen Penerima'} *
             </label>
             {stepType === 'admin_ke_sales' ? (
               <select
                 value={receivedBy}
                 onChange={(e) => setReceivedBy(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 bg-white"
+                className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent bg-panel"
               >
                 <option value="">Pilih Salesman</option>
                 {salespeople.map((s) => (
@@ -222,7 +222,7 @@ function HandoverStepModal({ handover, type, salespeople, onClose, onSaved }) {
                 value={receivedBy}
                 onChange={(e) => setReceivedBy(e.target.value)}
                 placeholder="Nama lengkap konsumen"
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+                className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
               />
             )}
           </div>
@@ -231,27 +231,27 @@ function HandoverStepModal({ handover, type, salespeople, onClose, onSaved }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Photo 1: Dokumen */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <label className="block text-sm font-semibold text-text mb-1.5">
                 <Camera size={14} className="inline mr-1" />
                 Foto Berita Acara / Dokumen
               </label>
               <div className="relative">
                 {previewDoc ? (
-                  <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                  <div className="relative rounded-xl overflow-hidden border border-border">
                     <img src={previewDoc} alt="Preview BA" className="w-full h-36 object-cover" />
                     <button
                       type="button"
                       onClick={() => { setPhotoDoc(null); setPreviewDoc(null) }}
-                      className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-lg shadow hover:bg-white"
+                      className="absolute top-2 right-2 p-1.5 bg-panel/90 rounded-lg shadow hover:bg-panel"
                     >
                       <X size={14} />
                     </button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all">
-                    <Camera size={24} className="text-slate-400 mb-1" />
-                    <span className="text-xs text-slate-500 font-medium">Upload Foto Dokumen</span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">Maks 10MB</span>
+                  <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-accent hover:bg-accent-soft/30 transition-all">
+                    <Camera size={24} className="text-faint mb-1" />
+                    <span className="text-xs text-muted font-medium">Upload Foto Dokumen</span>
+                    <span className="text-[10px] text-faint mt-0.5">Maks 10MB</span>
                     <input type="file" accept="image/jpeg,image/png" onChange={handlePhotoDocChange} className="hidden" />
                   </label>
                 )}
@@ -260,27 +260,27 @@ function HandoverStepModal({ handover, type, salespeople, onClose, onSaved }) {
 
             {/* Photo 2: Penyerahan Fisik */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <label className="block text-sm font-semibold text-text mb-1.5">
                 <Camera size={14} className="inline mr-1" />
                 Foto Penyerahan Fisik
               </label>
               <div className="relative">
                 {previewHandover ? (
-                  <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                  <div className="relative rounded-xl overflow-hidden border border-border">
                     <img src={previewHandover} alt="Preview Handover" className="w-full h-36 object-cover" />
                     <button
                       type="button"
                       onClick={() => { setPhotoHandover(null); setPreviewHandover(null) }}
-                      className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-lg shadow hover:bg-white"
+                      className="absolute top-2 right-2 p-1.5 bg-panel/90 rounded-lg shadow hover:bg-panel"
                     >
                       <X size={14} />
                     </button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/30 transition-all">
-                    <Camera size={24} className="text-slate-400 mb-1" />
-                    <span className="text-xs text-slate-500 font-medium">Upload Foto Penyerahan</span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">Maks 10MB</span>
+                  <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-success-soft/30 transition-all">
+                    <Camera size={24} className="text-faint mb-1" />
+                    <span className="text-xs text-muted font-medium">Upload Foto Penyerahan</span>
+                    <span className="text-[10px] text-faint mt-0.5">Maks 10MB</span>
                     <input type="file" accept="image/jpeg,image/png" onChange={handlePhotoHandoverChange} className="hidden" />
                   </label>
                 )}
@@ -290,25 +290,25 @@ function HandoverStepModal({ handover, type, salespeople, onClose, onSaved }) {
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Catatan</label>
+            <label className="block text-sm font-semibold text-text mb-1.5">Catatan</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Catatan tambahan (opsional)"
               rows={2}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 resize-none"
+              className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-none"
             />
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
+          <button onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-muted hover:bg-hover rounded-xl transition-colors">
             Batal
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving || !receivedBy.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-lg shadow-blue-600/20"
+            className="flex items-center gap-2 px-5 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition-colors shadow-lg shadow-accent/20"
           >
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             Simpan Serah Terima
@@ -332,39 +332,39 @@ function TimelineModal({ handoverId, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 py-5 border-b border-slate-100">
+      <div className="bg-panel rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 py-5 border-b border-border">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Riwayat Serah Terima {docLabel}</h3>
+              <h3 className="text-lg font-bold text-text-strong">Riwayat Serah Terima {docLabel}</h3>
               {data && (
-                <p className="text-sm text-slate-500 mt-0.5">
+                <p className="text-sm text-muted mt-0.5">
                   {data.engine_number} · {data.track?.stnk_name || data.consumer_name || '-'}
                 </p>
               )}
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors"><X size={20} /></button>
+            <button onClick={onClose} className="p-2 hover:bg-hover rounded-xl transition-colors"><X size={20} /></button>
           </div>
         </div>
         <div className="px-6 py-5">
           {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="animate-spin text-blue-600" size={24} /></div>
+            <div className="flex justify-center py-12"><Loader2 className="animate-spin text-accent" size={24} /></div>
           ) : !data ? (
-            <p className="text-center text-slate-500 py-8">Data tidak ditemukan</p>
+            <p className="text-center text-muted py-8">Data tidak ditemukan</p>
           ) : (
             <div className="relative">
               {/* Timeline line */}
-              <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-slate-200" />
+              <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-hover" />
 
               {/* Created step */}
               <div className="relative flex gap-4 pb-6">
-                <div className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 border-2 border-slate-300">
-                  <Clock size={14} className="text-slate-500" />
+                <div className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full bg-hover border-2 border-border-strong">
+                  <Clock size={14} className="text-muted" />
                 </div>
                 <div className="flex-1 pt-0.5">
-                  <p className="text-sm font-semibold text-slate-800">Dokumen Tersedia</p>
-                  <p className="text-xs text-slate-500">{formatDate(data.created_at)}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Dibuat oleh: {data.creator?.name || '-'}</p>
+                  <p className="text-sm font-semibold text-text">Dokumen Tersedia</p>
+                  <p className="text-xs text-muted">{formatDate(data.created_at)}</p>
+                  <p className="text-xs text-faint mt-0.5">Dibuat oleh: {data.creator?.name || '-'}</p>
                 </div>
               </div>
 
@@ -373,23 +373,23 @@ function TimelineModal({ handoverId, onClose }) {
                 const isLast = idx === data.steps.length - 1
                 return (
                   <div key={step.id} className="relative flex gap-4 pb-6">
-                    <div className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${isLast && data.status === 'selesai' ? 'bg-emerald-100 border-emerald-500' : 'bg-blue-100 border-blue-500'}`}>
-                      {isLast && data.status === 'selesai' ? <Check size={14} className="text-emerald-600" /> : <ArrowRight size={14} className="text-blue-600" />}
+                    <div className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${isLast && data.status === 'selesai' ? 'bg-success-soft border-emerald-500' : 'bg-accent-soft border-accent'}`}>
+                      {isLast && data.status === 'selesai' ? <Check size={14} className="text-success" /> : <ArrowRight size={14} className="text-accent" />}
                     </div>
                     <div className="flex-1 pt-0.5">
-                      <p className="text-sm font-semibold text-slate-800">{STEP_LABELS[step.step_type] || step.step_type}</p>
-                      <p className="text-xs text-slate-500">{formatDate(step.performed_at)}</p>
-                      {step.given_by_name && <p className="text-xs text-slate-500 mt-1">Diserahkan oleh: <span className="font-medium">{step.given_by_name}</span></p>}
-                      {step.received_by_name && <p className="text-xs text-slate-500">Diterima oleh: <span className="font-medium">{step.received_by_name}</span></p>}
-                      {step.performer && <p className="text-xs text-slate-400">Dicatat oleh: {step.performer.name}</p>}
-                      {step.notes && <p className="text-xs text-slate-500 mt-1 italic">"{step.notes}"</p>}
+                      <p className="text-sm font-semibold text-text">{STEP_LABELS[step.step_type] || step.step_type}</p>
+                      <p className="text-xs text-muted">{formatDate(step.performed_at)}</p>
+                      {step.given_by_name && <p className="text-xs text-muted mt-1">Diserahkan oleh: <span className="font-medium">{step.given_by_name}</span></p>}
+                      {step.received_by_name && <p className="text-xs text-muted">Diterima oleh: <span className="font-medium">{step.received_by_name}</span></p>}
+                      {step.performer && <p className="text-xs text-faint">Dicatat oleh: {step.performer.name}</p>}
+                      {step.notes && <p className="text-xs text-muted mt-1 italic">"{step.notes}"</p>}
                       <div className="flex flex-wrap gap-2 mt-2">
                         {step.photo_url && (
                           <a
                             href={`${API_BASE}/showroom/document-handovers/photo/${step.id}?type=doc`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent-soft text-accent rounded-lg text-xs font-medium hover:bg-accent-soft transition-colors"
                           >
                             <ImageIcon size={13} /> Lihat Foto Dokumen
                           </a>
@@ -399,7 +399,7 @@ function TimelineModal({ handoverId, onClose }) {
                             href={`${API_BASE}/showroom/document-handovers/photo/${step.id}?type=handover`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-medium hover:bg-emerald-100 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-success-soft text-success rounded-lg text-xs font-medium hover:bg-success-soft transition-colors"
                           >
                             <ImageIcon size={13} /> Lihat Foto Fisik
                           </a>
@@ -413,12 +413,12 @@ function TimelineModal({ handoverId, onClose }) {
               {/* Final status */}
               {data.status === 'selesai' && (
                 <div className="relative flex gap-4">
-                  <div className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 border-2 border-emerald-500">
+                  <div className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full bg-success border-2 border-emerald-500">
                     <CheckCircle2 size={14} className="text-white" />
                   </div>
                   <div className="flex-1 pt-0.5">
-                    <p className="text-sm font-bold text-emerald-700">Selesai</p>
-                    <p className="text-xs text-slate-500">Dokumen sudah di tangan konsumen</p>
+                    <p className="text-sm font-bold text-success">Selesai</p>
+                    <p className="text-xs text-muted">Dokumen sudah di tangan konsumen</p>
                   </div>
                 </div>
               )}
@@ -479,26 +479,26 @@ function AddDocumentModal({ onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 py-5 border-b border-slate-100 shrink-0">
+      <div className="bg-panel rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 py-5 border-b border-border shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Tambah Dokumen (Document Handling)</h3>
-              <p className="text-sm text-slate-500 mt-0.5">Pilih dokumen yang sudah siap untuk diproses serah terimanya</p>
+              <h3 className="text-lg font-bold text-text-strong">Tambah Dokumen (Document Handling)</h3>
+              <p className="text-sm text-muted mt-0.5">Pilih dokumen yang sudah siap untuk diproses serah terimanya</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors"><X size={20} /></button>
+            <button onClick={onClose} className="p-2 hover:bg-hover rounded-xl transition-colors"><X size={20} /></button>
           </div>
           <div className="flex gap-2 mt-4">
             <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Cari no mesin, nama, no polisi..."
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 bg-slate-50"
+                className="w-full pl-9 pr-4 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-hover"
               />
             </div>
-            <select value={docTypeFilter} onChange={(e) => setDocTypeFilter(e.target.value)} className="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white">
+            <select value={docTypeFilter} onChange={(e) => setDocTypeFilter(e.target.value)} className="px-3 py-2 border border-border rounded-xl text-sm bg-panel">
               <option value="">Semua Tipe</option>
               <option value="STNK">STNK</option>
               <option value="BPKB">BPKB</option>
@@ -508,11 +508,11 @@ function AddDocumentModal({ onClose, onSaved }) {
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="animate-spin text-blue-600" size={24} /></div>
+            <div className="flex justify-center py-12"><Loader2 className="animate-spin text-accent" size={24} /></div>
           ) : available.length === 0 ? (
             <div className="text-center py-12">
               <CheckCircle2 className="mx-auto text-emerald-400 mb-2" size={32} />
-              <p className="text-sm text-slate-500">Semua dokumen sudah diproses atau tidak ada yang sesuai filter</p>
+              <p className="text-sm text-muted">Semua dokumen sudah diproses atau tidak ada yang sesuai filter</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -520,21 +520,21 @@ function AddDocumentModal({ onClose, onSaved }) {
                 const key = `${doc.engine_number}:${doc.document_type}`
                 const docConf = DOC_TYPE_LABELS[doc.document_type]
                 return (
-                  <div key={key} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50/50 transition-all">
+                  <div key={key} className="flex items-center justify-between p-3 rounded-xl border border-border hover:border-border hover:bg-hover/50 transition-all">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${docConf?.color || 'bg-slate-100 text-slate-600'}`}>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${docConf?.color || 'bg-hover text-muted'}`}>
                           {docConf?.label || doc.document_type}
                         </span>
-                        <span className="text-xs font-mono text-slate-500">{doc.engine_number}</span>
+                        <span className="text-xs font-mono text-muted">{doc.engine_number}</span>
                       </div>
-                      <p className="text-sm font-medium text-slate-800 truncate">{doc.stnk_name || '-'}</p>
-                      <p className="text-xs text-slate-400">{doc.series || '-'} · {doc.no_polisi || 'Belum ada plat'}</p>
+                      <p className="text-sm font-medium text-text truncate">{doc.stnk_name || '-'}</p>
+                      <p className="text-xs text-faint">{doc.series || '-'} · {doc.no_polisi || 'Belum ada plat'}</p>
                     </div>
                     <button
                       onClick={() => handleCreate(doc)}
                       disabled={creating === key}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors shrink-0 ml-3"
+                      className="flex items-center gap-1.5 px-3 py-2 bg-accent text-white rounded-lg text-xs font-semibold hover:brightness-110 disabled:opacity-50 transition-colors shrink-0 ml-3"
                     >
                       {creating === key ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                       Proses
@@ -578,20 +578,20 @@ function EditHandoverModal({ handover, salespeople, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 py-5 border-b border-slate-100 shrink-0">
+      <div className="bg-panel rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 py-5 border-b border-border shrink-0">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900">Edit Info Serah Terima</h3>
-            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors"><X size={20} /></button>
+            <h3 className="text-lg font-bold text-text-strong">Edit Info Serah Terima</h3>
+            <button onClick={onClose} className="p-2 hover:bg-hover rounded-xl transition-colors"><X size={20} /></button>
           </div>
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Salesman</label>
+            <label className="block text-sm font-semibold text-text mb-1.5">Salesman</label>
             <select
               value={salesmanName}
               onChange={(e) => setSalesmanName(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 bg-white"
+              className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-panel"
             >
               <option value="">-- Pilih Salesman --</option>
               {salespeople.map((s) => (
@@ -600,39 +600,39 @@ function EditHandoverModal({ handover, salespeople, onClose, onSaved }) {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nama Konsumen</label>
+            <label className="block text-sm font-semibold text-text mb-1.5">Nama Konsumen</label>
             <input
               value={consumerName}
               onChange={(e) => setConsumerName(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">No HP Konsumen</label>
+            <label className="block text-sm font-semibold text-text mb-1.5">No HP Konsumen</label>
             <input
               value={consumerPhone}
               onChange={(e) => setConsumerPhone(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Catatan</label>
+            <label className="block text-sm font-semibold text-text mb-1.5">Catatan</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 resize-none"
+              className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
             />
           </div>
         </div>
-        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 shrink-0">
-          <button onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3 shrink-0">
+          <button onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-muted hover:bg-hover rounded-xl transition-colors">
             Batal
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-lg shadow-blue-600/20"
+            className="flex items-center gap-2 px-5 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition-colors shadow-lg shadow-accent/20"
           >
             {saving ? <Loader2 size={16} className="animate-spin" /> : 'Simpan'}
           </button>
@@ -724,10 +724,10 @@ export default function ShowroomDocumentHandover() {
   }
 
   const summaryCards = [
-    { label: 'Tersedia', value: summary?.byStatus?.tersedia || 0, icon: Package, colorClass: 'text-slate-700', borderClass: 'border-slate-200', iconBg: 'bg-slate-100 text-slate-600' },
-    { label: 'Di Salesman', value: (summary?.byStatus?.diserahkan_ke_sales || 0) + (summary?.byStatus?.diterima_sales || 0), icon: Users, colorClass: 'text-blue-700', borderClass: 'border-blue-200', iconBg: 'bg-blue-100 text-blue-600' },
-    { label: 'Selesai', value: summary?.byStatus?.selesai || 0, icon: CheckCircle2, colorClass: 'text-emerald-700', borderClass: 'border-emerald-200', iconBg: 'bg-emerald-100 text-emerald-600' },
-    { label: 'Selesai Bulan Ini', value: summary?.completedThisMonth || 0, icon: Clock, colorClass: 'text-indigo-700', borderClass: 'border-indigo-200', iconBg: 'bg-indigo-100 text-indigo-600' },
+    { label: 'Tersedia', value: summary?.byStatus?.tersedia || 0, icon: Package, colorClass: 'text-text', borderClass: 'border-border', iconBg: 'bg-hover text-muted' },
+    { label: 'Di Salesman', value: (summary?.byStatus?.diserahkan_ke_sales || 0) + (summary?.byStatus?.diterima_sales || 0), icon: Users, colorClass: 'text-accent-text', borderClass: 'border-accent-soft', iconBg: 'bg-accent-soft text-accent' },
+    { label: 'Selesai', value: summary?.byStatus?.selesai || 0, icon: CheckCircle2, colorClass: 'text-success', borderClass: 'border-emerald-200', iconBg: 'bg-success-soft text-success' },
+    { label: 'Selesai Bulan Ini', value: summary?.completedThisMonth || 0, icon: Clock, colorClass: 'text-indigo-700', borderClass: 'border-indigo-200', iconBg: 'bg-indigo-100 text-accent' },
   ]
 
   return (
@@ -735,16 +735,16 @@ export default function ShowroomDocumentHandover() {
       {/* Header */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Document Handling</h1>
-          <p className="text-sm text-slate-500">Monitoring penyerahan STNK, BPKB, Buku Service & Plat ke salesman/konsumen</p>
+          <h1 className="text-2xl font-bold text-text-strong">Document Handling</h1>
+          <p className="text-sm text-muted">Monitoring penyerahan STNK, BPKB, Buku Service & Plat ke salesman/konsumen</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {!isSalesman && (
-            <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20">
+            <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 transition-colors shadow-lg shadow-accent/20">
               <Plus size={16} /> Tambah Dokumen
             </button>
           )}
-          <button onClick={loadData} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+          <button onClick={loadData} className="flex items-center gap-2 px-4 py-2.5 bg-panel border border-border rounded-xl text-sm font-semibold text-muted hover:bg-hover transition-colors">
             <RefreshCw size={16} /> Refresh
           </button>
         </div>
@@ -758,23 +758,23 @@ export default function ShowroomDocumentHandover() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-wrap gap-3">
+      <div className="bg-panel rounded-xl border border-border shadow-sm p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[220px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={isSalesman ? "Cari no mesin, nama konsumen..." : "Cari no mesin, nama konsumen, salesman..."}
-            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            className="w-full pl-9 pr-4 py-2.5 bg-hover border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
           />
         </div>
-        <select value={docTypeFilter} onChange={(e) => setDocTypeFilter(e.target.value)} className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm">
+        <select value={docTypeFilter} onChange={(e) => setDocTypeFilter(e.target.value)} className="px-3 py-2.5 bg-panel border border-border rounded-xl text-sm">
           <option value="">Semua Dokumen</option>
           {Object.entries(DOC_TYPE_LABELS).map(([key, conf]) => (
             <option key={key} value={key}>{conf.label}</option>
           ))}
         </select>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2.5 bg-panel border border-border rounded-xl text-sm">
           <option value="">Semua Status</option>
           {Object.entries(STATUS_CONFIG).map(([key, conf]) => (
             <option key={key} value={key}>{conf.label}</option>
@@ -783,22 +783,22 @@ export default function ShowroomDocumentHandover() {
       </div>
 
       {/* Error */}
-      {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
+      {error && <div className="p-3 bg-danger-soft border border-red-200 rounded-xl text-sm text-danger">{error}</div>}
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <span className="text-sm font-bold text-slate-700">Daftar Serah Terima</span>
-          <span className="text-xs text-slate-400">{(pagination.total || 0).toLocaleString('id-ID')} total</span>
+      <div className="bg-panel rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <span className="text-sm font-bold text-text">Daftar Serah Terima</span>
+          <span className="text-xs text-faint">{(pagination.total || 0).toLocaleString('id-ID')} total</span>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center p-12"><Loader2 className="animate-spin text-blue-600" size={24} /></div>
+          <div className="flex items-center justify-center p-12"><Loader2 className="animate-spin text-accent" size={24} /></div>
         ) : items.length === 0 ? (
           <div className="p-12 text-center">
-            <Package className="mx-auto text-slate-300 mb-3" size={36} />
-            <p className="text-sm text-slate-500">Belum ada data serah terima</p>
-            <button onClick={() => setShowAddModal(true)} className="mt-3 text-sm text-blue-600 font-medium hover:underline">+ Tambah Dokumen</button>
+            <Package className="mx-auto text-faint mb-3" size={36} />
+            <p className="text-sm text-muted">Belum ada data serah terima</p>
+            <button onClick={() => setShowAddModal(true)} className="mt-3 text-sm text-accent font-medium hover:underline">+ Tambah Dokumen</button>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -810,11 +810,11 @@ export default function ShowroomDocumentHandover() {
 
               return (
                 <div key={item.id}>
-                  <div className="px-5 py-4 hover:bg-slate-50/50 transition-colors">
+                  <div className="px-5 py-4 hover:bg-hover/50 transition-colors">
                     <div className="flex items-center gap-4">
                       {/* Doc type + Status badges */}
                       <div className="flex flex-col gap-1.5 shrink-0 w-24">
-                        <span className={`inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border ${docConf.color || 'bg-slate-100'}`}>
+                        <span className={`inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border ${docConf.color || 'bg-hover'}`}>
                           {docConf.label || item.document_type}
                         </span>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-xs font-medium border ${statusConf.color}`}>
@@ -825,13 +825,13 @@ export default function ShowroomDocumentHandover() {
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-sm font-semibold text-slate-800 truncate">{item.track?.stnk_name || item.consumer_name || '-'}</span>
-                          <span className="text-xs font-mono text-slate-400">{item.engine_number}</span>
+                          <span className="text-sm font-semibold text-text truncate">{item.track?.stnk_name || item.consumer_name || '-'}</span>
+                          <span className="text-xs font-mono text-faint">{item.engine_number}</span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-slate-500">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-muted">
                           {item.track?.series && <span>{item.track.series}</span>}
                           {item.track?.no_polisi && <span>{item.track.no_polisi}</span>}
-                          {item.salesman_name && <span className="text-blue-600">Sales: {item.salesman_name}</span>}
+                          {item.salesman_name && <span className="text-accent">Sales: {item.salesman_name}</span>}
                           <span>Dibuat: {formatDateShort(item.created_at)}</span>
                         </div>
                       </div>
@@ -841,7 +841,7 @@ export default function ShowroomDocumentHandover() {
                         {nextAction && (
                           <button
                             onClick={nextAction.action}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+                            className="flex items-center gap-1.5 px-3 py-2 bg-accent text-white rounded-lg text-xs font-semibold hover:brightness-110 transition-colors shadow-sm"
                           >
                             <nextAction.icon size={14} />
                             {nextAction.label}
@@ -849,7 +849,7 @@ export default function ShowroomDocumentHandover() {
                         )}
                         <button
                           onClick={() => setTimelineId(item.id)}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium hover:bg-slate-200 transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-2 bg-hover text-muted rounded-lg text-xs font-medium hover:bg-hover transition-colors"
                         >
                           <Clock size={14} />
                           Riwayat
@@ -858,14 +858,14 @@ export default function ShowroomDocumentHandover() {
                           <>
                             <button
                               onClick={() => setEditHandoverModal(item)}
-                              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              className="p-2 text-faint hover:text-accent hover:bg-accent-soft rounded-lg transition-colors"
                               title="Edit"
                             >
                               <Pencil size={16} />
                             </button>
                             <button
                               onClick={() => handleDelete(item.id)}
-                              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-2 text-faint hover:text-danger hover:bg-danger-soft rounded-lg transition-colors"
                               title="Hapus"
                             >
                               <Trash2 size={16} />
@@ -874,7 +874,7 @@ export default function ShowroomDocumentHandover() {
                         )}
                         <button
                           onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                          className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                          className="p-2 text-faint hover:text-muted hover:bg-hover rounded-lg transition-colors"
                         >
                           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
@@ -884,50 +884,50 @@ export default function ShowroomDocumentHandover() {
 
                   {/* Expanded detail */}
                   {isExpanded && (
-                    <div className="px-5 pb-4 bg-slate-50/50 border-t border-slate-100">
+                    <div className="px-5 pb-4 bg-hover/50 border-t border-border">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-3 text-xs">
                         <div>
-                          <span className="text-slate-400 block mb-0.5">No Chassis</span>
-                          <span className="font-mono text-slate-700">{item.track?.chassis_number || '-'}</span>
+                          <span className="text-faint block mb-0.5">No Chassis</span>
+                          <span className="font-mono text-text">{item.track?.chassis_number || '-'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block mb-0.5">No Polisi</span>
-                          <span className="font-medium text-slate-700">{item.track?.no_polisi || '-'}</span>
+                          <span className="text-faint block mb-0.5">No Polisi</span>
+                          <span className="font-medium text-text">{item.track?.no_polisi || '-'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block mb-0.5">Leasing</span>
-                          <span className="text-slate-700">{item.track?.finance_company || 'Cash'}</span>
+                          <span className="text-faint block mb-0.5">Leasing</span>
+                          <span className="text-text">{item.track?.finance_company || 'Cash'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block mb-0.5">HP Konsumen</span>
-                          <span className="text-slate-700">{item.track?.mobile || item.consumer_phone || '-'}</span>
+                          <span className="text-faint block mb-0.5">HP Konsumen</span>
+                          <span className="text-text">{item.track?.mobile || item.consumer_phone || '-'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block mb-0.5">Mode Serah Terima</span>
-                          <span className="font-medium text-slate-700">{item.handover_mode === 'via_sales' ? 'Via Salesman' : 'Langsung Konsumen'}</span>
+                          <span className="text-faint block mb-0.5">Mode Serah Terima</span>
+                          <span className="font-medium text-text">{item.handover_mode === 'via_sales' ? 'Via Salesman' : 'Langsung Konsumen'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block mb-0.5">Salesman</span>
-                          <span className="text-slate-700">{item.salesman_name || '-'}</span>
+                          <span className="text-faint block mb-0.5">Salesman</span>
+                          <span className="text-text">{item.salesman_name || '-'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block mb-0.5">Konsumen Penerima</span>
-                          <span className="text-slate-700">{item.consumer_name || '-'}</span>
+                          <span className="text-faint block mb-0.5">Konsumen Penerima</span>
+                          <span className="text-text">{item.consumer_name || '-'}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block mb-0.5">Update Terakhir</span>
-                          <span className="text-slate-700">{formatDate(item.updated_at)}</span>
+                          <span className="text-faint block mb-0.5">Update Terakhir</span>
+                          <span className="text-text">{formatDate(item.updated_at)}</span>
                         </div>
                         {item.last_step && (
                           <>
                             <div className="col-span-2">
-                              <span className="text-slate-400 block mb-0.5">Langkah Terakhir</span>
-                              <span className="text-slate-700">{STEP_LABELS[item.last_step.step_type] || item.last_step.step_type} — {formatDate(item.last_step.performed_at)}</span>
+                              <span className="text-faint block mb-0.5">Langkah Terakhir</span>
+                              <span className="text-text">{STEP_LABELS[item.last_step.step_type] || item.last_step.step_type} — {formatDate(item.last_step.performed_at)}</span>
                             </div>
                             {item.last_step.notes && (
                               <div className="col-span-2">
-                                <span className="text-slate-400 block mb-0.5">Catatan Terakhir</span>
-                                <span className="text-slate-700 italic">"{item.last_step.notes}"</span>
+                                <span className="text-faint block mb-0.5">Catatan Terakhir</span>
+                                <span className="text-text italic">"{item.last_step.notes}"</span>
                               </div>
                             )}
                           </>

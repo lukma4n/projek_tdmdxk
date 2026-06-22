@@ -11,20 +11,20 @@ const TYPE_CONFIG = {
 
 const STATUS_CLASS = {
   sesuai: 'bg-success-50 text-success-700 border-success-200',
-  belum_scan: 'bg-slate-50 text-slate-600 border-slate-200',
+  belum_scan: 'bg-hover text-muted border-border',
   salah_lokasi: 'bg-warning-50 text-warning-700 border-warning-200',
   tidak_terdaftar: 'bg-danger-50 text-danger-700 border-danger-200',
 }
 
 const SESSION_STATUS_CLASS = {
-  draft: 'bg-slate-50 text-slate-700 border-slate-200',
-  open: 'bg-blue-50 text-blue-700 border-blue-200',
-  submitted: 'bg-amber-50 text-amber-700 border-amber-200',
-  approved_adh: 'bg-blue-50 text-blue-700 border-blue-200',
-  sent_to_kacab: 'bg-purple-50 text-purple-700 border-purple-200',
+  draft: 'bg-hover text-text border-border',
+  open: 'bg-accent-soft text-accent-text border-accent-soft',
+  submitted: 'bg-warning-soft text-warning border-amber-200',
+  approved_adh: 'bg-accent-soft text-accent-text border-accent-soft',
+  sent_to_kacab: 'bg-accent-soft text-accent border-purple-200',
   approved_kacab: 'bg-success-50 text-success-700 border-success-200',
   rejected: 'bg-danger-50 text-danger-700 border-danger-200',
-  done: 'bg-slate-100 text-slate-700 border-slate-300',
+  done: 'bg-hover text-text border-border-strong',
 }
 
 const FILTERS = [
@@ -394,15 +394,15 @@ export default function ShowroomOpname({ type = 'unit' }) {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{config.title}</h1>
-          <p className="text-sm text-slate-500">{canOperate ? config.subtitle : 'Monitoring hasil stock opname showroom'}</p>
+          <h1 className="text-2xl font-bold text-text-strong">{config.title}</h1>
+          <p className="text-sm text-muted">{canOperate ? config.subtitle : 'Monitoring hasil stock opname showroom'}</p>
         </div>
-        <button onClick={() => loadSessions({ autoResume: false })} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 hover:bg-slate-50"><RefreshCw size={16} /> Refresh</button>
+        <button onClick={() => loadSessions({ autoResume: false })} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-panel text-sm text-muted hover:bg-hover"><RefreshCw size={16} /> Refresh</button>
       </div>
 
       {!activeSession && canOperate && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex flex-wrap gap-3 items-end">
-          <button disabled={actionLoading} onClick={createSession} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm hover:bg-slate-50 disabled:opacity-60"><Plus size={16} /> Generate Semua Stock {config.title.replace('Opname ', '')}</button>
+        <div className="rounded-xl border border-border bg-panel p-4 shadow-sm flex flex-wrap gap-3 items-end">
+          <button disabled={actionLoading} onClick={createSession} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-panel text-text text-sm hover:bg-hover disabled:opacity-60"><Plus size={16} /> Generate Semua Stock {config.title.replace('Opname ', '')}</button>
         </div>
       )}
 
@@ -410,10 +410,10 @@ export default function ShowroomOpname({ type = 'unit' }) {
 
       {activeSession && (
         <div className="space-y-4">
-          <div className="rounded-xl border border-blue-200 bg-white p-4 shadow-sm flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="rounded-xl border border-accent-soft bg-panel p-4 shadow-sm flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="font-bold text-slate-800">{activeSession.session_code}</p>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              <p className="font-bold text-text">{activeSession.session_code}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
                 <span className={`inline-flex px-2 py-0.5 rounded-full border font-semibold ${SESSION_STATUS_CLASS[activeSession.status] || SESSION_STATUS_CLASS.draft}`}>{labelSessionStatus(activeSession.status)}</span>
                 <span>{activeSession.opname_type?.toUpperCase()}</span>
                 {activeSession.pic_so_name && <span>PIC: {activeSession.pic_so_name}</span>}
@@ -421,56 +421,56 @@ export default function ShowroomOpname({ type = 'unit' }) {
             </div>
             <div className="flex flex-wrap gap-2">
               {activeSession.status !== 'done' && canOperate && <button onClick={() => removeSession(activeSession)} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-danger-200 text-danger-600 text-sm hover:bg-danger-50"><Trash2 size={15} /> Hapus</button>}
-              <button onClick={() => exportReport(activeSession)} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-700 text-sm hover:bg-blue-100"><Download size={15} /> Export BASO</button>
+              <button onClick={() => exportReport(activeSession)} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent-soft text-accent-text text-sm hover:bg-accent-soft"><Download size={15} /> Export BASO</button>
               {activeSession.baso_signed_file && <button onClick={() => viewUploadedBaso(activeSession)} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-success-50 text-success-700 text-sm hover:bg-success-100"><ExternalLink size={15} /> Lihat BASO Signed</button>}
-              <button onClick={() => { setActiveSession(null); setItems([]); setSummary(null) }} className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">Riwayat</button>
+              <button onClick={() => { setActiveSession(null); setItems([]); setSummary(null) }} className="px-3 py-2 rounded-lg border border-border text-sm text-muted hover:bg-hover">Riwayat</button>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-slate-50 p-5 shadow-sm">
+          <div className="rounded-xl border border-accent-soft bg-gradient-to-r from-accent-soft to-slate-50 p-5 shadow-sm">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-blue-600">Progress Opname</p>
-                <p className="mt-1 text-3xl font-black text-slate-900">{summary?.sudah_scan || 0} / {summary?.total_system || 0}</p>
-                <p className="text-sm text-slate-500">{progress}% selesai, {summary?.belum_scan || 0} belum scan</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-accent">Progress Opname</p>
+                <p className="mt-1 text-3xl font-black text-text-strong">{summary?.sudah_scan || 0} / {summary?.total_system || 0}</p>
+                <p className="text-sm text-muted">{progress}% selesai, {summary?.belum_scan || 0} belum scan</p>
               </div>
-              <div className="h-3 w-full max-w-md rounded-full bg-white shadow-inner overflow-hidden">
-                <div className="h-full rounded-full bg-blue-600" style={{ width: `${progress}%` }} />
+              <div className="h-3 w-full max-w-md rounded-full bg-panel shadow-inner overflow-hidden">
+                <div className="h-full rounded-full bg-accent" style={{ width: `${progress}%` }} />
               </div>
             </div>
           </div>
 
           {canOperate && activeSession.status === 'draft' && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm grid grid-cols-1 lg:grid-cols-3 gap-3 items-end">
+            <div className="rounded-xl border border-border bg-panel p-4 shadow-sm grid grid-cols-1 lg:grid-cols-3 gap-3 items-end">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Nama PIC SO</label>
-                <input value={picSoName} onChange={(e) => setPicSoName(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm" placeholder="Input nama PIC SO manual" />
+                <label className="block text-xs font-semibold text-muted mb-1">Nama PIC SO</label>
+                <input value={picSoName} onChange={(e) => setPicSoName(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-border bg-hover text-sm" placeholder="Input nama PIC SO manual" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Nama ADH</label>
-                <input value={adhName} onChange={(e) => setAdhName(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm" placeholder="Nama ADH penandatangan" />
+                <label className="block text-xs font-semibold text-muted mb-1">Nama ADH</label>
+                <input value={adhName} onChange={(e) => setAdhName(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-border bg-hover text-sm" placeholder="Nama ADH penandatangan" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Nama Kepala Cabang</label>
-                <input value={branchHeadName} onChange={(e) => setBranchHeadName(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm" placeholder="Nama Kepala Cabang" />
+                <label className="block text-xs font-semibold text-muted mb-1">Nama Kepala Cabang</label>
+                <input value={branchHeadName} onChange={(e) => setBranchHeadName(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-border bg-hover text-sm" placeholder="Nama Kepala Cabang" />
               </div>
-              <button disabled={actionLoading || !picSoName.trim() || !adhName.trim() || !branchHeadName.trim()} onClick={confirmSession} className="flex justify-center items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-60 lg:col-span-3"><CheckCircle size={16} /> Confirm</button>
+              <button disabled={actionLoading || !picSoName.trim() || !adhName.trim() || !branchHeadName.trim()} onClick={confirmSession} className="flex justify-center items-center gap-2 px-5 py-2.5 rounded-lg bg-accent text-white text-sm hover:brightness-110 disabled:opacity-60 lg:col-span-3"><CheckCircle size={16} /> Confirm</button>
             </div>
           )}
 
           {/* Panel Assignment Lokasi — muncul setelah Confirm (status open) */}
           {canOperate && activeSession.status === 'open' && sessionLocations.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+            <div className="rounded-xl border border-border bg-panel p-4 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <MapPin size={16} className="text-blue-600" />
-                  <span className="font-bold text-slate-800 text-sm">Assign PIC per Lokasi</span>
+                  <MapPin size={16} className="text-accent" />
+                  <span className="font-bold text-text text-sm">Assign PIC per Lokasi</span>
                 </div>
                 {Object.keys(assignments).length > 0 && (
                   <button
                     disabled={actionLoading}
                     onClick={saveAssignments}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs hover:bg-blue-700 disabled:opacity-60"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-white text-xs hover:brightness-110 disabled:opacity-60"
                   >
                     <CheckCircle size={12} /> Simpan Assignment
                   </button>
@@ -478,14 +478,14 @@ export default function ShowroomOpname({ type = 'unit' }) {
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {sessionLocations.map((loc) => (
-                  <div key={loc} className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 bg-slate-50">
+                  <div key={loc} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-hover">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">{loc}</p>
+                      <p className="text-sm font-medium text-text truncate">{loc}</p>
                     </div>
                     <select
                       value={assignments[loc] || ''}
                       onChange={(e) => setAssignments((prev) => ({ ...prev, [loc]: e.target.value }))}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-sm"
+                      className="px-3 py-1.5 rounded-lg border border-border bg-panel text-sm"
                     >
                       <option value="">Pilih PIC...</option>
                       {picUsers.map((u) => (
@@ -520,23 +520,23 @@ export default function ShowroomOpname({ type = 'unit' }) {
           )}
 
           {canOperate && activeSession.status === 'open' && (
-            <form onSubmit={scan} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm grid grid-cols-1 lg:grid-cols-[1fr_260px_auto_auto] gap-3 items-end">
+            <form onSubmit={scan} className="rounded-xl border border-border bg-panel p-4 shadow-sm grid grid-cols-1 lg:grid-cols-[1fr_260px_auto_auto] gap-3 items-end">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">{config.inputLabel}</label>
-                <input ref={inputRef} value={code} onChange={(e) => setCode(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm font-mono" placeholder="Scan atau ketik..." />
+                <label className="block text-xs font-semibold text-muted mb-1">{config.inputLabel}</label>
+                <input ref={inputRef} value={code} onChange={(e) => setCode(e.target.value)} className="w-full px-4 py-2.5 rounded-lg border border-border bg-hover text-sm font-mono" placeholder="Scan atau ketik..." />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">{type === 'unit' ? 'Lokasi fisik unit ditemukan' : 'Mode lokasi fisik tetap'}</label>
+                <label className="block text-xs font-semibold text-muted mb-1">{type === 'unit' ? 'Lokasi fisik unit ditemukan' : 'Mode lokasi fisik tetap'}</label>
                 {type === 'unit' ? (
-                  <select value={physicalLocation} onChange={(e) => setPhysicalLocation(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm">
+                  <select value={physicalLocation} onChange={(e) => setPhysicalLocation(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-border bg-hover text-sm">
                     <option value="">Pilih lokasi unit...</option>
                     {locationOptions.map((location) => <option key={location} value={location}>{location}</option>)}
                   </select>
                 ) : (
-                  <input value={physicalLocation} onChange={(e) => setPhysicalLocation(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm" placeholder="Cabang/HO" />
+                  <input value={physicalLocation} onChange={(e) => setPhysicalLocation(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-border bg-hover text-sm" placeholder="Cabang/HO" />
                 )}
               </div>
-              <button disabled={scanning || !code.trim()} className="flex justify-center items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-60">{scanning ? <Loader2 className="animate-spin" size={16} /> : <ScanBarcode size={16} />} Scan</button>
+              <button disabled={scanning || !code.trim()} className="flex justify-center items-center gap-2 px-5 py-2.5 rounded-lg bg-accent text-white text-sm hover:brightness-110 disabled:opacity-60">{scanning ? <Loader2 className="animate-spin" size={16} /> : <ScanBarcode size={16} />} Scan</button>
               <button type="button" disabled={actionLoading} onClick={submit} className="flex justify-center items-center gap-2 px-5 py-2.5 rounded-lg bg-success-600 text-white text-sm hover:bg-success-700 disabled:opacity-60"><Send size={16} /> Kirim</button>
             </form>
           )}
@@ -561,13 +561,13 @@ export default function ShowroomOpname({ type = 'unit' }) {
           )}
 
           {canApproveAdh && ['submitted', 'rejected'].includes(activeSession.status) && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+            <div className="rounded-xl border border-border bg-panel p-4 shadow-sm space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <button disabled={actionLoading || !fullResult} onClick={adhDone} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-success-100 text-success-700 text-sm hover:bg-success-200 disabled:opacity-50"><CheckCircle size={16} /> Approve 1 ADH</button>
-                {!fullResult && <span className="text-xs text-slate-500">Hasil belum 100%, isi alasan reject untuk dikembalikan ke PIC SO.</span>}
+                {!fullResult && <span className="text-xs text-muted">Hasil belum 100%, isi alasan reject untuk dikembalikan ke PIC SO.</span>}
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
-                <textarea value={rfaReason} onChange={(e) => setRfaReason(e.target.value)} className="min-h-20 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Alasan reject / catatan verifikator 1" />
+                <textarea value={rfaReason} onChange={(e) => setRfaReason(e.target.value)} className="min-h-20 rounded-lg border border-border bg-hover px-3 py-2 text-sm" placeholder="Alasan reject / catatan verifikator 1" />
                 <button disabled={actionLoading || !rfaReason.trim()} onClick={rfa} className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-danger-100 text-danger-700 text-sm hover:bg-danger-200 disabled:opacity-60"><XCircle size={16} /> Reject</button>
               </div>
               {activeSession.rejection_reason && <p className="text-xs text-danger-600">Reject sebelumnya: {activeSession.rejection_reason}</p>}
@@ -575,34 +575,34 @@ export default function ShowroomOpname({ type = 'unit' }) {
           )}
 
           {canApproveAdh && activeSession.status === 'approved_adh' && (
-            <div className="rounded-xl border border-blue-200 bg-white p-4 shadow-sm space-y-3">
-              <p className="text-sm text-slate-600">Approved 1 oleh ADH. Kirim hasil SO ke Kepala Cabang/SOH untuk verifikasi 2.</p>
+            <div className="rounded-xl border border-accent-soft bg-panel p-4 shadow-sm space-y-3">
+              <p className="text-sm text-muted">Approved 1 oleh ADH. Kirim hasil SO ke Kepala Cabang/SOH untuk verifikasi 2.</p>
               <button disabled={actionLoading} onClick={sendToKacab} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-700"><Send size={16} /> Sent to Verifikator 2</button>
             </div>
           )}
 
           {canApproveKacab && activeSession.status === 'sent_to_kacab' && (
-            <div className="rounded-xl border border-purple-200 bg-white p-4 shadow-sm space-y-3">
+            <div className="rounded-xl border border-purple-200 bg-panel p-4 shadow-sm space-y-3">
               <div>
-                <p className="text-xs font-bold uppercase text-purple-600">Review Verifikator 2</p>
-                <p className="text-sm text-slate-600">Hasil sudah Approved 1 oleh ADH. Jika sesuai, approve agar BASO dapat dicetak.</p>
+                <p className="text-xs font-bold uppercase text-accent">Review Verifikator 2</p>
+                <p className="text-sm text-muted">Hasil sudah Approved 1 oleh ADH. Jika sesuai, approve agar BASO dapat dicetak.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button disabled={actionLoading} onClick={approve} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-success-100 text-success-700 text-sm hover:bg-success-200"><CheckCircle size={16} /> Approve 2 Kepala Cabang</button>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
-                <input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Alasan reject" />
+                <input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} className="rounded-lg border border-border bg-hover px-3 py-2 text-sm" placeholder="Alasan reject" />
                 <button disabled={actionLoading || !rejectReason.trim()} onClick={reject} className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-danger-100 text-danger-700 text-sm hover:bg-danger-200 disabled:opacity-60"><XCircle size={16} /> Reject</button>
               </div>
             </div>
           )}
 
           {canOperate && ['approved_kacab'].includes(activeSession.status) && (
-            <div className="rounded-xl border border-success-200 bg-white p-4 shadow-sm space-y-3">
-              <p className="text-sm text-slate-600">Cetak/export BASO, tanda tangan pejabat berwenang, lalu upload file PDF signed ke sistem.</p>
+            <div className="rounded-xl border border-success-200 bg-panel p-4 shadow-sm space-y-3">
+              <p className="text-sm text-muted">Cetak/export BASO, tanda tangan pejabat berwenang, lalu upload file PDF signed ke sistem.</p>
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_auto] gap-3 items-center">
-                <input type="file" accept="application/pdf,.pdf" onChange={(e) => setBasoFile(e.target.files?.[0] || null)} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" />
-                <button disabled={actionLoading || !basoFile} onClick={uploadBaso} className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-60"><FileUp size={16} /> Upload BASO PDF</button>
+                <input type="file" accept="application/pdf,.pdf" onChange={(e) => setBasoFile(e.target.files?.[0] || null)} className="rounded-lg border border-border bg-hover px-3 py-2 text-sm" />
+                <button disabled={actionLoading || !basoFile} onClick={uploadBaso} className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm hover:brightness-110 disabled:opacity-60"><FileUp size={16} /> Upload BASO PDF</button>
                 <button disabled className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-success-600 text-white text-sm opacity-60"><ShieldCheck size={16} /> Done Setelah Upload</button>
               </div>
               {activeSession.baso_uploaded_at && <p className="text-xs text-success-700">BASO uploaded: {new Date(activeSession.baso_uploaded_at).toLocaleString('id-ID')}</p>}
@@ -611,7 +611,7 @@ export default function ShowroomOpname({ type = 'unit' }) {
 
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             {[['Total Sistem', summary?.total_system], ['Sudah Scan', summary?.sudah_scan], ['Belum Scan', summary?.belum_scan], ['Salah Lokasi', summary?.salah_lokasi], ['Tidak Terdaftar', summary?.tidak_terdaftar]].map(([label, value]) => (
-              <div key={label} className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs text-slate-500">{label}</p><p className="text-2xl font-bold text-slate-900">{value || 0}</p></div>
+              <div key={label} className="rounded-xl border border-border bg-panel p-4"><p className="text-xs text-muted">{label}</p><p className="text-2xl font-bold text-text-strong">{value || 0}</p></div>
             ))}
           </div>
 
@@ -625,62 +625,62 @@ export default function ShowroomOpname({ type = 'unit' }) {
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
-                <div className="rounded-lg bg-white/70 p-3">
+                <div className="rounded-lg bg-panel/70 p-3">
                   <p className="text-xs font-bold uppercase text-warning-700">Lokasi Sistem Bermasalah</p>
-                  <div className="mt-2 space-y-1 text-sm text-slate-700">{Object.entries(wrongLocationBySystem).map(([location, count]) => <p key={location}>{location}: <b>{count}</b> unit</p>)}</div>
+                  <div className="mt-2 space-y-1 text-sm text-text">{Object.entries(wrongLocationBySystem).map(([location, count]) => <p key={location}>{location}: <b>{count}</b> unit</p>)}</div>
                 </div>
-                <div className="rounded-lg bg-white/70 p-3">
+                <div className="rounded-lg bg-panel/70 p-3">
                   <p className="text-xs font-bold uppercase text-warning-700">Ditemukan Di</p>
-                  <div className="mt-2 space-y-1 text-sm text-slate-700">{Object.entries(wrongLocationByPhysical).map(([location, count]) => <p key={location}>{location}: <b>{count}</b> unit</p>)}</div>
+                  <div className="mt-2 space-y-1 text-sm text-text">{Object.entries(wrongLocationByPhysical).map(([location, count]) => <p key={location}>{location}: <b>{count}</b> unit</p>)}</div>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+          <div className="rounded-xl border border-border bg-panel p-4 shadow-sm space-y-3">
             <div className="flex flex-wrap gap-2">
-              {FILTERS.map(([value, label]) => <button key={value} onClick={() => setStatusFilter(value)} className={`px-3 py-2 rounded-lg text-sm font-medium ${statusFilter === value ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'}`}>{label}</button>)}
+              {FILTERS.map(([value, label]) => <button key={value} onClick={() => setStatusFilter(value)} className={`px-3 py-2 rounded-lg text-sm font-medium ${statusFilter === value ? 'bg-accent text-white' : 'bg-hover text-muted border border-border hover:bg-hover'}`}>{label}</button>)}
             </div>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm" placeholder="Cari dalam sesi..." />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-border bg-hover text-sm" placeholder="Cari dalam sesi..." />
           </div>
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><span className="font-semibold text-sm text-slate-700">{activeSession ? `Item Opname (${visibleItems.length})` : 'Riwayat Sesi'}</span></div>
-        {loading ? <div className="p-12 flex justify-center"><Loader2 className="animate-spin text-blue-600" /></div> : activeSession ? (
+      <div className="rounded-xl border border-border bg-panel shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between"><span className="font-semibold text-sm text-text">{activeSession ? `Item Opname (${visibleItems.length})` : 'Riwayat Sesi'}</span></div>
+        {loading ? <div className="p-12 flex justify-center"><Loader2 className="animate-spin text-accent" /></div> : activeSession ? (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead><tr className="bg-slate-50 border-b border-slate-200">{[config.itemHeader, config.secondaryHeader, 'Lokasi Sistem', 'Ditemukan Di', 'Foto/Geo', 'Status', 'Aksi'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">{h}</th>)}</tr></thead>
+              <thead><tr className="bg-hover border-b border-border">{[config.itemHeader, config.secondaryHeader, 'Lokasi Sistem', 'Ditemukan Di', 'Foto/Geo', 'Status', 'Aksi'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase whitespace-nowrap">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-slate-100">{visibleItems.map((item) => (
                 <tr key={item.id} className={type === 'unit' && item.status === 'salah_lokasi' ? 'bg-warning-50/60' : ''}>
-                  <td className="px-4 py-3"><p className="text-sm font-semibold text-slate-800">{item.reference_key}</p><p className="text-xs text-slate-500">{item.display_name || '-'}</p>{item.notes && <p className="text-xs text-warning-600 mt-1">{item.notes}</p>}</td>
-                  <td className="px-4 py-3 text-xs font-mono text-slate-600">{item.secondary_key || '-'}</td>
-                  <td className="px-4 py-3 text-sm text-slate-600">{item.system_location || '-'}</td>
-                  <td className="px-4 py-3 text-sm text-slate-600">{editingItem === item.id ? (type === 'unit' ? <select value={editForm.physical_location} onChange={(e) => setEditForm((form) => ({ ...form, physical_location: e.target.value }))} className="w-40 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm"><option value="">Pilih lokasi</option>{locationOptions.map((location) => <option key={location} value={location}>{location}</option>)}</select> : <input value={editForm.physical_location} onChange={(e) => setEditForm((form) => ({ ...form, physical_location: e.target.value }))} className="w-36 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm" />) : <span className={type === 'unit' && item.status === 'salah_lokasi' ? 'font-semibold text-warning-800' : ''}>{item.physical_location || '-'}</span>}</td>
+                  <td className="px-4 py-3"><p className="text-sm font-semibold text-text">{item.reference_key}</p><p className="text-xs text-muted">{item.display_name || '-'}</p>{item.notes && <p className="text-xs text-warning-600 mt-1">{item.notes}</p>}</td>
+                  <td className="px-4 py-3 text-xs font-mono text-muted">{item.secondary_key || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-muted">{item.system_location || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-muted">{editingItem === item.id ? (type === 'unit' ? <select value={editForm.physical_location} onChange={(e) => setEditForm((form) => ({ ...form, physical_location: e.target.value }))} className="w-40 rounded border border-border bg-hover px-2 py-1 text-sm"><option value="">Pilih lokasi</option>{locationOptions.map((location) => <option key={location} value={location}>{location}</option>)}</select> : <input value={editForm.physical_location} onChange={(e) => setEditForm((form) => ({ ...form, physical_location: e.target.value }))} className="w-36 rounded border border-border bg-hover px-2 py-1 text-sm" />) : <span className={type === 'unit' && item.status === 'salah_lokasi' ? 'font-semibold text-warning-800' : ''}>{item.physical_location || '-'}</span>}</td>
                   <td className="px-4 py-3">
                     {item.photo_url ? (
-                      <a href={`${API_BASE}/showroom/opname/photo/${encodeURIComponent(item.photo_url.split('/').pop())}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline"><img src={`${API_BASE}/showroom/opname/photo/${encodeURIComponent(item.photo_url.split('/').pop())}`} alt="Foto" className="w-12 h-12 rounded object-cover inline-block mr-1" />Lihat</a>
-                    ) : <span className="text-xs text-slate-400">-</span>}
+                      <a href={`${API_BASE}/showroom/opname/photo/${encodeURIComponent(item.photo_url.split('/').pop())}`} target="_blank" rel="noopener noreferrer" className="text-xs text-accent hover:underline"><img src={`${API_BASE}/showroom/opname/photo/${encodeURIComponent(item.photo_url.split('/').pop())}`} alt="Foto" className="w-12 h-12 rounded object-cover inline-block mr-1" />Lihat</a>
+                    ) : <span className="text-xs text-faint">-</span>}
                     {item.geo_lat && item.geo_lng && (
                       <a
                         href={`https://www.google.com/maps?q=${item.geo_lat},${item.geo_lng}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[10px] text-blue-600 hover:underline mt-0.5 block"
+                        className="text-[10px] text-accent hover:underline mt-0.5 block"
                       >
                         {item.geo_lat.toFixed(6)}, {item.geo_lng.toFixed(6)}
                       </a>
                     )}
                   </td>
-                  <td className="px-4 py-3">{editingItem === item.id ? <select value={editForm.status} onChange={(e) => setEditForm((form) => ({ ...form, status: e.target.value }))} className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-sm"><option value="belum_scan">Belum Scan</option><option value="sesuai">Sesuai</option><option value="salah_lokasi">Salah Lokasi</option><option value="tidak_terdaftar">Tidak Terdaftar</option></select> : <span className={`inline-flex px-2 py-0.5 rounded-full border text-xs font-medium ${STATUS_CLASS[item.status] || STATUS_CLASS.belum_scan}`}>{labelStatus(item.status)}</span>}</td>
-                  <td className="px-4 py-3">{canOperate && activeSession.status === 'open' ? (editingItem === item.id ? <div className="flex gap-2"><button onClick={() => saveEdit(item)} className="px-2 py-1 rounded bg-blue-600 text-white text-xs">Simpan</button><button onClick={() => setEditingItem(null)} className="px-2 py-1 rounded border border-slate-200 text-xs">Batal</button></div> : <button onClick={() => startEdit(item)} className="inline-flex items-center gap-1 px-2 py-1 rounded border border-slate-200 text-xs text-slate-600 hover:bg-slate-50"><Pencil size={12} /> Edit</button>) : <span className="text-xs text-slate-400">Read only</span>}</td>
+                  <td className="px-4 py-3">{editingItem === item.id ? <select value={editForm.status} onChange={(e) => setEditForm((form) => ({ ...form, status: e.target.value }))} className="rounded border border-border bg-hover px-2 py-1 text-sm"><option value="belum_scan">Belum Scan</option><option value="sesuai">Sesuai</option><option value="salah_lokasi">Salah Lokasi</option><option value="tidak_terdaftar">Tidak Terdaftar</option></select> : <span className={`inline-flex px-2 py-0.5 rounded-full border text-xs font-medium ${STATUS_CLASS[item.status] || STATUS_CLASS.belum_scan}`}>{labelStatus(item.status)}</span>}</td>
+                  <td className="px-4 py-3">{canOperate && activeSession.status === 'open' ? (editingItem === item.id ? <div className="flex gap-2"><button onClick={() => saveEdit(item)} className="px-2 py-1 rounded bg-accent text-white text-xs">Simpan</button><button onClick={() => setEditingItem(null)} className="px-2 py-1 rounded border border-border text-xs">Batal</button></div> : <button onClick={() => startEdit(item)} className="inline-flex items-center gap-1 px-2 py-1 rounded border border-border text-xs text-muted hover:bg-hover"><Pencil size={12} /> Edit</button>) : <span className="text-xs text-faint">Read only</span>}</td>
                 </tr>
               ))}</tbody>
             </table>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">{sessions.map((session) => <div key={session.id} className="p-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between"><div><p className="font-semibold text-slate-800">{session.session_code}</p><p className="text-xs text-slate-500 uppercase">{session.opname_type} / {labelSessionStatus(session.status)} / {session._count?.items || 0} item {session.pic_so_name ? `/ PIC ${session.pic_so_name}` : ''}</p></div><div className="flex flex-wrap gap-2"><button onClick={() => loadItems(session)} className="px-3 py-2 rounded-lg bg-blue-50 text-blue-700 text-sm hover:bg-blue-100">Buka</button><button onClick={() => exportReport(session)} className="px-3 py-2 rounded-lg bg-success-50 text-success-700 text-sm hover:bg-success-100">Export</button>{session.baso_signed_file && <button onClick={() => viewUploadedBaso(session)} className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm hover:bg-slate-200">Lihat BASO</button>}{canOperate && session.status !== 'done' && <button onClick={() => removeSession(session)} className="px-3 py-2 rounded-lg border border-danger-200 text-danger-600 text-sm hover:bg-danger-50">Hapus</button>}</div></div>)}</div>
+          <div className="divide-y divide-slate-100">{sessions.map((session) => <div key={session.id} className="p-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between"><div><p className="font-semibold text-text">{session.session_code}</p><p className="text-xs text-muted uppercase">{session.opname_type} / {labelSessionStatus(session.status)} / {session._count?.items || 0} item {session.pic_so_name ? `/ PIC ${session.pic_so_name}` : ''}</p></div><div className="flex flex-wrap gap-2"><button onClick={() => loadItems(session)} className="px-3 py-2 rounded-lg bg-accent-soft text-accent-text text-sm hover:bg-accent-soft">Buka</button><button onClick={() => exportReport(session)} className="px-3 py-2 rounded-lg bg-success-50 text-success-700 text-sm hover:bg-success-100">Export</button>{session.baso_signed_file && <button onClick={() => viewUploadedBaso(session)} className="px-3 py-2 rounded-lg bg-hover text-text text-sm hover:bg-hover">Lihat BASO</button>}{canOperate && session.status !== 'done' && <button onClick={() => removeSession(session)} className="px-3 py-2 rounded-lg border border-danger-200 text-danger-600 text-sm hover:bg-danger-50">Hapus</button>}</div></div>)}</div>
         )}
       </div>
     </div>

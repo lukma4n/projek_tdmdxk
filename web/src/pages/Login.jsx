@@ -1,29 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { useThemeStore } from '../stores/themeStore'
 import { api } from '../services/api'
-import { Eye, EyeOff, Loader2, Shield, LogIn } from 'lucide-react'
-
-// Skydash Admin design tokens (from DESIGN.md)
-const C = {
-  primary: '#4B49AC',
-  primaryDark: '#27367F',
-  primaryLight: '#B9B8EE',
-  electricBlue: '#0D6EFD',
-  success: '#57B657',
-  warning: '#FFC100',
-  error: '#FF4747',
-  textPrimary: '#1F1F1F',
-  textSecondary: '#6C7383',
-  textTertiary: '#A3A4A5',
-  border: '#CED4DA',
-  surface: '#F8F9FA',
-  card: '#FFFFFF',
-  shadow: 'rgba(0, 0, 0, 0.05) 0px 2px 8px 0px',
-  shadowMd: 'rgba(0, 0, 0, 0.1) 0px 4px 12px 0px',
-  shadowLg: 'rgba(205, 209, 225, 1) 0px 5px 21px -5px',
-  focusRing: 'rgba(75, 73, 172, 0.1)',
-}
+import { Eye, EyeOff, Loader2, Shield, LogIn, Sun, Moon } from 'lucide-react'
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -33,6 +13,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const { login, isAuthenticated } = useAuthStore()
+  const { theme, toggleTheme } = useThemeStore()
+  const isDark = theme === 'dark'
 
   useEffect(() => {
     let cancelled = false
@@ -43,16 +25,13 @@ export default function Login() {
           login(data.user)
         }
       })
-      .catch(() => {
-        // 401 or network error — stay on login page, no reload
-      })
+      .catch(() => {})
       .finally(() => {
         if (!cancelled) setCheckingAuth(false)
       })
     return () => { cancelled = true }
   }, [login])
 
-  // If already authenticated, redirect to home
   if (isAuthenticated) {
     return <Navigate to="/" replace />
   }
@@ -77,15 +56,9 @@ export default function Login() {
 
   if (checkingAuth) {
     return (
-      <div
-        className="flex h-screen items-center justify-center"
-        style={{ backgroundColor: C.surface }}
-      >
-        <Loader2 className="animate-spin" size={32} style={{ color: C.primary }} />
-        <span
-          className="ml-3 text-sm font-semibold"
-          style={{ color: C.textSecondary }}
-        >
+      <div className="flex h-screen items-center justify-center bg-bg">
+        <Loader2 className="animate-spin text-accent" size={32} />
+        <span className="ml-3 text-sm font-semibold text-muted">
           Memeriksa sesi...
         </span>
       </div>
@@ -93,56 +66,37 @@ export default function Login() {
   }
 
   return (
-    <div
-      className="flex min-h-screen items-center justify-center p-4 sm:p-6"
-      style={{ backgroundColor: C.surface }}
-    >
-      <div
-        className="w-full max-w-md overflow-hidden"
-        style={{
-          backgroundColor: C.card,
-          borderRadius: '20px',
-          border: 'none',
-          boxShadow: C.shadow,
-        }}
-      >
-        {/* Header: Logo + Title — Skydash: H4 18px/500 untuk title, body 14px/500 untuk subtitle */}
-        <div
-          className="px-6 pt-8 pb-6 text-center"
-          style={{ borderBottom: `1px solid ${C.border}` }}
-        >
-          <div
-            className="mx-auto mb-4 flex h-14 w-14 items-center justify-center"
-            style={{
-              backgroundColor: C.primary,
-              color: C.card,
-              borderRadius: '15px',
-              boxShadow: C.shadow,
-            }}
-          >
+    <div className="flex min-h-screen items-center justify-center p-4 sm:p-6 bg-bg">
+      <div className="w-full max-w-md overflow-hidden bg-panel rounded-2xl shadow-lg border border-border">
+        {/* Header */}
+        <div className="px-6 pt-8 pb-6 text-center border-b border-border">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-white shadow-sm">
             <LogIn size={26} />
           </div>
-          <h1
-            className="text-[24px] font-medium leading-[24px]"
-            style={{ color: C.textPrimary }}
-          >
+          <h1 className="text-2xl font-extrabold tracking-tight text-text-strong">
             DXK Operation System
           </h1>
-          <p
-            className="mt-2 text-sm font-medium"
-            style={{ color: C.textSecondary }}
-          >
+          <p className="mt-2 text-sm font-medium text-muted">
             Masuk untuk melanjutkan ke sistem operasional
           </p>
         </div>
 
-        {/* Form — Skydash inputs: 55px height, 4px radius, 1px solid #CED4DA */}
+        {/* Theme Toggle */}
+        <div className="absolute top-4 right-4">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border transition border-border bg-panel text-muted hover:bg-hover"
+            title={isDark ? 'Mode Terang' : 'Mode Gelap'}
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+        </div>
+
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5 px-6 py-6">
           <div>
-            <label
-              className="mb-2 block text-sm font-medium"
-              style={{ color: C.textPrimary }}
-            >
+            <label className="mb-2 block text-sm font-semibold text-text">
               Username
             </label>
             <input
@@ -150,25 +104,7 @@ export default function Login() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Masukkan username"
-              className="w-full text-sm transition focus:outline-none"
-              style={{
-                height: '55px',
-                padding: '18px 22px',
-                fontFamily: 'inherit',
-                fontWeight: 400,
-                color: C.textPrimary,
-                backgroundColor: C.card,
-                border: `1px solid ${C.border}`,
-                borderRadius: '4px',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.border = `1px solid ${C.primary}`
-                e.currentTarget.style.boxShadow = `0px 0px 0px 3px ${C.focusRing}`
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.border = `1px solid ${C.border}`
-                e.currentTarget.style.boxShadow = 'none'
-              }}
+              className="w-full rounded-xl border border-border bg-hover px-4 py-3 text-sm text-text placeholder:text-faint outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
               disabled={loading}
               autoComplete="username"
               autoFocus
@@ -176,10 +112,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label
-              className="mb-2 block text-sm font-medium"
-              style={{ color: C.textPrimary }}
-            >
+            <label className="mb-2 block text-sm font-semibold text-text">
               Password
             </label>
             <div className="relative">
@@ -188,47 +121,14 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Masukkan password"
-                className="w-full text-sm transition focus:outline-none"
-                style={{
-                  height: '55px',
-                  padding: '18px 52px 18px 22px',
-                  fontFamily: 'inherit',
-                  fontWeight: 400,
-                  color: C.textPrimary,
-                  backgroundColor: C.card,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: '4px',
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.border = `1px solid ${C.primary}`
-                  e.currentTarget.style.boxShadow = `0px 0px 0px 3px ${C.focusRing}`
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.border = `1px solid ${C.border}`
-                  e.currentTarget.style.boxShadow = 'none'
-                }}
+                className="w-full rounded-xl border border-border bg-hover px-4 py-3 pr-12 text-sm text-text placeholder:text-faint outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
                 disabled={loading}
                 autoComplete="current-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((value) => !value)}
-                className="absolute top-1/2 -translate-y-1/2 transition"
-                style={{
-                  right: '10px',
-                  padding: '6px',
-                  color: C.textSecondary,
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = C.textPrimary
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = C.textSecondary
-                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-muted hover:text-text transition rounded-lg"
                 aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                 tabIndex={-1}
               >
@@ -238,49 +138,16 @@ export default function Login() {
           </div>
 
           {error && (
-            <div
-              className="flex items-center gap-2 px-3 py-2.5 text-sm"
-              style={{
-                backgroundColor: 'rgba(255, 71, 71, 0.1)',
-                color: C.error,
-                border: `1px solid rgba(255, 71, 71, 0.3)`,
-                borderRadius: '8px',
-              }}
-            >
+            <div className="flex items-center gap-2 rounded-xl bg-danger-soft border border-danger/20 px-4 py-3 text-sm text-danger">
               <Shield size={16} />
               <span className="font-semibold">{error}</span>
             </div>
           )}
 
-          {/* Primary Button: bg #4B49AC, text white, 14px/700, 15px radius, 55px height */}
           <button
             type="submit"
             disabled={loading || !username || !password}
-            className="flex w-full items-center justify-center gap-2 text-sm transition"
-            style={{
-              height: '55px',
-              padding: '14px 24px',
-              fontFamily: 'inherit',
-              fontWeight: 700,
-              color: C.card,
-              backgroundColor: loading || !username || !password ? C.textTertiary : C.primary,
-              border: 'none',
-              borderRadius: '15px',
-              boxShadow: C.shadow,
-              cursor: loading || !username || !password ? 'not-allowed' : 'pointer',
-            }}
-            onMouseEnter={(e) => {
-              if (!loading && username && password) {
-                e.currentTarget.style.backgroundColor = C.primaryDark
-                e.currentTarget.style.boxShadow = C.shadowMd
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!loading && username && password) {
-                e.currentTarget.style.backgroundColor = C.primary
-                e.currentTarget.style.boxShadow = C.shadow
-              }
-            }}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading && <Loader2 className="animate-spin" size={17} />}
             {loading ? 'Memproses...' : 'Masuk'}
@@ -288,14 +155,8 @@ export default function Login() {
         </form>
 
         {/* Footer */}
-        <div
-          className="px-6 py-4 text-center"
-          style={{ borderTop: `1px solid ${C.border}`, backgroundColor: C.surface }}
-        >
-          <p
-            className="text-xs font-medium"
-            style={{ color: C.textTertiary }}
-          >
+        <div className="px-6 py-4 text-center border-t border-border bg-hover/50">
+          <p className="text-xs font-medium text-faint">
             DXK Operation System v1.0
           </p>
         </div>

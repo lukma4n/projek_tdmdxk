@@ -97,18 +97,18 @@ export default function SalesOrderMargin() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Simulasi DP & Margin</h1>
-          <p className="text-sm text-slate-500">Kontrol DP net sebelum deal: sistem hitung TAC/program otomatis dan menampilkan sisa margin sebagai acuan keputusan.</p>
+          <h1 className="text-2xl font-bold text-text-strong">Simulasi DP & Margin</h1>
+          <p className="text-sm text-muted">Kontrol DP net sebelum deal: sistem hitung TAC/program otomatis dan menampilkan sisa margin sebagai acuan keputusan.</p>
         </div>
-        <button onClick={() => setForm(EMPTY_FORM)} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"><RotateCcw size={16} /> Reset</button>
+        <button onClick={() => setForm(EMPTY_FORM)} className="flex items-center gap-2 rounded-lg border border-border bg-panel px-4 py-2 text-sm text-muted hover:bg-hover"><RotateCcw size={16} /> Reset</button>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_.8fr]">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
-          <div className="flex items-center gap-2"><Calculator size={18} className="text-blue-600" /><h2 className="font-semibold text-slate-800">Input Pertanyaan Sales</h2></div>
+        <div className="rounded-xl border border-border bg-panel p-5 shadow-sm space-y-5">
+          <div className="flex items-center gap-2"><Calculator size={18} className="text-accent" /><h2 className="font-semibold text-text">Input Pertanyaan Sales</h2></div>
 
           <section className="space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Unit dan Program</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-faint">Unit dan Program</p>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <Input label="Kode Unit" value={form.product_type} onChange={(v) => setField('product_type', v.toUpperCase())} placeholder="Contoh: MRBC" autoFocus />
               <Select label="Area BBN" value={form.city_name} onChange={(v) => setField('city_name', v)} options={bbnAreas} />
@@ -119,17 +119,17 @@ export default function SalesOrderMargin() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-blue-100 bg-blue-50 p-4 space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-blue-500">Simulasi DP Net</p>
+          <section className="rounded-xl border border-accent-soft bg-accent-soft p-4 space-y-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-accent">Simulasi DP Net</p>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <Input label={isCash ? 'Simulasi Diskon Tambahan' : 'DP Gross Konsumen'} value={form.dp_gross} onChange={(v) => setField('dp_gross', v)} placeholder="2.150.000" numeric />
               <Input label={isCash ? 'Setoran Konsumen' : 'DP Net Konsumen Mau Setor'} value={form.dp_net_customer} onChange={(v) => setField('dp_net_customer', v)} placeholder="450.000" numeric />
             </div>
-            <p className="text-xs text-blue-700">{isCash ? 'Cash: Sisa Piutang = OTR - (Setoran + Program MD + Diskon Dealer Manual).' : 'Tambahan diskon dihitung otomatis: DP Gross - TAC/program - DP Net konsumen.'}</p>
+            <p className="text-xs text-accent-text">{isCash ? 'Cash: Sisa Piutang = OTR - (Setoran + Program MD + Diskon Dealer Manual).' : 'Tambahan diskon dihitung otomatis: DP Gross - TAC/program - DP Net konsumen.'}</p>
           </section>
 
           <section className="space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Beban Tambahan Jika Ada</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-faint">Beban Tambahan Jika Ada</p>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <Input label="Hutang Komisi" value={form.hutang_komisi} onChange={(v) => setField('hutang_komisi', v)} numeric />
               <Input label={isCash ? 'Diskon Dealer Manual' : 'Subsidi Dealer Manual'} value={form.dealer_subsidy} onChange={(v) => setField('dealer_subsidy', v)} numeric />
@@ -156,8 +156,8 @@ export default function SalesOrderMargin() {
             <Metric label="Total Beban Dealer" value={currency(preview?.totalBebanDealer || 0)} />
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Rincian DP dan Program</p>
+          <div className="rounded-xl border border-border bg-panel p-5 shadow-sm space-y-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-faint">Rincian DP dan Program</p>
             <Row label="DP Gross" value={currency(preview?.dpGross || 0)} />
             {!isCash && <Row label={usesPromoScheme ? 'Dana Promosi IMFI' : 'TAC Leasing'} value={currency(preview?.tac_program_subsidy || 0)} />}
             {usesPromoScheme && <Row label="Dana Titipan Cabang" value={currency(preview?.promo_scheme_branch_deposit_amount || 0)} />}
@@ -175,8 +175,8 @@ export default function SalesOrderMargin() {
             <Row label="Hutang Komisi" value={currency(preview?.hutangKomisiGross || 0, 2)} />
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Audit Margin</p>
+          <div className="rounded-xl border border-border bg-panel p-5 shadow-sm space-y-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-faint">Audit Margin</p>
             <Row label="Nama Unit" value={preview?.description || preview?.series || '-'} />
             <Row label="Harga OTR" value={currency(preview?.otr_price || 0)} />
             <Row label="Harga Beli Dealer" value={currency(preview?.purchase_price || 0)} />
@@ -203,11 +203,11 @@ function Input({ label, value, onChange, type = 'text', placeholder = '', autoFo
     onChange(numeric ? formatNumericInput(event.target.value) : event.target.value)
   }
 
-  return <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">{label}</span><input autoFocus={autoFocus} type={type} inputMode={numeric ? 'numeric' : undefined} value={value} placeholder={placeholder} onChange={handleChange} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" /></label>
+  return <label className="block"><span className="mb-1 block text-xs font-semibold text-muted">{label}</span><input autoFocus={autoFocus} type={type} inputMode={numeric ? 'numeric' : undefined} value={value} placeholder={placeholder} onChange={handleChange} className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm" /></label>
 }
 
 function Select({ label, value, onChange, options }) {
-  return <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">{label}</span><select value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">{options.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
+  return <label className="block"><span className="mb-1 block text-xs font-semibold text-muted">{label}</span><select value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm">{options.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
 }
 
 function uniqueOptions(values, fallback = []) {
@@ -215,14 +215,14 @@ function uniqueOptions(values, fallback = []) {
 }
 
 function ReadOnly({ label, value }) {
-  return <label className="block"><span className="mb-1 block text-xs font-semibold text-slate-500">{label}</span><div className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700">{value}</div></label>
+  return <label className="block"><span className="mb-1 block text-xs font-semibold text-muted">{label}</span><div className="rounded-lg border border-border bg-hover px-3 py-2 text-sm font-semibold text-text">{value}</div></label>
 }
 
 function Metric({ label, value, highlight = false, danger = false }) {
-  const className = danger ? 'text-danger-700' : highlight ? 'text-blue-700' : 'text-slate-900'
-  return <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><p className="text-xs font-semibold uppercase text-slate-400">{label}</p><p className={`mt-1 text-lg font-black ${className}`}>{value}</p></div>
+  const className = danger ? 'text-danger-700' : highlight ? 'text-accent-text' : 'text-text-strong'
+  return <div className="rounded-xl border border-border bg-panel p-4 shadow-sm"><p className="text-xs font-semibold uppercase text-faint">{label}</p><p className={`mt-1 text-lg font-black ${className}`}>{value}</p></div>
 }
 
 function Row({ label, value, bold = false }) {
-  return <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-2 last:border-b-0"><span className="text-sm text-slate-500">{label}</span><span className={bold ? 'text-lg font-black text-slate-900' : 'text-sm font-semibold text-slate-700'}>{value}</span></div>
+  return <div className="flex items-center justify-between gap-4 border-b border-border pb-2 last:border-b-0"><span className="text-sm text-muted">{label}</span><span className={bold ? 'text-lg font-black text-text-strong' : 'text-sm font-semibold text-text'}>{value}</span></div>
 }

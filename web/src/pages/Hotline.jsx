@@ -4,9 +4,9 @@ import { Search, Phone, ChevronRight, AlertTriangle, Loader2 } from 'lucide-reac
 
 const stateColors = {
   Done: 'bg-success-100 text-success-700 border-success-200',
-  Approved: 'bg-blue-100 text-blue-700 border-blue-200',
+  Approved: 'bg-accent-soft text-accent-text border-accent-soft',
   Waiting_For_Approval: 'bg-warning-100 text-warning-700 border-warning-200',
-  Cancel: 'bg-slate-100 text-slate-500 border-slate-200',
+  Cancel: 'bg-hover text-muted border-border',
 }
 
 export default function Hotline() {
@@ -56,28 +56,28 @@ export default function Hotline() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Part Hotline</h1>
-          <p className="text-sm text-slate-500">Tracking permintaan part hotline end-to-end</p>
+          <h1 className="text-2xl font-bold text-text-strong">Part Hotline</h1>
+          <p className="text-sm text-muted">Tracking permintaan part hotline end-to-end</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-wrap items-center gap-3">
+      <div className="bg-panel rounded-xl border border-border shadow-sm p-4 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[240px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             type="text"
             placeholder="Cari no hotline atau customer..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-4 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
 
         <select
           value={filterState}
           onChange={(e) => setFilterState(e.target.value)}
-          className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
         >
           <option value="all">Semua State</option>
           <option value="Done">Done</option>
@@ -89,7 +89,7 @@ export default function Hotline() {
         <select
           value={filterJenis}
           onChange={(e) => setFilterJenis(e.target.value)}
-          className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
         >
           <option value="all">Semua Jenis PO</option>
           <option value="No Claim">No Claim</option>
@@ -99,10 +99,10 @@ export default function Hotline() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-panel rounded-xl border border-border shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center p-12">
-            <Loader2 className="animate-spin text-blue-600" size={24} />
+            <Loader2 className="animate-spin text-accent" size={24} />
           </div>
         ) : error ? (
           <div className="p-8 text-center">
@@ -113,9 +113,9 @@ export default function Hotline() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
+                <tr className="bg-hover border-b border-border">
                   {['No Hotline', 'Tanggal', 'Customer', 'Jenis PO', 'Qty', 'Qty PO', 'State'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">{h}</th>
                   ))}
                   <th className="px-4 py-3"></th>
                 </tr>
@@ -124,19 +124,19 @@ export default function Hotline() {
                 {hotlines.map((item) => (
                   <tr 
                     key={item.id} 
-                    className={`hover:bg-slate-50/50 transition-colors ${item.state === 'Cancel' ? 'opacity-60' : ''}`}
+                    className={`hover:bg-hover/50 transition-colors ${item.state === 'Cancel' ? 'opacity-60' : ''}`}
                   >
-                    <td className="px-4 py-3 font-mono text-sm text-slate-700">{item.no_hotline}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{new Date(item.tgl_hotline).toLocaleDateString('id-ID')}</td>
-                    <td className="px-4 py-3 text-sm text-slate-700 font-medium">{item.customer}</td>
+                    <td className="px-4 py-3 font-mono text-sm text-text">{item.no_hotline}</td>
+                    <td className="px-4 py-3 text-sm text-muted">{new Date(item.tgl_hotline).toLocaleDateString('id-ID')}</td>
+                    <td className="px-4 py-3 text-sm text-text font-medium">{item.customer}</td>
                     <td className="px-4 py-3">
-                      <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md border border-slate-200">
+                      <span className="text-xs px-2 py-0.5 bg-hover text-muted rounded-md border border-border">
                         {item.jenis_po}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-700">{item.qty_hotline || 0}</td>
+                    <td className="px-4 py-3 text-sm text-text">{item.qty_hotline || 0}</td>
                     <td className="px-4 py-3 text-sm">
-                      <span className={(item.qty_po || 0) < (item.qty_hotline || 0) ? 'text-danger-600 font-semibold' : 'text-slate-600'}>
+                      <span className={(item.qty_po || 0) < (item.qty_hotline || 0) ? 'text-danger-600 font-semibold' : 'text-muted'}>
                         {item.qty_po || 0}
                         {(item.qty_po || 0) < (item.qty_hotline || 0) && <span className="ml-1 text-xs">(Under Order)</span>}
                       </span>
@@ -154,7 +154,7 @@ export default function Hotline() {
                       </select>
                     </td>
                     <td className="px-4 py-3">
-                      <button className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors">
+                      <button className="p-1.5 hover:bg-hover rounded-md text-faint hover:text-muted transition-colors">
                         <ChevronRight size={16} />
                       </button>
                     </td>
@@ -167,8 +167,8 @@ export default function Hotline() {
 
         {hotlines.length === 0 && !loading && (
           <div className="p-8 text-center">
-            <Phone className="mx-auto text-slate-300 mb-2" size={32} />
-            <p className="text-sm text-slate-500">Tidak ada data hotline</p>
+            <Phone className="mx-auto text-faint mb-2" size={32} />
+            <p className="text-sm text-muted">Tidak ada data hotline</p>
           </div>
         )}
       </div>

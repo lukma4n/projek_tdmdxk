@@ -25,8 +25,8 @@ const statuses = [
 ]
 
 const statusColors = {
-  belum_dihubungi: 'bg-slate-50 text-slate-600 border-slate-200',
-  sudah_dihubungi: 'bg-blue-50 text-blue-600 border-blue-200',
+  belum_dihubungi: 'bg-hover text-muted border-border',
+  sudah_dihubungi: 'bg-accent-soft text-accent border-accent-soft',
   booking: 'bg-warning-50 text-warning-600 border-warning-200',
   datang: 'bg-success-50 text-success-600 border-success-200',
   batal: 'bg-danger-50 text-danger-600 border-danger-200',
@@ -202,14 +202,14 @@ export default function FollowupKpb() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Follow-up KPB</h1>
-          <p className="text-sm text-slate-500">Daftar konsumen yang KPB-nya overdue atau mendekati tenggat</p>
+          <h1 className="text-2xl font-bold text-text-strong">Follow-up KPB</h1>
+          <p className="text-sm text-muted">Daftar konsumen yang KPB-nya overdue atau mendekati tenggat</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
             value={days}
             onChange={(e) => setDays(e.target.value)}
-            className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 bg-panel border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
           >
             <option value="7">7 hari ke depan</option>
             <option value="14">14 hari ke depan</option>
@@ -218,7 +218,7 @@ export default function FollowupKpb() {
           <select
             value={level}
             onChange={(e) => setLevel(e.target.value)}
-            className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 bg-panel border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
           >
             <option value="all">Semua KPB</option>
             <option value="KPB1">KPB1</option>
@@ -228,7 +228,7 @@ export default function FollowupKpb() {
           </select>
           <button
             onClick={loadData}
-            className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="flex items-center gap-2 px-3 py-2 bg-panel border border-border rounded-lg text-sm font-medium text-muted hover:bg-hover"
           >
             <RefreshCw size={15} />
             Refresh
@@ -253,7 +253,7 @@ export default function FollowupKpb() {
           <p className="text-xs font-medium opacity-80">Dalam Periode</p>
           <p className="text-2xl font-bold mt-1">{summary.warning || 0}</p>
         </div>
-        <div className="p-4 rounded-xl border border-blue-200 bg-blue-50 text-blue-700">
+        <div className="p-4 rounded-xl border border-accent-soft bg-accent-soft text-accent-text">
           <p className="text-xs font-medium opacity-80">Sudah Dihubungi</p>
           <p className="text-2xl font-bold mt-1">{counts.sudah_dihubungi || 0}</p>
         </div>
@@ -270,8 +270,8 @@ export default function FollowupKpb() {
             onClick={() => setStatus(item.value)}
             className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
               status === item.value
-                ? 'bg-blue-600 border-blue-600 text-white'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                ? 'bg-accent border-accent text-white'
+                : 'bg-panel border-border text-muted hover:bg-hover'
             }`}
           >
             {item.label} ({counts[item.value] || 0})
@@ -283,15 +283,15 @@ export default function FollowupKpb() {
         <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg text-sm text-danger-600">{error}</div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-panel rounded-xl border border-border shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center p-12">
-            <Loader2 className="animate-spin text-blue-600" size={26} />
+            <Loader2 className="animate-spin text-accent" size={26} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
             <CheckCircle2 className="mx-auto text-success-400 mb-2" size={32} />
-            <p className="text-sm text-slate-500">Tidak ada data follow-up sesuai filter</p>
+            <p className="text-sm text-muted">Tidak ada data follow-up sesuai filter</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -299,11 +299,11 @@ export default function FollowupKpb() {
               const currentStatus = getFollowupStatus(item)
               const waUrl = buildWhatsappUrl(item)
               return (
-                <div key={`${item.id}-${item.kpb_label}`} className="p-4 hover:bg-slate-50/60 transition-colors">
+                <div key={`${item.id}-${item.kpb_label}`} className="p-4 hover:bg-hover/60 transition-colors">
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="space-y-2 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-blue-50 text-blue-600 border-blue-200">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-accent-soft text-accent border-accent-soft">
                           <Calendar size={11} />
                           {item.kpb_label}
                         </span>
@@ -316,26 +316,26 @@ export default function FollowupKpb() {
                       </div>
                       <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
                         <div className="flex items-center gap-2 min-w-0">
-                          <User size={15} className="text-slate-400 shrink-0" />
+                          <User size={15} className="text-faint shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-800 truncate">{item.customer}</p>
-                            <p className="text-xs text-slate-400 truncate">SO: {item.so_number || '-'}</p>
+                            <p className="text-sm font-semibold text-text truncate">{item.customer}</p>
+                            <p className="text-xs text-faint truncate">SO: {item.so_number || '-'}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 min-w-0">
-                          <Phone size={15} className="text-slate-400 shrink-0" />
-                          <p className="text-sm text-slate-600 truncate">{item.customer_mobile || '-'}</p>
+                          <Phone size={15} className="text-faint shrink-0" />
+                          <p className="text-sm text-muted truncate">{item.customer_mobile || '-'}</p>
                         </div>
                         <div className="flex items-center gap-2 min-w-0">
-                          <Bike size={15} className="text-slate-400 shrink-0" />
-                          <p className="text-sm text-slate-600 truncate">{item.model || '-'} {item.color ? `(${item.color})` : ''}</p>
+                          <Bike size={15} className="text-faint shrink-0" />
+                          <p className="text-sm text-muted truncate">{item.model || '-'} {item.color ? `(${item.color})` : ''}</p>
                         </div>
                         <div className="flex items-center gap-2 min-w-0">
-                          <Clock size={15} className="text-slate-400 shrink-0" />
-                          <p className="text-sm text-slate-600 truncate">Tenggat {formatDate(item.kpb_due_date)}</p>
+                          <Clock size={15} className="text-faint shrink-0" />
+                          <p className="text-sm text-muted truncate">Tenggat {formatDate(item.kpb_due_date)}</p>
                         </div>
                       </div>
-                      {item.followup?.note && <p className="text-xs text-slate-500">Catatan terakhir: {item.followup.note}</p>}
+                      {item.followup?.note && <p className="text-xs text-muted">Catatan terakhir: {item.followup.note}</p>}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -378,7 +378,7 @@ export default function FollowupKpb() {
         )}
       </div>
 
-      <div className="flex items-start gap-2 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+      <div className="flex items-start gap-2 p-4 bg-warning-soft border border-amber-200 rounded-xl text-sm text-amber-800">
         <AlertTriangle size={18} className="mt-0.5 shrink-0" />
         <p>
           Tombol WhatsApp membuka template pesan dan otomatis mencatat status sebagai Sudah Dihubungi.

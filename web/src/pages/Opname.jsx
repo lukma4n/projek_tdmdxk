@@ -309,14 +309,14 @@ export default function Opname() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Stock Opname</h1>
-          <p className="text-sm text-slate-500">Scan barcode untuk cek fisik vs sistem (auto qty = 1)</p>
+          <h1 className="text-2xl font-bold text-text-strong">Stock Opname</h1>
+          <p className="text-sm text-muted">Scan barcode untuk cek fisik vs sistem (auto qty = 1)</p>
         </div>
         <div className="flex items-center gap-3">
           {activeSession && (
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-2 text-faint hover:text-muted hover:bg-hover rounded-lg transition-colors"
               title={soundEnabled ? 'Matikan suara' : 'Nyalakan suara'}
             >
               {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
@@ -326,7 +326,7 @@ export default function Opname() {
             <button
               onClick={handleCreateSession}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg text-sm font-medium shadow-lg shadow-blue-600/20 transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-accent hover:brightness-110 disabled:bg-border-strong text-white rounded-lg text-sm font-medium shadow-lg shadow-accent/20 transition-all"
             >
               <Plus size={16} />
               {loading ? 'Membuat...' : 'Sesi Baru'}
@@ -336,18 +336,18 @@ export default function Opname() {
       </div>
 
       {!activeSession && canOperate && (
-        <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 rounded-xl border border-border bg-panel p-4 shadow-sm md:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-500">Nama PIC Opname</label>
-            <input value={signers.pic_opname_name} onChange={(e) => setSigners((value) => ({ ...value, pic_opname_name: e.target.value }))} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="PIC Opname" />
+            <label className="mb-1 block text-xs font-semibold text-muted">Nama PIC Opname</label>
+            <input value={signers.pic_opname_name} onChange={(e) => setSigners((value) => ({ ...value, pic_opname_name: e.target.value }))} className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm" placeholder="PIC Opname" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-500">Nama Kepala Bengkel</label>
-            <input value={signers.workshop_head_name} onChange={(e) => setSigners((value) => ({ ...value, workshop_head_name: e.target.value }))} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Kepala Bengkel" />
+            <label className="mb-1 block text-xs font-semibold text-muted">Nama Kepala Bengkel</label>
+            <input value={signers.workshop_head_name} onChange={(e) => setSigners((value) => ({ ...value, workshop_head_name: e.target.value }))} className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm" placeholder="Kepala Bengkel" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-500">Nama Kepala Cabang</label>
-            <input value={signers.branch_head_name} onChange={(e) => setSigners((value) => ({ ...value, branch_head_name: e.target.value }))} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Kepala Cabang" />
+            <label className="mb-1 block text-xs font-semibold text-muted">Nama Kepala Cabang</label>
+            <input value={signers.branch_head_name} onChange={(e) => setSigners((value) => ({ ...value, branch_head_name: e.target.value }))} className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm" placeholder="Kepala Cabang" />
           </div>
         </div>
       )}
@@ -355,14 +355,14 @@ export default function Opname() {
       {/* Active Session */}
       {activeSession ? (
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-blue-200 shadow-sm p-4 flex items-center justify-between">
+          <div className="bg-panel rounded-xl border border-accent-soft shadow-sm p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <ScanBarcode className="text-blue-600" size={20} />
+              <div className="p-2 bg-accent-soft rounded-lg">
+                <ScanBarcode className="text-accent" size={20} />
               </div>
               <div>
-                <p className="font-semibold text-slate-800">{activeSession.session_name}</p>
-                <p className="text-xs text-slate-500">{scannedItems.length} part terscan</p>
+                <p className="font-semibold text-text">{activeSession.session_name}</p>
+                <p className="text-xs text-muted">{scannedItems.length} part terscan</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -379,7 +379,7 @@ export default function Opname() {
                   setScannedItems([])
                   setScanError('')
                 }}
-                className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm text-muted hover:bg-hover rounded-lg transition-colors"
               >
                 Batal
               </button>
@@ -394,11 +394,11 @@ export default function Opname() {
           </div>
 
           {/* Scan Input - Auto submit on Enter */}
-          <form onSubmit={handleManualSubmit} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <form onSubmit={handleManualSubmit} className="bg-panel rounded-xl border border-border shadow-sm p-4">
             <div className="flex items-end gap-3">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-slate-500 mb-1.5">
-                  Scan Barcode / Kode Part <span className="text-slate-400">(Enter = auto qty 1)</span>
+                <label className="block text-xs font-medium text-muted mb-1.5">
+                  Scan Barcode / Kode Part <span className="text-faint">(Enter = auto qty 1)</span>
                 </label>
                 <input
                   ref={scanInputRef}
@@ -410,7 +410,7 @@ export default function Opname() {
                   }}
                   onKeyDown={handleKeyDown}
                   placeholder="Scan barcode..."
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 bg-hover border border-border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent"
                   autoFocus
                   disabled={scanning}
                 />
@@ -418,7 +418,7 @@ export default function Opname() {
               <button
                 type="submit"
                 disabled={scanning || !currentCode.trim()}
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg text-sm font-medium shadow-lg transition-all active:scale-[0.98] flex items-center gap-2"
+                className="px-6 py-2.5 bg-accent hover:brightness-110 disabled:bg-border-strong text-white rounded-lg text-sm font-medium shadow-lg transition-all active:scale-[0.98] flex items-center gap-2"
               >
                 {scanning ? (
                   <>
@@ -441,7 +441,7 @@ export default function Opname() {
               </div>
             )}
 
-            <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
+            <div className="mt-3 flex items-center gap-4 text-xs text-muted">
               <span className="flex items-center gap-1">
                 <ScanBarcode size={12} />
                 Scan ulang part yang sama = qty +1
@@ -455,13 +455,13 @@ export default function Opname() {
 
           {/* Scanned Items Table */}
           {scannedItems.length > 0 && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-panel rounded-xl border border-border shadow-sm overflow-hidden">
               <div className="overflow-x-auto scrollbar-hide">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
+                    <tr className="bg-hover border-b border-border">
                       {['Kode Part', 'Nama', 'Qty Sistem', 'Qty Fisik', 'Selisih', 'Status', 'Aksi'].map((h) => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -471,10 +471,10 @@ export default function Opname() {
                       const isEditing = editingItem === item.id
 
                       return (
-                        <tr key={item.id} className={`hover:bg-slate-50/50 transition-colors ${colors.bg} border-l-4 ${colors.border}`}>
-                          <td className="px-4 py-3 font-mono text-sm text-slate-700">{item.product_code}</td>
-                          <td className="px-4 py-3 text-sm text-slate-700">{item.product_name}</td>
-                          <td className="px-4 py-3 text-sm text-slate-600">{item.qty_system}</td>
+                        <tr key={item.id} className={`hover:bg-hover/50 transition-colors ${colors.bg} border-l-4 ${colors.border}`}>
+                          <td className="px-4 py-3 font-mono text-sm text-text">{item.product_code}</td>
+                          <td className="px-4 py-3 text-sm text-text">{item.product_name}</td>
+                          <td className="px-4 py-3 text-sm text-muted">{item.qty_system}</td>
                           <td className="px-4 py-3">
                             {isEditing ? (
                               <div className="flex items-center gap-2">
@@ -487,7 +487,7 @@ export default function Opname() {
                                     if (e.key === 'Enter') saveEditItem(item.id)
                                     if (e.key === 'Escape') cancelEditItem()
                                   }}
-                                  className="w-20 px-2 py-1 bg-white border border-blue-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-20 px-2 py-1 bg-panel border border-accent-soft rounded text-sm focus:outline-none focus:ring-2 focus:ring-accent"
                                   autoFocus
                                 />
                                 <button
@@ -499,14 +499,14 @@ export default function Opname() {
                                 </button>
                                 <button
                                   onClick={cancelEditItem}
-                                  className="p-1 text-slate-400 hover:bg-slate-100 rounded"
+                                  className="p-1 text-faint hover:bg-hover rounded"
                                   title="Batal"
                                 >
                                   <XCircle size={14} />
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-sm font-semibold text-slate-700">{item.qty_physical}</span>
+                              <span className="text-sm font-semibold text-text">{item.qty_physical}</span>
                             )}
                           </td>
                           <td className="px-4 py-3 text-sm font-semibold">
@@ -525,7 +525,7 @@ export default function Opname() {
                               {!isEditing && (
                                 <button
                                   onClick={() => startEditItem(item)}
-                                  className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  className="p-1.5 text-faint hover:text-accent hover:bg-accent-soft rounded-lg transition-colors"
                                   title="Edit qty"
                                 >
                                   <Pencil size={14} />
@@ -533,7 +533,7 @@ export default function Opname() {
                               )}
                               <button
                                 onClick={() => handleDeleteItem(item.id)}
-                                className="p-1.5 text-slate-400 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
+                                className="p-1.5 text-faint hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
                                 title="Hapus item"
                               >
                                 <Trash2 size={14} />
@@ -552,45 +552,45 @@ export default function Opname() {
       ) : (
         <div className="space-y-4">
           {/* Session List */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200">
-              <h2 className="font-semibold text-slate-800">Histori Sesi Opname</h2>
+          <div className="bg-panel rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-border">
+              <h2 className="font-semibold text-text">Histori Sesi Opname</h2>
             </div>
             <div className="divide-y divide-slate-100">
               {loading ? (
                 <div className="flex items-center justify-center p-8">
-                  <Loader2 className="animate-spin text-blue-600" size={24} />
+                  <Loader2 className="animate-spin text-accent" size={24} />
                 </div>
               ) : sessions.length === 0 ? (
                 <div className="p-8 text-center">
-                  <Package className="mx-auto text-slate-300 mb-2" size={32} />
-                  <p className="text-sm text-slate-500">Belum ada sesi opname</p>
-                  {canOperate && <button onClick={handleCreateSession} className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Buat Sesi Pertama</button>}
+                  <Package className="mx-auto text-faint mb-2" size={32} />
+                  <p className="text-sm text-muted">Belum ada sesi opname</p>
+                  {canOperate && <button onClick={handleCreateSession} className="mt-3 px-4 py-2 bg-accent hover:brightness-110 text-white rounded-lg text-sm font-medium">Buat Sesi Pertama</button>}
                 </div>
               ) : (
                 sessions.map((session) => (
-                  <div key={session.id} className="px-5 py-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                  <div key={session.id} className="px-5 py-4 flex items-center justify-between hover:bg-hover/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-slate-100 rounded-lg">
-                        <Package className="text-slate-500" size={18} />
+                      <div className="p-2 bg-hover rounded-lg">
+                        <Package className="text-muted" size={18} />
                       </div>
                       <div>
-                        <p className="font-medium text-slate-800 text-sm">{session.session_name}</p>
-                        <p className="text-xs text-slate-500">{session._count?.items || 0} part • {new Date(session.start_date).toLocaleDateString('id-ID')} {new Date(session.start_date).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</p>
+                        <p className="font-medium text-text text-sm">{session.session_name}</p>
+                        <p className="text-xs text-muted">{session._count?.items || 0} part • {new Date(session.start_date).toLocaleDateString('id-ID')} {new Date(session.start_date).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                         ['done', 'approved_kacab'].includes(session.status)
                           ? 'bg-success-100 text-success-700'
-                          : 'bg-blue-100 text-blue-700'
+                          : 'bg-accent-soft text-accent-text'
                       }`}>
                         {session.status}
                       </span>
                       {session.status === 'active' && canOperate && (
                         <button
                           onClick={() => activateSession(session)}
-                          className="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
+                          className="px-3 py-1.5 text-sm text-accent hover:bg-accent-soft rounded-lg transition-colors border border-accent-soft"
                         >
                           Lanjutkan
                         </button>
@@ -598,7 +598,7 @@ export default function Opname() {
                       {session.status !== 'active' && (
                         <button
                           onClick={() => viewReport(session)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
+                          className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted hover:bg-hover rounded-lg transition-colors border border-border"
                           title="Lihat report"
                         >
                           <Eye size={14} />
@@ -608,7 +608,7 @@ export default function Opname() {
                       {session.baso_signed_file && <button onClick={() => viewUploadedBaso(session)} className="flex items-center gap-1 px-3 py-1.5 text-sm text-success-700 hover:bg-success-50 rounded-lg transition-colors border border-success-200"><ExternalLink size={14} /> BASO</button>}
                       {canOperate && session.status !== 'done' && <button
                         onClick={() => handleDeleteSession(session.id)}
-                        className="p-1.5 text-slate-400 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
+                        className="p-1.5 text-faint hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
                         title="Hapus sesi"
                       >
                         <Trash2 size={16} />
@@ -625,24 +625,24 @@ export default function Opname() {
       {/* Report Modal */}
       {reportSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && closeReport()}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-panel rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-hover">
               <div>
-                <h2 className="text-xl font-bold text-slate-800">Report Opname</h2>
-                <p className="text-sm text-slate-500">{reportData?.session?.session_name || reportSession.session_name}</p>
+                <h2 className="text-xl font-bold text-text">Report Opname</h2>
+                <p className="text-sm text-muted">{reportData?.session?.session_name || reportSession.session_name}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={printReport}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-sm text-slate-600 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-panel border border-border hover:bg-hover rounded-lg text-sm text-muted transition-colors"
                 >
                   <Printer size={14} />
                   Print
                 </button>
                 <button
                   onClick={closeReport}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                  className="p-1.5 text-faint hover:text-muted hover:bg-hover rounded-lg transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -653,15 +653,15 @@ export default function Opname() {
             <div className="flex-1 overflow-auto p-6">
               {loadingReport ? (
                 <div className="flex items-center justify-center p-12">
-                  <Loader2 className="animate-spin text-blue-600" size={32} />
+                  <Loader2 className="animate-spin text-accent" size={32} />
                 </div>
               ) : reportData ? (
                 <div className="space-y-6">
                   {/* Summary Cards */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                      <p className="text-xs text-blue-600 font-medium uppercase">Total Part</p>
-                      <p className="text-2xl font-bold text-blue-700">{reportData.summary.total_parts}</p>
+                    <div className="bg-accent-soft rounded-xl p-4 border border-accent-soft">
+                      <p className="text-xs text-accent font-medium uppercase">Total Part</p>
+                      <p className="text-2xl font-bold text-accent-text">{reportData.summary.total_parts}</p>
                     </div>
                     <div className="bg-success-50 rounded-xl p-4 border border-success-200">
                       <p className="text-xs text-success-600 font-medium uppercase">Sesuai</p>
@@ -678,26 +678,26 @@ export default function Opname() {
                   </div>
 
                   {/* Additional Info */}
-                  <div className="bg-white rounded-xl border border-slate-200 p-4">
+                  <div className="bg-panel rounded-xl border border-border p-4">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <p className="text-slate-500">Qty Sistem</p>
-                        <p className="font-semibold text-slate-700">{reportData.summary.total_qty_system}</p>
+                        <p className="text-muted">Qty Sistem</p>
+                        <p className="font-semibold text-text">{reportData.summary.total_qty_system}</p>
                       </div>
                       <div>
-                        <p className="text-slate-500">Qty Fisik</p>
-                        <p className="font-semibold text-slate-700">{reportData.summary.total_qty_fisik}</p>
+                        <p className="text-muted">Qty Fisik</p>
+                        <p className="font-semibold text-text">{reportData.summary.total_qty_fisik}</p>
                       </div>
                       <div>
-                        <p className="text-slate-500">Selisih Kurang</p>
+                        <p className="text-muted">Selisih Kurang</p>
                         <p className="font-semibold text-danger-600">{reportData.summary.total_selisih_kurang}</p>
                       </div>
                       <div>
-                        <p className="text-slate-500">Selisih Lebih</p>
+                        <p className="text-muted">Selisih Lebih</p>
                         <p className="font-semibold text-warning-600">{reportData.summary.total_selisih_lebih}</p>
                       </div>
                     </div>
-                    <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
+                    <div className="mt-3 pt-3 border-t border-border text-xs text-muted">
                       <p>Operator: {reportData.session.created_by || '-'} | Tanggal: {new Date(reportData.session.start_date).toLocaleString('id-ID')}</p>
                       {reportData.session.end_date && (
                         <p>Selesai: {new Date(reportData.session.end_date).toLocaleString('id-ID')}</p>
@@ -705,28 +705,28 @@ export default function Opname() {
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                  <div className="bg-panel rounded-xl border border-border p-4 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2 py-1 rounded bg-slate-100 text-xs font-semibold text-slate-700">Status: {reportData.session.status}</span>
+                      <span className="px-2 py-1 rounded bg-hover text-xs font-semibold text-text">Status: {reportData.session.status}</span>
                       {reportData.session.baso_signed_file && <button onClick={() => viewUploadedBaso(reportData.session)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success-50 text-success-700 text-sm border border-success-200"><ExternalLink size={14} /> Lihat BASO Signed</button>}
                     </div>
                     {canApproveKabeng && reportData.session.status === 'submitted' && <button onClick={() => approveKabeng(reportData.session)} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-success-100 text-success-700 text-sm"><CheckCircle size={16} /> Approve 1 Kepala Bengkel</button>}
                     {canApproveKabeng && reportData.session.status === 'approved_kabeng' && <button onClick={() => sendToKacab(reportData.session)} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm"><Send size={16} /> Sent to Kepala Cabang</button>}
                     {canApproveKacab && reportData.session.status === 'sent_to_kacab' && <button onClick={() => approveKacab(reportData.session)} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-success-100 text-success-700 text-sm"><CheckCircle size={16} /> Approve 2 Kepala Cabang</button>}
-                    {(canApproveKabeng || canApproveKacab) && ['submitted', 'approved_kabeng', 'sent_to_kacab'].includes(reportData.session.status) && <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto]"><input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Alasan reject" /><button onClick={() => rejectApproval(reportData.session)} className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-danger-100 text-danger-700 text-sm"><XCircle size={16} /> Reject</button></div>}
-                    {canOperate && reportData.session.status === 'approved_kacab' && <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto]"><input type="file" accept="application/pdf,.pdf" onChange={(e) => setBasoFile(e.target.files?.[0] || null)} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" /><button onClick={() => uploadBaso(reportData.session)} className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm"><FileUp size={16} /> Upload BASO PDF</button></div>}
+                    {(canApproveKabeng || canApproveKacab) && ['submitted', 'approved_kabeng', 'sent_to_kacab'].includes(reportData.session.status) && <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto]"><input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} className="rounded-lg border border-border bg-hover px-3 py-2 text-sm" placeholder="Alasan reject" /><button onClick={() => rejectApproval(reportData.session)} className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-danger-100 text-danger-700 text-sm"><XCircle size={16} /> Reject</button></div>}
+                    {canOperate && reportData.session.status === 'approved_kacab' && <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto]"><input type="file" accept="application/pdf,.pdf" onChange={(e) => setBasoFile(e.target.files?.[0] || null)} className="rounded-lg border border-border bg-hover px-3 py-2 text-sm" /><button onClick={() => uploadBaso(reportData.session)} className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm"><FileUp size={16} /> Upload BASO PDF</button></div>}
                   </div>
 
                   {/* Items Table */}
                   <div>
-                    <h3 className="font-semibold text-slate-800 mb-3">Detail Per Barang</h3>
-                    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <h3 className="font-semibold text-text mb-3">Detail Per Barang</h3>
+                    <div className="bg-panel rounded-xl border border-border overflow-hidden">
                       <div className="overflow-x-auto scrollbar-hide">
                         <table className="w-full">
                           <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200">
+                            <tr className="bg-hover border-b border-border">
                               {['Kode Part', 'Nama Barang', 'Qty Sistem', 'Qty Fisik', 'Selisih', 'Status'].map((h) => (
-                                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">{h}</th>
                               ))}
                             </tr>
                           </thead>
@@ -734,11 +734,11 @@ export default function Opname() {
                             {reportData.items.map((item) => {
                               const colors = getSelisihColor(item.selisih)
                               return (
-                                <tr key={item.id} className={`hover:bg-slate-50/50 ${colors.bg} border-l-4 ${colors.border}`}>
-                                  <td className="px-4 py-2.5 font-mono text-sm text-slate-700">{item.product_code}</td>
-                                  <td className="px-4 py-2.5 text-sm text-slate-700">{item.product_name}</td>
-                                  <td className="px-4 py-2.5 text-sm text-slate-600">{item.qty_system}</td>
-                                  <td className="px-4 py-2.5 text-sm font-semibold text-slate-700">{item.qty_physical}</td>
+                                <tr key={item.id} className={`hover:bg-hover/50 ${colors.bg} border-l-4 ${colors.border}`}>
+                                  <td className="px-4 py-2.5 font-mono text-sm text-text">{item.product_code}</td>
+                                  <td className="px-4 py-2.5 text-sm text-text">{item.product_name}</td>
+                                  <td className="px-4 py-2.5 text-sm text-muted">{item.qty_system}</td>
+                                  <td className="px-4 py-2.5 text-sm font-semibold text-text">{item.qty_physical}</td>
                                   <td className="px-4 py-2.5 text-sm font-semibold">
                                     <span className={item.selisih < 0 ? 'text-danger-600' : item.selisih > 0 ? 'text-warning-600' : 'text-success-600'}>
                                       {item.selisih > 0 ? `+${item.selisih}` : item.selisih}
@@ -759,32 +759,32 @@ export default function Opname() {
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-xl border border-slate-200 p-5 print:border-slate-300">
-                    <h3 className="font-semibold text-slate-800 mb-4">Berita Acara Stock Opname Bengkel</h3>
-                    <div className="grid grid-cols-3 gap-6 text-center text-sm text-slate-700">
+                  <div className="bg-panel rounded-xl border border-border p-5 print:border-border-strong">
+                    <h3 className="font-semibold text-text mb-4">Berita Acara Stock Opname Bengkel</h3>
+                    <div className="grid grid-cols-3 gap-6 text-center text-sm text-text">
                       <div>
                         <p className="font-semibold">Validasi SO</p>
                         <p>PIC Opname</p>
                         <div className="h-20" />
-                        <p className="border-t border-slate-300 pt-2">{reportData.session.pic_opname_name || reportData.session.created_by || '(........................)'}</p>
+                        <p className="border-t border-border-strong pt-2">{reportData.session.pic_opname_name || reportData.session.created_by || '(........................)'}</p>
                       </div>
                       <div>
                         <p className="font-semibold">Mengetahui</p>
                         <p>Kepala Bengkel</p>
                         <div className="h-20" />
-                        <p className="border-t border-slate-300 pt-2">{reportData.session.workshop_head_name || '(........................)'}</p>
+                        <p className="border-t border-border-strong pt-2">{reportData.session.workshop_head_name || '(........................)'}</p>
                       </div>
                       <div>
                         <p className="font-semibold">Mengetahui</p>
                         <p>Kepala Cabang</p>
                         <div className="h-20" />
-                        <p className="border-t border-slate-300 pt-2">{reportData.session.branch_head_name || '(........................)'}</p>
+                        <p className="border-t border-border-strong pt-2">{reportData.session.branch_head_name || '(........................)'}</p>
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-center text-slate-500 py-12">Tidak ada data report</div>
+                <div className="text-center text-muted py-12">Tidak ada data report</div>
               )}
             </div>
           </div>

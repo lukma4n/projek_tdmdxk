@@ -102,8 +102,8 @@ export default function ShowroomSalesAnalysis() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center space-y-3">
-          <Loader2 className="animate-spin text-blue-600 mx-auto" size={32} />
-          <p className="text-sm text-slate-500">Memuat data analisis penjualan...</p>
+          <Loader2 className="animate-spin text-accent mx-auto" size={32} />
+          <p className="text-sm text-muted">Memuat data analisis penjualan...</p>
         </div>
       </div>
     )
@@ -113,11 +113,11 @@ export default function ShowroomSalesAnalysis() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-3">
-            <AlertTriangle className="text-red-500" size={28} />
+          <div className="mx-auto w-16 h-16 bg-danger-soft rounded-full flex items-center justify-center mb-3">
+            <AlertTriangle className="text-danger" size={28} />
           </div>
-          <p className="text-red-600 font-medium">{error}</p>
-          <button onClick={loadData} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+          <p className="text-danger font-medium">{error}</p>
+          <button onClick={loadData} className="mt-4 px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:brightness-110 transition-colors">
             Coba Lagi
           </button>
         </div>
@@ -139,11 +139,11 @@ export default function ShowroomSalesAnalysis() {
       {/* Refresh indicator */}
       {loading && data && (
         <div className="fixed top-0 left-0 right-0 z-50">
-          <div className="h-0.5 bg-blue-500 animate-pulse" />
+          <div className="h-0.5 bg-accent animate-pulse" />
         </div>
       )}
       {error && data && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+        <div className="flex items-center gap-2 px-4 py-2 bg-danger-soft border border-red-200 rounded-lg text-sm text-danger">
           <AlertTriangle size={16} />
           <span>{error}</span>
           <button onClick={loadData} className="ml-auto text-xs font-semibold underline">Coba Lagi</button>
@@ -153,10 +153,10 @@ export default function ShowroomSalesAnalysis() {
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-3xl font-black text-text-strong tracking-tight">
             Laporan Analisis Penjualan
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-muted mt-1">
             Analisis penjualan showroom DXK per periode
           </p>
         </div>
@@ -169,9 +169,9 @@ export default function ShowroomSalesAnalysis() {
               setFrom(e.target.value)
               setActivePreset('')
             }}
-            className="px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
+            className="px-4 py-2.5 text-sm border border-border rounded-xl bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft shadow-sm"
           />
-          <span className="text-slate-400 text-sm font-medium">s/d</span>
+          <span className="text-faint text-sm font-medium">s/d</span>
           <input
             type="date"
             value={to}
@@ -180,11 +180,11 @@ export default function ShowroomSalesAnalysis() {
               setTo(e.target.value)
               setActivePreset('')
             }}
-            className="px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
+            className="px-4 py-2.5 text-sm border border-border rounded-xl bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft shadow-sm"
           />
           <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-slate-400" />
-            <label htmlFor="sales-period-preset" className="text-xs font-semibold text-slate-500">Periode</label>
+            <Calendar size={16} className="text-faint" />
+            <label htmlFor="sales-period-preset" className="text-xs font-semibold text-muted">Periode</label>
             <select
               id="sales-period-preset"
               value={activePreset || 'custom'}
@@ -196,7 +196,7 @@ export default function ShowroomSalesAnalysis() {
                   handlePreset(value)
                 }
               }}
-              className="min-w-[180px] px-3 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
+              className="min-w-[180px] px-3 py-2.5 text-sm border border-border rounded-xl bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft shadow-sm"
             >
               {DATE_PRESETS.map((preset) => (
                 <option key={preset.key} value={preset.key}>
@@ -207,18 +207,18 @@ export default function ShowroomSalesAnalysis() {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <Target size={16} className="text-blue-600" />
+            <Target size={16} className="text-accent" />
             <input
               type="number"
               placeholder="Target"
               value={target}
               onChange={(e) => setTarget(e.target.value)}
-              className="w-24 px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
+              className="w-24 px-3 py-2 text-sm border border-border rounded-xl bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft shadow-sm"
             />
           </div>
           <button
             onClick={loadData}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-panel border border-border rounded-xl text-sm font-semibold text-muted hover:bg-hover transition-all shadow-sm"
           >
             <RefreshCw size={16} /> Refresh
           </button>
@@ -264,16 +264,16 @@ export default function ShowroomSalesAnalysis() {
                 growth: data.comparison.creditGrowthPercent || 0,
               },
             ].map((item) => (
-              <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-300">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{item.label}</p>
+              <div key={item.label} className="rounded-xl border border-border bg-panel p-5 shadow-sm hover:shadow-md transition-all duration-300">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted">{item.label}</p>
                 <div className="flex items-end justify-between mt-2.5">
                   <div className="space-y-1">
-                    <p className="text-2xl font-black text-slate-800 tabular-nums">{item.current.toLocaleString('id-ID')}</p>
-                    <p className="text-xs text-slate-400">Bulan lalu: {item.prev.toLocaleString('id-ID')} unit</p>
+                    <p className="text-2xl font-black text-text tabular-nums">{item.current.toLocaleString('id-ID')}</p>
+                    <p className="text-xs text-faint">Bulan lalu: {item.prev.toLocaleString('id-ID')} unit</p>
                   </div>
                   <div className={`flex items-center gap-0.5 text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${
                     item.growth >= 0 
-                      ? 'bg-emerald-100 text-emerald-800' 
+                      ? 'bg-success-soft text-emerald-800' 
                       : 'bg-rose-100 text-rose-800'
                   }`}>
                     {item.growth >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
@@ -288,39 +288,39 @@ export default function ShowroomSalesAnalysis() {
         {/* Productivity & Gap Analysis */}
         {data?.analysis && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm">
+            <div className="rounded-xl border border-indigo-200 bg-accent-soft p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <Zap size={16} className="text-indigo-600" />
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Produktivitas</p>
+                <Zap size={16} className="text-accent" />
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted">Produktivitas</p>
               </div>
               <p className="text-2xl font-black text-indigo-700 tabular-nums">{data.analysis.avgUnitsPerSales || 0}</p>
-              <p className="text-xs text-slate-500 mt-1">Unit / Sales ({summary.totalActiveSales || 0} sales aktif)</p>
-              <p className="text-xs text-slate-400 mt-1">Rata-rata {data.analysis.avgUnitsPerDay || 0} unit/hari</p>
+              <p className="text-xs text-muted mt-1">Unit / Sales ({summary.totalActiveSales || 0} sales aktif)</p>
+              <p className="text-xs text-faint mt-1">Rata-rata {data.analysis.avgUnitsPerDay || 0} unit/hari</p>
             </div>
 
-            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+            <div className="rounded-xl border border-accent-soft bg-accent-soft p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <Target size={16} className="text-blue-600" />
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Proyeksi Akhir Bulan</p>
+                <Target size={16} className="text-accent" />
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted">Proyeksi Akhir Bulan</p>
               </div>
-              <p className="text-2xl font-black text-blue-700 tabular-nums">{(data.analysis.projectedMonthEnd || 0).toLocaleString('id-ID')}</p>
-              <p className="text-xs text-slate-500 mt-1">Estimasi jika pace tetap</p>
-              <p className="text-xs text-slate-400 mt-1">{data.analysis.daysRemaining || 0} hari tersisa</p>
+              <p className="text-2xl font-black text-accent-text tabular-nums">{(data.analysis.projectedMonthEnd || 0).toLocaleString('id-ID')}</p>
+              <p className="text-xs text-muted mt-1">Estimasi jika pace tetap</p>
+              <p className="text-xs text-faint mt-1">{data.analysis.daysRemaining || 0} hari tersisa</p>
             </div>
 
             {data.analysis.target > 0 && (
-              <div className={`rounded-2xl border p-5 shadow-sm flex items-center justify-between gap-4 ${data.analysis.gap <= 0 ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50'}`}>
+              <div className={`rounded-xl border p-5 shadow-sm flex items-center justify-between gap-4 ${data.analysis.gap <= 0 ? 'border-emerald-200 bg-success-soft' : 'border-rose-200 bg-rose-50'}`}>
                 <div className="space-y-1.5 min-w-0">
                   <div className="flex items-center gap-2">
-                    <Target size={16} className={data.analysis.gap <= 0 ? 'text-emerald-600' : 'text-rose-600'} />
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Target vs Gap</p>
+                    <Target size={16} className={data.analysis.gap <= 0 ? 'text-success' : 'text-rose-600'} />
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted">Target vs Gap</p>
                   </div>
                   <p className="text-2xl font-black tabular-nums">
-                    <span className={data.analysis.gap <= 0 ? 'text-emerald-700' : 'text-rose-700'}>
+                    <span className={data.analysis.gap <= 0 ? 'text-success' : 'text-rose-700'}>
                       {data.analysis.gap <= 0 ? `+${Math.abs(data.analysis.gap)}` : `-${data.analysis.gap}`}
                     </span>
                   </p>
-                  <p className="text-xs text-slate-500 leading-normal">
+                  <p className="text-xs text-muted leading-normal">
                     {data.analysis.gap <= 0 ? 'Target tercapai! 🎉' : `Butuh ${data.analysis.dailyRequired} unit/hari untuk target ${data.analysis.target}`}
                   </p>
                 </div>
@@ -332,7 +332,7 @@ export default function ShowroomSalesAnalysis() {
                       strokeDashoffset={2 * Math.PI * 32 * (1 - Math.min(100, data.analysis.attainmentRate || 0) / 100)}
                       strokeLinecap="round" />
                   </svg>
-                  <span className="absolute text-sm font-black text-slate-800">
+                  <span className="absolute text-sm font-black text-text">
                     {data.analysis.attainmentRate || 0}%
                   </span>
                 </div>
@@ -343,7 +343,7 @@ export default function ShowroomSalesAnalysis() {
 
         {/* Daily Trend Chart */}
         <SectionCard title="Trend Penjualan Harian" icon={Activity} action={
-          <span className="text-[10px] text-slate-400 font-semibold italic">
+          <span className="text-[10px] text-faint font-semibold italic">
             Klik legend untuk menyembunyikan/menampilkan grafik
           </span>
         }>
@@ -403,7 +403,7 @@ export default function ShowroomSalesAnalysis() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="text-sm text-slate-400">Tidak ada data untuk periode ini.</p>
+            <p className="text-sm text-faint">Tidak ada data untuk periode ini.</p>
           )}
         </SectionCard>
 
@@ -412,7 +412,7 @@ export default function ShowroomSalesAnalysis() {
           title="Tipe Motor Terlaris per Kabupaten" 
           icon={BarChart3}
           action={
-            <span className="text-[10px] text-slate-400 font-semibold italic">
+            <span className="text-[10px] text-faint font-semibold italic">
               Memetakan tipe motor yang paling laku di setiap wilayah
             </span>
           }
@@ -421,10 +421,10 @@ export default function ShowroomSalesAnalysis() {
             <div className="space-y-4">
               {/* Quick Explanation for Laymen */}
               {data.areaModelCorrelation[0] && (
-                <div className="p-4 bg-blue-50/70 border border-blue-100 rounded-2xl flex items-start gap-3 text-xs text-blue-800 shadow-sm">
+                <div className="p-4 bg-accent-soft/70 border border-accent-soft rounded-xl flex items-start gap-3 text-xs text-accent-text shadow-sm">
                   <span className="text-base shrink-0">💡</span>
                   <div className="leading-relaxed">
-                    <span className="font-bold text-blue-900">Penjelasan Singkat:</span> Halaman ini membandingkan penjualan motor berdasarkan wilayah kabupaten dan tipe motornya. Saat ini, penjualan paling banyak adalah model <span className="font-bold text-blue-900 underline decoration-blue-300">{data.areaModelCorrelation[0].model}</span> di <span className="font-bold text-blue-900">{String(data.areaModelCorrelation[0].area).replace('KAB. ', '')}</span> yaitu sebanyak <span className="font-bold text-blue-950 bg-blue-100/80 px-1.5 py-0.5 rounded">{data.areaModelCorrelation[0].count} unit</span>.
+                    <span className="font-bold text-accent-text">Penjelasan Singkat:</span> Halaman ini membandingkan penjualan motor berdasarkan wilayah kabupaten dan tipe motornya. Saat ini, penjualan paling banyak adalah model <span className="font-bold text-accent-text underline decoration-accent">{data.areaModelCorrelation[0].model}</span> di <span className="font-bold text-accent-text">{String(data.areaModelCorrelation[0].area).replace('KAB. ', '')}</span> yaitu sebanyak <span className="font-bold text-accent-text bg-accent-soft/80 px-1.5 py-0.5 rounded">{data.areaModelCorrelation[0].count} unit</span>.
                   </div>
                 </div>
               )}
@@ -468,21 +468,21 @@ export default function ShowroomSalesAnalysis() {
                 </div>
                 
                 {/* Detailed Table */}
-                <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6 max-h-[320px] overflow-y-auto">
+                <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-border pt-4 lg:pt-0 lg:pl-6 max-h-[320px] overflow-y-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b border-slate-200 text-slate-400">
-                        <th className="text-left pb-2 font-semibold text-slate-500">Kabupaten/Kota</th>
-                        <th className="text-left pb-2 font-semibold text-slate-500">Tipe Motor</th>
-                        <th className="text-right pb-2 font-semibold text-slate-500">Jumlah Terjual</th>
+                      <tr className="border-b border-border text-faint">
+                        <th className="text-left pb-2 font-semibold text-muted">Kabupaten/Kota</th>
+                        <th className="text-left pb-2 font-semibold text-muted">Tipe Motor</th>
+                        <th className="text-right pb-2 font-semibold text-muted">Jumlah Terjual</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {(data?.areaModelCorrelation || []).map((row) => (
-                        <tr key={`${row.area}-${row.model}`} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-2.5 font-medium text-slate-700">{String(row.area || 'Lainnya').replace('KAB. ', '')}</td>
-                          <td className="py-2.5 text-slate-600 font-semibold">{row.model}</td>
-                          <td className="py-2.5 text-right font-black text-slate-800 tabular-nums">{row.count} Unit</td>
+                        <tr key={`${row.area}-${row.model}`} className="hover:bg-hover transition-colors">
+                          <td className="py-2.5 font-medium text-text">{String(row.area || 'Lainnya').replace('KAB. ', '')}</td>
+                          <td className="py-2.5 text-muted font-semibold">{row.model}</td>
+                          <td className="py-2.5 text-right font-black text-text tabular-nums">{row.count} Unit</td>
                         </tr>
                       ))}
                     </tbody>
@@ -491,7 +491,7 @@ export default function ShowroomSalesAnalysis() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-slate-400 py-4 text-center">Belum ada data korelasi area-model untuk periode ini.</p>
+            <p className="text-sm text-faint py-4 text-center">Belum ada data korelasi area-model untuk periode ini.</p>
           )}
         </SectionCard>
 
@@ -502,7 +502,7 @@ export default function ShowroomSalesAnalysis() {
               title="Team Performance"
               icon={Users}
               action={
-                <span className="text-xs font-semibold text-slate-500">
+                <span className="text-xs font-semibold text-muted">
                   {data?.byTeamPeriod?.length || 0} Tim • {summary.totalActiveSales || 0} Sales Aktif
                 </span>
               }
@@ -514,7 +514,7 @@ export default function ShowroomSalesAnalysis() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data team untuk periode ini.</p>
+                <p className="text-sm text-faint py-4 text-center">Belum ada data team untuk periode ini.</p>
               )}
             </SectionCard>
           </div>
@@ -530,19 +530,19 @@ export default function ShowroomSalesAnalysis() {
                       <div key={sales.name} className="py-2.5 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 min-w-0">
                           {/* Minimalist number */}
-                          <span className="text-xs font-bold text-slate-400 w-5">
+                          <span className="text-xs font-bold text-faint w-5">
                             {String(idx + 1).padStart(2, '0')}
                           </span>
-                          <span className="font-semibold text-slate-700 text-sm truncate uppercase tracking-tight">
+                          <span className="font-semibold text-text text-sm truncate uppercase tracking-tight">
                             {sales.name}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           {/* Minimal thin bar indicating ratio */}
-                          <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
-                            <div className="h-full bg-blue-600 rounded-full" style={{ width: `${percentage}%` }} />
+                          <div className="w-16 h-1.5 rounded-full bg-hover overflow-hidden hidden sm:block">
+                            <div className="h-full bg-accent rounded-full" style={{ width: `${percentage}%` }} />
                           </div>
-                          <span className="text-sm font-bold text-slate-800 tabular-nums">
+                          <span className="text-sm font-bold text-text tabular-nums">
                             {sales.count} unit
                           </span>
                         </div>
@@ -551,7 +551,7 @@ export default function ShowroomSalesAnalysis() {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data sales untuk periode ini.</p>
+                <p className="text-sm text-faint py-4 text-center">Belum ada data sales untuk periode ini.</p>
               )}
             </SectionCard>
           </div>
@@ -563,31 +563,31 @@ export default function ShowroomSalesAnalysis() {
             <SectionCard title="Sales Type" icon={CreditCard}>
               <div className="flex flex-col md:flex-row items-center gap-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2 gap-4 flex-1 w-full">
-                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+                  <div className="bg-success-soft border border-emerald-100 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-success-soft text-success">
                         <TrendingUp size={16} />
                       </div>
                       <span className="font-bold text-emerald-800 text-sm">Cash</span>
                     </div>
-                    <p className="text-2xl font-black text-emerald-700 tabular-nums">
+                    <p className="text-2xl font-black text-success tabular-nums">
                       {(summary.cashCount || 0).toLocaleString('id-ID')}
                     </p>
-                    <p className="text-xs text-emerald-600">
+                    <p className="text-xs text-success">
                       {summary.cashPercent || 0}% dari total periode
                     </p>
                   </div>
-                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                  <div className="bg-warning-soft border border-amber-100 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-warning-soft text-warning">
                         <CreditCard size={16} />
                       </div>
                       <span className="font-bold text-amber-800 text-sm">Kredit</span>
                     </div>
-                    <p className="text-2xl font-black text-amber-700 tabular-nums">
+                    <p className="text-2xl font-black text-warning tabular-nums">
                       {(summary.creditCount || 0).toLocaleString('id-ID')}
                     </p>
-                    <p className="text-xs text-amber-600">
+                    <p className="text-xs text-warning">
                       {summary.creditPercent || 0}% dari total periode
                     </p>
                   </div>
@@ -614,8 +614,8 @@ export default function ShowroomSalesAnalysis() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute flex flex-col items-center justify-center leading-none">
-                    <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Total</span>
-                    <span className="text-lg font-black text-slate-800 mt-0.5">{(summary.closingDo || 0).toLocaleString('id-ID')}</span>
+                    <span className="text-xs text-faint font-semibold uppercase tracking-wider">Total</span>
+                    <span className="text-lg font-black text-text mt-0.5">{(summary.closingDo || 0).toLocaleString('id-ID')}</span>
                   </div>
                 </div>
               </div>
@@ -644,8 +644,8 @@ export default function ShowroomSalesAnalysis() {
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute flex flex-col items-center justify-center leading-none">
-                      <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Kredit</span>
-                      <span className="text-lg font-black text-slate-800 mt-0.5">{(summary.creditCount || 0).toLocaleString('id-ID')}</span>
+                      <span className="text-xs text-faint font-semibold uppercase tracking-wider">Kredit</span>
+                      <span className="text-lg font-black text-text mt-0.5">{(summary.creditCount || 0).toLocaleString('id-ID')}</span>
                     </div>
                   </div>
                   <div className="flex-1 w-full space-y-2.5">
@@ -653,16 +653,16 @@ export default function ShowroomSalesAnalysis() {
                       <div key={item.name} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: LEASING_COLORS[item.name] || '#94a3b8' }} />
-                          <span className="font-semibold text-slate-700">{item.name}</span>
-                          <span className="text-xs text-slate-400">({item.percent}%)</span>
+                          <span className="font-semibold text-text">{item.name}</span>
+                          <span className="text-xs text-faint">({item.percent}%)</span>
                         </div>
-                        <span className="font-bold text-slate-800 tabular-nums">{item.count} unit</span>
+                        <span className="font-bold text-text tabular-nums">{item.count} unit</span>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data leasing untuk periode ini.</p>
+                <p className="text-sm text-faint py-4 text-center">Belum ada data leasing untuk periode ini.</p>
               )}
             </SectionCard>
 
@@ -670,24 +670,24 @@ export default function ShowroomSalesAnalysis() {
               {(data?.leasingComparison || []).length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {(data.leasingComparison).map((item) => (
-                    <div key={item.name} className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+                    <div key={item.name} className="p-3 bg-hover border border-border rounded-xl space-y-1">
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: LEASING_COLORS[item.name] || '#94a3b8' }} />
-                        <span className="font-bold text-slate-700 text-xs uppercase">{item.name}</span>
+                        <span className="font-bold text-text text-xs uppercase">{item.name}</span>
                       </div>
                       <div className="flex items-baseline gap-2 pt-1">
-                        <p className="text-xl font-black text-slate-800 tabular-nums">{item.current}</p>
-                        <div className={`flex items-center text-[10px] font-bold ${item.growth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        <p className="text-xl font-black text-text tabular-nums">{item.current}</p>
+                        <div className={`flex items-center text-[10px] font-bold ${item.growth >= 0 ? 'text-success' : 'text-rose-600'}`}>
                           {item.growth >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
                           {Math.abs(item.growth)}%
                         </div>
                       </div>
-                      <p className="text-[10px] text-slate-400">Bulan lalu: {item.prev} unit</p>
+                      <p className="text-[10px] text-faint">Bulan lalu: {item.prev} unit</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data perbandingan leasing.</p>
+                <p className="text-sm text-faint py-4 text-center">Belum ada data perbandingan leasing.</p>
               )}
             </SectionCard>
 
@@ -702,19 +702,19 @@ export default function ShowroomSalesAnalysis() {
                       <div key={item.name} className="py-2.5 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 min-w-0">
                           {/* Minimalist number */}
-                          <span className="text-xs font-bold text-slate-400 w-5">
+                          <span className="text-xs font-bold text-faint w-5">
                             {String(idx + 1).padStart(2, '0')}
                           </span>
-                          <span className="font-semibold text-slate-700 text-sm truncate uppercase tracking-tight">
+                          <span className="font-semibold text-text text-sm truncate uppercase tracking-tight">
                             {String(item.name || 'Lainnya').replace('KAB. ', '')}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           {/* Minimal thin bar indicating ratio */}
-                          <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
+                          <div className="w-16 h-1.5 rounded-full bg-hover overflow-hidden hidden sm:block">
                             <div className="h-full bg-purple-600 rounded-full" style={{ width: `${percentage}%` }} />
                           </div>
-                          <span className="text-sm font-bold text-slate-800 tabular-nums">
+                          <span className="text-sm font-bold text-text tabular-nums">
                             {item.count} unit
                           </span>
                         </div>
@@ -723,7 +723,7 @@ export default function ShowroomSalesAnalysis() {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data area untuk periode ini.</p>
+                <p className="text-sm text-faint py-4 text-center">Belum ada data area untuk periode ini.</p>
               )}
             </SectionCard>
           </div>
@@ -740,19 +740,19 @@ export default function ShowroomSalesAnalysis() {
                       <div key={item.name} className="py-2.5 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 min-w-0">
                           {/* Minimalist number */}
-                          <span className="text-xs font-bold text-slate-400 w-5">
+                          <span className="text-xs font-bold text-faint w-5">
                             {String(idx + 1).padStart(2, '0')}
                           </span>
-                          <span className="font-semibold text-slate-700 text-sm truncate uppercase tracking-tight">
+                          <span className="font-semibold text-text text-sm truncate uppercase tracking-tight">
                             {item.name}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           {/* Minimal thin bar indicating ratio */}
-                          <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
-                            <div className="h-full bg-blue-600 rounded-full" style={{ width: `${percentage}%` }} />
+                          <div className="w-16 h-1.5 rounded-full bg-hover overflow-hidden hidden sm:block">
+                            <div className="h-full bg-accent rounded-full" style={{ width: `${percentage}%` }} />
                           </div>
-                          <span className="text-sm font-bold text-slate-800 tabular-nums">
+                          <span className="text-sm font-bold text-text tabular-nums">
                             {item.count} unit
                           </span>
                         </div>
@@ -761,7 +761,7 @@ export default function ShowroomSalesAnalysis() {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data model untuk periode ini.</p>
+                <p className="text-sm text-faint py-4 text-center">Belum ada data model untuk periode ini.</p>
               )}
             </SectionCard>
 
@@ -776,19 +776,19 @@ export default function ShowroomSalesAnalysis() {
                       <div key={item.name} className="py-2.5 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 min-w-0">
                           {/* Minimalist number */}
-                          <span className="text-xs font-bold text-slate-400 w-5">
+                          <span className="text-xs font-bold text-faint w-5">
                             {String(idx + 1).padStart(2, '0')}
                           </span>
-                          <span className="font-semibold text-slate-700 text-sm truncate uppercase tracking-tight">
+                          <span className="font-semibold text-text text-sm truncate uppercase tracking-tight">
                             {item.name}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           {/* Minimal thin bar indicating ratio */}
-                          <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
+                          <div className="w-16 h-1.5 rounded-full bg-hover overflow-hidden hidden sm:block">
                             <div className="h-full bg-teal-600 rounded-full" style={{ width: `${percentage}%` }} />
                           </div>
-                          <span className="text-sm font-bold text-slate-800 tabular-nums">
+                          <span className="text-sm font-bold text-text tabular-nums">
                             {item.count} unit
                           </span>
                         </div>
@@ -797,7 +797,7 @@ export default function ShowroomSalesAnalysis() {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400 py-4 text-center">Belum ada data kecamatan untuk periode ini.</p>
+                <p className="text-sm text-faint py-4 text-center">Belum ada data kecamatan untuk periode ini.</p>
               )}
             </SectionCard>
           </div>

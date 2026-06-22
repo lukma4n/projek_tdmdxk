@@ -129,15 +129,15 @@ export default function ShowroomDealerBurden() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Master Beban Dealer</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-text-strong">Master Beban Dealer</h1>
+          <p className="text-sm text-muted">
             Beban dealer per series untuk CASH dan KREDIT. Data lama akan di-replace saat import data.
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={loadData}
-            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            className="flex items-center gap-2 rounded-lg border border-border bg-panel px-4 py-2 text-sm text-muted hover:bg-hover"
           >
             <RefreshCw size={16} /> Refresh
           </button>
@@ -182,9 +182,9 @@ export default function ShowroomDealerBurden() {
 
       {/* Import Preview Modal */}
       {showPreview && previewData && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm space-y-4">
+        <div className="rounded-xl border border-amber-200 bg-warning-soft p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            <h2 className="font-semibold text-text flex items-center gap-2">
               <FileSpreadsheet size={18} />
               Preview Import Data
             </h2>
@@ -195,29 +195,29 @@ export default function ShowroomDealerBurden() {
                   setPreviewData(null)
                   setPendingFile(null)
                 }}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-border bg-panel px-4 py-2 text-sm text-muted hover:bg-hover"
               >
                 Batal
               </button>
               <button
                 onClick={handleImportConfirm}
                 disabled={importing}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-60"
               >
                 {importing ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
                 Import {previewData.total} Rows
               </button>
             </div>
           </div>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted">
             File akan <strong>menimpa semua data lama</strong>. Pastikan data sudah benar.
           </p>
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-lg border border-border bg-panel">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className="border-b border-border bg-hover">
                   {['Series', 'Cash Beban', 'Credit Beban'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted">
                       {h}
                     </th>
                   ))}
@@ -234,7 +234,7 @@ export default function ShowroomDealerBurden() {
               </tbody>
             </table>
             {previewData.total > 5 && (
-              <p className="px-4 py-2 text-xs text-slate-500 border-t border-slate-100">
+              <p className="px-4 py-2 text-xs text-muted border-t border-border">
                 ...dan {previewData.total - 5} baris lainnya
               </p>
             )}
@@ -245,9 +245,9 @@ export default function ShowroomDealerBurden() {
       {/* Form Input */}
       <form
         onSubmit={saveItem}
-        className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4"
+        className="rounded-xl border border-border bg-panel p-5 shadow-sm space-y-4"
       >
-        <h2 className="font-semibold text-slate-800">Tambah / Edit Beban Dealer</h2>
+        <h2 className="font-semibold text-text">Tambah / Edit Beban Dealer</h2>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <Input
             label="Series"
@@ -272,7 +272,7 @@ export default function ShowroomDealerBurden() {
         </div>
         <button
           disabled={saving}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+          className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-60"
         >
           {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
           Simpan
@@ -280,34 +280,34 @@ export default function ShowroomDealerBurden() {
       </form>
 
       {/* Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-slate-100 p-4">
+      <div className="rounded-xl border border-border bg-panel shadow-sm overflow-hidden">
+        <div className="border-b border-border p-4">
           <div className="relative">
             <Search
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-faint"
             />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm"
+              className="w-full rounded-lg border border-border bg-hover py-2 pl-9 pr-4 text-sm"
               placeholder="Cari series..."
             />
           </div>
         </div>
         {loading ? (
           <div className="flex justify-center p-12">
-            <Loader2 className="animate-spin text-blue-600" />
+            <Loader2 className="animate-spin text-accent" />
           </div>
         ) : (
           <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className="border-b border-border bg-hover">
                   {['Series', 'Cash Beban', 'Credit Beban', 'Action'].map((h) => (
                     <th
                       key={h}
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500"
+                      className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted"
                     >
                       {h}
                     </th>
@@ -317,7 +317,7 @@ export default function ShowroomDealerBurden() {
               <tbody className="divide-y divide-slate-100">
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-sm text-slate-500">
+                    <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted">
                       Tidak ada data Beban Dealer.
                     </td>
                   </tr>
@@ -330,7 +330,7 @@ export default function ShowroomDealerBurden() {
                       <td className="px-4 py-3 text-sm">
                         <button
                           onClick={() => handleEdit(item)}
-                          className="text-blue-600 hover:text-blue-800 font-medium"
+                          className="text-accent hover:text-accent-text font-medium"
                         >
                           Edit
                         </button>
@@ -352,14 +352,14 @@ function Input({ label, value, onChange, type = 'text', placeholder = '', numeri
     onChange(numeric ? formatNumericInput(event.target.value) : event.target.value)
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-semibold text-slate-500">{label}</span>
+      <span className="mb-1 block text-xs font-semibold text-muted">{label}</span>
       <input
         type={type}
         inputMode={numeric ? 'numeric' : undefined}
         value={value}
         placeholder={placeholder}
         onChange={handleChange}
-        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+        className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
       />
     </label>
   )
@@ -367,7 +367,7 @@ function Input({ label, value, onChange, type = 'text', placeholder = '', numeri
 
 function Card({ label, value, small }) {
   return (
-    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-700">
+    <div className="rounded-xl border border-accent-soft bg-accent-soft p-4 text-accent-text">
       <p className="text-xs font-medium">{label}</p>
       <p className={small ? 'mt-1 truncate text-sm font-bold' : 'mt-1 text-2xl font-bold'}>
         {value}

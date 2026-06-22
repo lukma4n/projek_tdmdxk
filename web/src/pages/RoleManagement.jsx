@@ -94,7 +94,7 @@ export default function RoleManagement() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-faint" />
       </div>
     )
   }
@@ -102,43 +102,43 @@ export default function RoleManagement() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Manajemen Hak Akses</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-text-strong">Manajemen Hak Akses</h1>
+        <p className="mt-1 text-sm text-muted">
           Atur peran mana saja yang dapat melihat dan mengakses modul tertentu di dalam aplikasi.
         </p>
       </div>
 
       {error && (
-        <div className="mb-6 flex items-center gap-3 rounded-lg bg-red-50 p-4 text-red-800">
+        <div className="mb-6 flex items-center gap-3 rounded-lg bg-danger-soft p-4 text-red-800">
           <ShieldAlert className="h-5 w-5 flex-shrink-0" />
           <p className="text-sm">{error}</p>
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-border bg-panel shadow-sm">
         <div className="overflow-auto max-h-[calc(100vh-14rem)]">
           <table className="w-full text-left text-sm border-separate border-spacing-0">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-600">
+            <thead className="bg-hover text-xs uppercase text-muted">
               <tr>
-                <th className="sticky left-0 top-0 z-30 min-w-[250px] bg-slate-50 px-6 py-4 font-semibold shadow-[1px_1px_0_#e2e8f0]">
+                <th className="sticky left-0 top-0 z-30 min-w-[250px] bg-hover px-6 py-4 font-semibold shadow-[1px_1px_0_#e2e8f0]">
                   Modul / Menu
                 </th>
                 {ALL_ROLES.map(role => (
-                  <th key={role} className="sticky top-0 z-20 min-w-[120px] bg-slate-50 px-6 py-4 text-center font-semibold whitespace-nowrap shadow-[0_1px_0_#e2e8f0]">
+                  <th key={role} className="sticky top-0 z-20 min-w-[120px] bg-hover px-6 py-4 text-center font-semibold whitespace-nowrap shadow-[0_1px_0_#e2e8f0]">
                     {role}
                   </th>
                 ))}
-                <th className="sticky right-0 top-0 z-30 bg-slate-50 px-6 py-4 text-center font-semibold shadow-[-1px_1px_0_#e2e8f0]">
+                <th className="sticky right-0 top-0 z-30 bg-hover px-6 py-4 text-center font-semibold shadow-[-1px_1px_0_#e2e8f0]">
                   Aksi
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {MENUS.map((menu) => (
-                <tr key={menu.key} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 px-6 py-4 shadow-[1px_0_0_#e2e8f0]">
-                    <div className="font-medium text-slate-900">{menu.label}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">{menu.key}</div>
+                <tr key={menu.key} className="hover:bg-hover/50 transition-colors">
+                  <td className="sticky left-0 z-10 bg-panel group-hover:bg-hover px-6 py-4 shadow-[1px_0_0_#e2e8f0]">
+                    <div className="font-medium text-text-strong">{menu.label}</div>
+                    <div className="text-xs text-faint mt-0.5">{menu.key}</div>
                   </td>
                   {ALL_ROLES.map(role => {
                     const isChecked = (permissions[menu.key] || []).includes(role)
@@ -147,20 +147,20 @@ export default function RoleManagement() {
                         <button
                           type="button"
                           onClick={() => togglePermission(menu.key, role)}
-                          className="flex w-full cursor-pointer items-center justify-center rounded-lg p-2 hover:bg-slate-100 focus:outline-none"
+                          className="flex w-full cursor-pointer items-center justify-center rounded-lg p-2 hover:bg-hover focus:outline-none"
                         >
-                          <div className={`flex h-5 w-5 items-center justify-center rounded border transition-all ${isChecked ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white text-transparent'}`}>
+                          <div className={`flex h-5 w-5 items-center justify-center rounded border transition-all ${isChecked ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-border-strong bg-panel text-transparent'}`}>
                             <Check className="h-3.5 w-3.5" />
                           </div>
                         </button>
                       </td>
                     )
                   })}
-                  <td className="sticky right-0 z-10 bg-white group-hover:bg-slate-50 px-6 py-4 shadow-[-1px_0_0_#e2e8f0] text-center">
+                  <td className="sticky right-0 z-10 bg-panel group-hover:bg-hover px-6 py-4 shadow-[-1px_0_0_#e2e8f0] text-center">
                     <button
                       onClick={() => handleSave(menu.key)}
                       disabled={savingKey === menu.key}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white transition-colors hover:brightness-110 disabled:opacity-50"
                     >
                       {savingKey === menu.key ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />

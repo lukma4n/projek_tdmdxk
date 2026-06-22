@@ -63,34 +63,32 @@ export default function StnkBpkbCheck() {
     }
   }
 
-
-
   return (
-    <div className={`min-h-screen font-sans transition-colors duration-300 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
+    <div className="min-h-screen font-sans transition-colors duration-300 bg-bg text-text">
       {/* Header */}
-      <nav className={`border-b transition-colors duration-300 ${isDark ? 'border-white/10 bg-slate-900/80' : 'border-slate-200 bg-white'} sticky top-0 z-50 backdrop-blur-md`}>
+      <nav className="border-b transition-colors duration-300 border-border bg-panel/80 sticky top-0 z-50 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30`}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-white font-bold shadow-md shadow-accent/30">
               DXK
             </div>
             <div>
-              <h1 className="text-base font-bold tracking-tight">TDM KETAPANG</h1>
-              <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-semibold`}>Self Check STNK & BPKB</p>
+              <h1 className="text-base font-bold tracking-tight text-text-strong">TDM KETAPANG</h1>
+              <p className="text-[10px] text-muted font-semibold">Self Check STNK & BPKB</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <button
               onClick={toggleTheme}
-              className={`p-2.5 rounded-xl border transition-all duration-300 ${isDark ? 'border-white/10 bg-white/5 text-amber-200 hover:bg-white/10' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}
+              className="p-2.5 rounded-xl border transition-all duration-300 border-border bg-panel text-muted hover:bg-hover"
               title={isDark ? 'Tema Terang' : 'Tema Gelap'}
             >
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <Link
               to="/login"
-              className={`inline-flex items-center gap-1 text-xs font-semibold px-3 py-2 rounded-xl transition ${isDark ? 'text-slate-300 bg-white/5 hover:bg-white/10' : 'text-slate-600 bg-slate-100 hover:bg-slate-200'}`}
+              className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-2 rounded-xl transition text-muted bg-hover hover:bg-hover"
             >
               Area Karyawan <ArrowRight size={14} />
             </Link>
@@ -102,19 +100,19 @@ export default function StnkBpkbCheck() {
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
         {/* Banner Hero */}
         <div className="mb-10 text-center">
-          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl text-text-strong">
             Lacak Status STNK & BPKB Anda
           </h2>
-          <p className={`mx-auto mt-3 max-w-xl text-sm sm:text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+          <p className="mx-auto mt-3 max-w-xl text-sm sm:text-base text-muted">
             Masukkan Nomor Mesin motor Honda Anda dan Nomor HP yang terdaftar untuk memantau pengurusan dokumen secara real-time.
           </p>
         </div>
 
         {/* Form Search Card */}
-        <div className={`mb-10 p-6 rounded-3xl border shadow-xl ${isDark ? 'border-white/10 bg-slate-900 shadow-slate-950/50' : 'border-slate-200 bg-white shadow-slate-200/50'}`}>
+        <div className="mb-10 p-6 rounded-3xl border shadow-xl border-border bg-panel">
           <form onSubmit={handleSearch} className="grid gap-5 md:grid-cols-2 md:items-end">
             <div>
-              <label htmlFor="engine" className="mb-2 block text-xs font-bold uppercase tracking-wider text-indigo-500">
+              <label htmlFor="engine" className="mb-2 block text-xs font-bold uppercase tracking-wider text-accent">
                 Nomor Mesin
               </label>
               <input
@@ -123,11 +121,11 @@ export default function StnkBpkbCheck() {
                 value={engineNumber}
                 onChange={(e) => setEngineNumber(e.target.value)}
                 placeholder="Contoh: MH1JM1111..."
-                className={`w-full rounded-xl border px-4 py-3.5 text-sm transition-all duration-300 focus:outline-none ${isDark ? 'border-white/10 bg-slate-950 text-slate-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10' : 'border-slate-200 bg-slate-50 text-slate-800 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10'}`}
+                className="w-full rounded-xl border px-4 py-3.5 text-sm transition-all duration-300 focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
               />
             </div>
             <div>
-              <label htmlFor="phone" className="mb-2 block text-xs font-bold uppercase tracking-wider text-indigo-500">
+              <label htmlFor="phone" className="mb-2 block text-xs font-bold uppercase tracking-wider text-accent">
                 Nomor Handphone Terdaftar
               </label>
               <input
@@ -136,14 +134,14 @@ export default function StnkBpkbCheck() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Contoh: 081234567..."
-                className={`w-full rounded-xl border px-4 py-3.5 text-sm transition-all duration-300 focus:outline-none ${isDark ? 'border-white/10 bg-slate-950 text-slate-100 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10' : 'border-slate-200 bg-slate-50 text-slate-800 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10'}`}
+                className="w-full rounded-xl border px-4 py-3.5 text-sm transition-all duration-300 focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
               />
             </div>
             <div className="md:col-span-2 mt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-sm font-bold text-white transition-all shadow-md ${loading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98]'}`}
+                className="flex w-full items-center justify-center gap-2 rounded-xl py-4 text-sm font-bold text-white transition-all shadow-md bg-accent hover:brightness-110 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -161,8 +159,8 @@ export default function StnkBpkbCheck() {
           </form>
 
           {/* Privacy Disclaimer */}
-          <div className={`mt-4 flex gap-2.5 rounded-xl p-3 text-xs leading-relaxed ${isDark ? 'bg-white/5 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
-            <Lock size={16} className="shrink-0 text-indigo-500" />
+          <div className="mt-4 flex gap-2.5 rounded-xl p-3 text-xs leading-relaxed bg-hover text-muted">
+            <Lock size={16} className="shrink-0 text-accent" />
             <p>
               <strong>Kebijakan Privasi:</strong> Data pribadi Anda disamarkan demi keamanan. Nomor Mesin dan Nomor Handphone harus sesuai dengan data transaksi saat pembelian unit di TDM Ketapang.
             </p>
@@ -171,7 +169,7 @@ export default function StnkBpkbCheck() {
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-10 flex gap-3 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-rose-500">
+          <div className="mb-10 flex gap-3 rounded-xl border border-danger/20 bg-danger-soft p-4 text-danger">
             <AlertCircle size={20} className="shrink-0" />
             <div className="text-sm">
               <p className="font-bold">Pencarian Gagal</p>
@@ -184,59 +182,59 @@ export default function StnkBpkbCheck() {
         {result && (
           <div className="space-y-8 animate-fadeIn">
             {/* Info Unit */}
-            <div className={`rounded-3xl border p-6 shadow-lg ${isDark ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'}`}>
-              <div className="flex items-center gap-2.5 pb-4 border-b border-dashed border-slate-200 dark:border-white/10">
-                <User size={18} className="text-indigo-500" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Informasi Pembelian</h3>
+            <div className="rounded-3xl border p-6 shadow-lg border-border bg-panel">
+              <div className="flex items-center gap-2.5 pb-4 border-b border-dashed border-border">
+                <User size={18} className="text-accent" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-faint">Informasi Pembelian</h3>
               </div>
               <div className="mt-4 grid gap-4 sm:grid-cols-2 text-sm">
                 <div>
-                  <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Nama Pemilik (STNK)</p>
-                  <p className="font-bold text-base mt-0.5">{result.stnk_name || '-'}</p>
+                  <p className="text-muted">Nama Pemilik (STNK)</p>
+                  <p className="font-bold text-base mt-0.5 text-text-strong">{result.stnk_name || '-'}</p>
                 </div>
                 <div>
-                  <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Seri Motor</p>
-                  <p className="font-bold text-base mt-0.5">{result.series || '-'}</p>
+                  <p className="text-muted">Seri Motor</p>
+                  <p className="font-bold text-base mt-0.5 text-text-strong">{result.series || '-'}</p>
                 </div>
                 <div>
-                  <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Nomor Mesin / Rangka</p>
-                  <p className="font-mono font-medium mt-0.5">{result.engine_number} / {result.chassis_number || '-'}</p>
+                  <p className="text-muted">Nomor Mesin / Rangka</p>
+                  <p className="font-mono font-medium mt-0.5 text-text">{result.engine_number} / {result.chassis_number || '-'}</p>
                 </div>
                 <div>
-                  <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Nomor Polisi</p>
-                  <p className="font-bold text-base mt-0.5 text-indigo-600 dark:text-indigo-400">{result.no_polisi || 'Belum Terbit'}</p>
+                  <p className="text-muted">Nomor Polisi</p>
+                  <p className="font-bold text-base mt-0.5 text-accent">{result.no_polisi || 'Belum Terbit'}</p>
                 </div>
                 <div>
-                  <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Dealer Cabang</p>
-                  <p className="font-semibold mt-0.5">{result.branch_name || 'TDM KETAPANG'}</p>
+                  <p className="text-muted">Dealer Cabang</p>
+                  <p className="font-semibold mt-0.5 text-text">{result.branch_name || 'TDM KETAPANG'}</p>
                 </div>
               </div>
             </div>
 
             {/* Status Penjemputan / Callout Banner */}
             {((result.stnk.is_done && !result.stnk.is_delivered) || (result.bpkb.is_done && !result.bpkb.is_delivered)) && (
-              <div className="flex gap-4 rounded-3xl border border-indigo-500/20 bg-indigo-500/10 p-6 shadow-md shadow-indigo-600/5">
-                <Info size={24} className="shrink-0 text-indigo-500 mt-1" />
+              <div className="flex gap-4 rounded-3xl border border-accent/20 bg-accent/10 p-6 shadow-md shadow-accent/5">
+                <Info size={24} className="shrink-0 text-accent mt-1" />
                 <div>
-                  <h4 className="font-bold text-indigo-600 dark:text-indigo-400 text-base">Dokumen Siap Diambil!</h4>
-                  <p className={`text-sm mt-1 leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                  <h4 className="font-bold text-accent text-base">Dokumen Siap Diambil!</h4>
+                  <p className="text-sm mt-1 leading-relaxed text-muted">
                     Silakan mengunjungi dealer <strong>TDM Ketapang</strong> untuk mengambil dokumen Anda yang telah terbit:
                   </p>
                   <ul className="mt-3 space-y-2 text-sm font-semibold">
                     {result.stnk.is_done && !result.stnk.is_delivered && (
-                      <li className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
-                        <div className="h-2 w-2 rounded-full bg-indigo-500" />
+                      <li className="flex items-center gap-2 text-text">
+                        <div className="h-2 w-2 rounded-full bg-accent" />
                         STNK & Plat Nomor (Lokasi: {result.stnk.lokasi || 'Kassa/Frontdesk'})
                       </li>
                     )}
                     {result.bpkb.is_done && !result.bpkb.is_delivered && (
-                      <li className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
-                        <div className="h-2 w-2 rounded-full bg-indigo-500" />
+                      <li className="flex items-center gap-2 text-text">
+                        <div className="h-2 w-2 rounded-full bg-accent" />
                         BPKB (Lokasi: {result.bpkb.lokasi || 'Admin BPKB'})
                       </li>
                     )}
                   </ul>
-                  <p className={`text-xs mt-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className="text-xs mt-4 text-muted">
                     * Catatan: Harap membawa KTP asli pemilik sesuai nama STNK dan nota serah terima atau Sales Order asli.
                   </p>
                 </div>
@@ -244,14 +242,14 @@ export default function StnkBpkbCheck() {
             )}
 
             {/* Stepper Timeline */}
-            <div className={`rounded-3xl border p-6 shadow-lg ${isDark ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'}`}>
-              <div className="flex items-center gap-2.5 pb-4 border-b border-dashed border-slate-200 dark:border-white/10 mb-6">
-                <Compass size={18} className="text-indigo-500" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Timeline Pengurusan</h3>
+            <div className="rounded-3xl border p-6 shadow-lg border-border bg-panel">
+              <div className="flex items-center gap-2.5 pb-4 border-b border-dashed border-border mb-6">
+                <Compass size={18} className="text-accent" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-faint">Timeline Pengurusan</h3>
               </div>
 
               {/* Steps Layout */}
-              <div className="relative pl-6 sm:pl-8 space-y-8 before:absolute before:left-[11px] sm:before:left-[15px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200 dark:before:bg-slate-800">
+              <div className="relative pl-6 sm:pl-8 space-y-8 before:absolute before:left-[11px] sm:before:left-[15px] before:top-2 before:bottom-2 before:w-[2px] before:bg-hover">
                 {/* 1. Faktur */}
                 <TimelineStep
                   title="Permohonan Faktur"
@@ -266,7 +264,6 @@ export default function StnkBpkbCheck() {
                   isDone={result.faktur.is_done}
                   isActive={!result.faktur.is_done}
                   icon={<FileText size={16} />}
-                  isDark={isDark}
                 />
 
                 {/* 2. STNK */}
@@ -285,7 +282,6 @@ export default function StnkBpkbCheck() {
                   isDone={result.stnk.is_done}
                   isActive={result.faktur.is_done && !result.stnk.is_done}
                   icon={<Compass size={16} />}
-                  isDark={isDark}
                 />
 
                 {/* 3. Plat Nomor */}
@@ -302,7 +298,6 @@ export default function StnkBpkbCheck() {
                   isDone={result.plat.is_done}
                   isActive={result.stnk.is_done && !result.plat.is_done}
                   icon={<Award size={16} />}
-                  isDark={isDark}
                 />
 
                 {/* 4. BPKB */}
@@ -319,7 +314,6 @@ export default function StnkBpkbCheck() {
                   isDone={result.bpkb.is_done}
                   isActive={result.faktur.is_done && !result.bpkb.is_done}
                   icon={<ShieldAlert size={16} />}
-                  isDark={isDark}
                 />
 
                 {/* 5. Serah Terima */}
@@ -336,7 +330,6 @@ export default function StnkBpkbCheck() {
                   isDone={result.stnk.is_delivered && result.bpkb.is_delivered}
                   isActive={(result.stnk.is_done || result.bpkb.is_done) && !(result.stnk.is_delivered && result.bpkb.is_delivered)}
                   icon={<CheckCircle2 size={16} />}
-                  isDark={isDark}
                 />
               </div>
             </div>
@@ -345,7 +338,7 @@ export default function StnkBpkbCheck() {
       </main>
 
       {/* Footer */}
-      <footer className={`mt-20 py-8 border-t transition-colors duration-300 ${isDark ? 'border-white/10 bg-slate-900/40 text-slate-500' : 'border-slate-200 bg-white text-slate-400'} text-center text-xs font-semibold`}>
+      <footer className="mt-20 py-8 border-t transition-colors duration-300 border-border bg-panel text-muted text-center text-xs font-semibold">
         <div className="mx-auto max-w-6xl px-4">
           <p>© {new Date().getFullYear()} TDM Ketapang - Honda Authorized Dealer.</p>
           <p className="mt-1">DXK Operation System v1.0 • All Rights Reserved.</p>
@@ -355,8 +348,7 @@ export default function StnkBpkbCheck() {
   )
 }
 
-function TimelineStep({ title, description, date, isDone, isActive, icon, isDark }) {
-  // Helpers formatting date inside component
+function TimelineStep({ title, description, date, isDone, isActive, icon }) {
   const formatDateLocal = (dateStr) => {
     if (!dateStr) return null
     const d = new Date(dateStr)
@@ -374,38 +366,38 @@ function TimelineStep({ title, description, date, isDone, isActive, icon, isDark
   let textTitleClass
 
   if (isDone) {
-    nodeColorClass = 'bg-indigo-600 text-white shadow-indigo-600/30'
-    bgClass = isDark ? 'bg-slate-900 border-white/5' : 'bg-white border-slate-100'
-    textTitleClass = isDark ? 'text-slate-100' : 'text-slate-950'
+    nodeColorClass = 'bg-accent text-white shadow-accent/30'
+    bgClass = 'bg-panel border-border'
+    textTitleClass = 'text-text-strong'
   } else if (isActive) {
-    nodeColorClass = 'bg-indigo-500 text-white animate-pulse shadow-indigo-500/20'
-    bgClass = isDark ? 'bg-indigo-950/20 border-indigo-500/20' : 'bg-indigo-50/50 border-indigo-100'
-    textTitleClass = 'text-indigo-600 dark:text-indigo-400 font-bold'
+    nodeColorClass = 'bg-accent text-white animate-pulse shadow-accent/20'
+    bgClass = 'bg-accent-soft/50 border-accent/20'
+    textTitleClass = 'text-accent font-bold'
   } else {
-    nodeColorClass = isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400'
+    nodeColorClass = 'bg-hover text-faint'
     bgClass = 'opacity-60'
-    textTitleClass = isDark ? 'text-slate-400' : 'text-slate-500'
+    textTitleClass = 'text-muted'
   }
 
   return (
     <div className="relative group transition-all duration-300">
       {/* Icon Node */}
-      <div className={`absolute -left-6 sm:-left-8 top-1 flex h-[24px] w-[24px] sm:h-[32px] sm:w-[32px] items-center justify-center rounded-full border-4 ${isDark ? 'border-slate-900' : 'border-white'} text-xs font-semibold shadow-md transition-all duration-300 ${nodeColorClass} z-10`}>
+      <div className={`absolute -left-6 sm:-left-8 top-1 flex h-[24px] w-[24px] sm:h-[32px] sm:w-[32px] items-center justify-center rounded-full border-4 border-panel text-xs font-semibold shadow-md transition-all duration-300 ${nodeColorClass} z-10`}>
         {isDone ? <Check size={14} className="sm:h-4 sm:w-4" /> : icon}
       </div>
 
       {/* Content Box */}
-      <div className={`rounded-2xl border p-4 shadow-sm transition-all duration-300 ${bgClass}`}>
+      <div className={`rounded-xl border p-4 shadow-sm transition-all duration-300 ${bgClass}`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
           <h4 className={`text-sm font-bold tracking-tight ${textTitleClass}`}>{title}</h4>
           {formattedDate && (
-            <div className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              <Calendar size={12} className="shrink-0 text-slate-400" />
+            <div className="flex items-center gap-1.5 text-xs text-muted">
+              <Calendar size={12} className="shrink-0 text-faint" />
               <span>{formattedDate}</span>
             </div>
           )}
         </div>
-        <p className={`mt-1.5 text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{description}</p>
+        <p className="mt-1.5 text-xs leading-relaxed text-muted">{description}</p>
       </div>
     </div>
   )

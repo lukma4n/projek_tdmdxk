@@ -69,8 +69,8 @@ export default function ShowroomDiscountTable() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tabel Diskon Marketing</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-text-strong">Tabel Diskon Marketing</h1>
+          <p className="text-sm text-muted">
             Masukkan filter dulu, lalu klik Cari. Total Diskon = Program + TAC Leasing + Beban Dealer.
           </p>
         </div>
@@ -84,7 +84,7 @@ export default function ShowroomDiscountTable() {
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 print:hidden"
+              className="flex items-center gap-2 rounded-lg border border-border bg-panel px-4 py-2 text-sm text-muted hover:bg-hover print:hidden"
             >
               <Printer size={16} /> Print
             </button>
@@ -93,7 +93,7 @@ export default function ShowroomDiscountTable() {
       </div>
 
       {period && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-700">
+        <div className="rounded-lg border border-accent-soft bg-accent-soft p-4 text-accent-text">
           <p className="text-xs font-semibold uppercase">Periode Program Aktif</p>
           <p className="mt-1 text-sm font-semibold">
             {formatDate(period.start)} - {formatDate(period.end)} | {period.document_number || '-'}
@@ -108,14 +108,14 @@ export default function ShowroomDiscountTable() {
       )}
 
       {/* Filter Card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-xl border border-border bg-panel p-4 shadow-sm">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-500">Tipe Jualan</label>
+            <label className="mb-1 block text-xs font-semibold text-muted">Tipe Jualan</label>
             <select
               value={filters.sale_type}
               onChange={(e) => setFilters((f) => ({ ...f, sale_type: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
             >
               <option value="">Semua</option>
               <option value="CASH">CASH</option>
@@ -123,21 +123,21 @@ export default function ShowroomDiscountTable() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-500">Series / Kode</label>
+            <label className="mb-1 block text-xs font-semibold text-muted">Series / Kode</label>
             <input
               value={filters.series_key}
               onChange={(e) => setFilters((f) => ({ ...f, series_key: e.target.value }))}
               placeholder="Contoh: SCOOPY"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
               onKeyDown={(e) => { if (e.key === 'Enter') handleSearch() }}
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-500">Leasing</label>
+            <label className="mb-1 block text-xs font-semibold text-muted">Leasing</label>
             <select
               value={filters.leasing}
               onChange={(e) => setFilters((f) => ({ ...f, leasing: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
             >
               <option value="">Semua Leasing</option>
               <option value="FIF">FIF</option>
@@ -147,11 +147,11 @@ export default function ShowroomDiscountTable() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-500">Tenor</label>
+            <label className="mb-1 block text-xs font-semibold text-muted">Tenor</label>
             <select
               value={filters.tenor}
               onChange={(e) => setFilters((f) => ({ ...f, tenor: e.target.value }))}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
             >
               <option value="">Semua Tenor</option>
               <option value="18">18 Bulan</option>
@@ -165,14 +165,14 @@ export default function ShowroomDiscountTable() {
           <button
             onClick={handleSearch}
             disabled={loading}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+            className="flex items-center gap-2 rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-60"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
             {loading ? 'Mencari...' : 'Cari'}
           </button>
           <button
             onClick={handleReset}
-            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            className="flex items-center gap-2 rounded-lg border border-border bg-panel px-5 py-2 text-sm text-muted hover:bg-hover"
           >
             <RefreshCw size={16} /> Reset
           </button>
@@ -180,16 +180,16 @@ export default function ShowroomDiscountTable() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-border bg-panel shadow-sm">
         {loading ? (
           <div className="flex justify-center p-12">
-            <Loader2 className="animate-spin text-blue-600" />
+            <Loader2 className="animate-spin text-accent" />
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className="border-b border-border bg-hover">
                   {[
                     'Series',
                     'Tipe',
@@ -204,7 +204,7 @@ export default function ShowroomDiscountTable() {
                   ].map((h) => (
                     <th
                       key={h}
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500"
+                      className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted"
                     >
                       {h}
                     </th>
@@ -214,13 +214,13 @@ export default function ShowroomDiscountTable() {
               <tbody className="divide-y divide-slate-100">
                 {!searched ? (
                   <tr>
-                    <td colSpan={10} className="px-4 py-8 text-center text-sm text-slate-500">
+                    <td colSpan={10} className="px-4 py-8 text-center text-sm text-muted">
                       Masukkan filter lalu klik Cari.
                     </td>
                   </tr>
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-4 py-8 text-center text-sm text-slate-500">
+                    <td colSpan={10} className="px-4 py-8 text-center text-sm text-muted">
                       Tidak ada data yang cocok dengan filter.
                     </td>
                   </tr>
@@ -233,7 +233,7 @@ export default function ShowroomDiscountTable() {
                           className={`rounded px-2 py-1 text-xs font-semibold ${
                             row.sale_type === 'CASH'
                               ? 'bg-green-100 text-green-700'
-                              : 'bg-blue-100 text-blue-700'
+                              : 'bg-accent-soft text-accent-text'
                           }`}
                         >
                           {row.sale_type}
@@ -247,43 +247,43 @@ export default function ShowroomDiscountTable() {
                         ) : row.tac_gt15 ? (
                           <span className="font-semibold">{row.tac_gt15.leasing}</span>
                         ) : (
-                          <span className="text-slate-400">TAC tidak tersedia</span>
+                          <span className="text-faint">TAC tidak tersedia</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm font-bold text-blue-700">
-                        {row.ahm_discount > 0 ? currency(row.ahm_discount) : <span className="text-slate-400">-</span>}
+                      <td className="px-4 py-3 text-sm font-bold text-accent-text">
+                        {row.ahm_discount > 0 ? currency(row.ahm_discount) : <span className="text-faint">-</span>}
                       </td>
-                      <td className="px-4 py-3 text-sm font-bold text-blue-700">
-                        {row.md_discount > 0 ? currency(row.md_discount) : <span className="text-slate-400">-</span>}
+                      <td className="px-4 py-3 text-sm font-bold text-accent-text">
+                        {row.md_discount > 0 ? currency(row.md_discount) : <span className="text-faint">-</span>}
                       </td>
-                      <td className="px-4 py-3 text-sm font-bold text-blue-700">
-                        {row.dealer_discount > 0 ? currency(row.dealer_discount) : <span className="text-slate-400">-</span>}
+                      <td className="px-4 py-3 text-sm font-bold text-accent-text">
+                        {row.dealer_discount > 0 ? currency(row.dealer_discount) : <span className="text-faint">-</span>}
                       </td>
-                      <td className="px-4 py-3 text-sm font-bold text-orange-700">
+                      <td className="px-4 py-3 text-sm font-bold text-warning">
                         {row.sale_type === 'KREDIT' ? (
                           row.tac_lt15 ? (
                             <span>{currency(row.tac_lt15.amount)}</span>
                           ) : row.tac_gt15 ? (
                             <span>{currency(row.tac_gt15.amount)}</span>
                           ) : (
-                            <span className="text-slate-400">-</span>
+                            <span className="text-faint">-</span>
                           )
                         ) : (
-                          <span className="text-slate-400">-</span>
+                          <span className="text-faint">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm font-bold text-purple-700">
+                      <td className="px-4 py-3 text-sm font-bold text-accent">
                         {row.sale_type === 'CASH' ? (
                           row.dealer_burden_cash > 0 ? (
                             <span>{currency(row.dealer_burden_cash)}</span>
                           ) : (
-                            <span className="text-slate-400">-</span>
+                            <span className="text-faint">-</span>
                           )
                         ) : (
                           row.dealer_burden_credit > 0 ? (
                             <span>{currency(row.dealer_burden_credit)}</span>
                           ) : (
-                            <span className="text-slate-400">-</span>
+                            <span className="text-faint">-</span>
                           )
                         )}
                       </td>
@@ -291,10 +291,10 @@ export default function ShowroomDiscountTable() {
                         {row.total_discount > 0 ? (
                           currency(row.total_discount)
                         ) : (
-                          <span className="text-slate-400">-</span>
+                          <span className="text-faint">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
+                      <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
                         {row.period_start || row.period_end
                           ? `${formatDate(row.period_start)} - ${formatDate(row.period_end)}`
                           : '-'}
@@ -310,12 +310,12 @@ export default function ShowroomDiscountTable() {
 
       {/* WhatsApp Preview */}
       {rows.length > 0 && (
-        <div className="rounded-xl border border-green-200 bg-green-50 p-5 space-y-3">
+        <div className="rounded-xl border border-green-200 bg-success-soft p-5 space-y-3">
           <div className="flex items-center gap-2 text-green-800">
             <Table2 size={18} />
             <h3 className="font-semibold">Preview Copy WhatsApp</h3>
           </div>
-          <pre className="whitespace-pre-wrap text-sm text-green-900 bg-white rounded-lg p-4 border border-green-100">
+          <pre className="whitespace-pre-wrap text-sm text-green-900 bg-panel rounded-lg p-4 border border-green-100">
             {buildWhatsAppText(rows, period)}
           </pre>
         </div>

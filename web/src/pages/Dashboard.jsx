@@ -4,9 +4,14 @@ import { api } from '../services/api'
 import { useAppStore } from '../stores/appStore'
 import {
   Wrench, Phone, Package, AlertTriangle, CheckCircle, Clock,
-  DollarSign, ArrowRight, Loader2, Database, TrendingUp, TrendingDown,
+  DollarSign, ArrowRight, Loader2, Database,
   RefreshCw, Bell
 } from 'lucide-react'
+import PageHeader from '../components/ui/PageHeader'
+import KpiCard from '../components/ui/KpiCard'
+import Card from '../components/ui/Card'
+import Table from '../components/ui/Table'
+import Badge from '../components/ui/Badge'
 
 function formatDateTime(value) {
   if (!value) return 'Belum pernah import'
@@ -14,59 +19,6 @@ function formatDateTime(value) {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
-}
-
-function StatCard({ label, value, icon: Icon, colorClass, borderClass, iconBgClass, trend }) {
-  return (
-    <div className={`relative overflow-hidden rounded-2xl border ${borderClass} bg-white p-5 shadow-sm hover:shadow-md transition-all duration-300 group`}>
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
-          <p className={`text-3xl font-black ${colorClass} tabular-nums truncate`} title={value}>{value}</p>
-        </div>
-        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconBgClass} shadow-sm`}>
-          <Icon size={24} />
-        </div>
-      </div>
-      {trend && (
-        <div className="mt-3 flex items-center gap-1.5">
-          {trend.isPositive ? (
-            <TrendingUp size={14} className="text-emerald-500" />
-          ) : (
-            <TrendingDown size={14} className="text-red-500" />
-          )}
-          <span className={`text-xs font-semibold ${trend.isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
-            {trend.text}
-          </span>
-          <span className="text-xs text-slate-400 font-medium">vs kemarin</span>
-        </div>
-      )}
-      <div className={`absolute bottom-0 left-0 h-1 w-full ${iconBgClass.replace('bg-', 'bg-opacity-50 bg-')}`} />
-    </div>
-  )
-}
-
-function SectionCard({ title, icon: Icon, colorClass = "text-blue-600", bgClass = "bg-blue-50", badge, children }) {
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow duration-300">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-        <div className="flex items-center gap-3">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${bgClass} ${colorClass}`}>
-            <Icon size={20} />
-          </div>
-          <h2 className="font-bold text-slate-800 text-lg">{title}</h2>
-        </div>
-        {badge > 0 && (
-          <span className={`px-3 py-1 rounded-lg text-xs font-bold ${bgClass} ${colorClass}`}>
-            {badge}
-          </span>
-        )}
-      </div>
-      <div className="flex-1 p-4 flex flex-col">
-        {children}
-      </div>
-    </div>
-  )
 }
 
 const formatTrendPct = (trend) => {
@@ -108,8 +60,8 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center space-y-3">
-          <Loader2 className="animate-spin text-blue-600 mx-auto" size={32} />
-          <p className="text-sm text-slate-500">Memuat data dashboard...</p>
+          <Loader2 className="animate-spin text-accent mx-auto" size={32} />
+          <p className="text-sm text-muted">Memuat data dashboard...</p>
         </div>
       </div>
     )
@@ -119,11 +71,11 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-3">
-            <AlertTriangle className="text-red-500" size={28} />
+          <div className="mx-auto w-16 h-16 bg-danger-soft rounded-full flex items-center justify-center mb-3">
+            <AlertTriangle className="text-danger" size={28} />
           </div>
-          <p className="text-red-600 font-medium">{error}</p>
-          <button onClick={loadDashboard} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+          <p className="text-danger font-medium">{error}</p>
+          <button onClick={loadDashboard} className="mt-4 px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:brightness-110 transition-colors">
             Coba Lagi
           </button>
         </div>
@@ -134,193 +86,206 @@ export default function Dashboard() {
   const criticalCount = summary?.alerts?.critical?.length || 0
   const attentionCount = summary?.alerts?.attention?.length || 0
 
-  const cards = [
+  const kpiCards = [
     {
       label: 'WO Hari Ini',
       value: (summary?.totalWO || 0).toLocaleString('id-ID'),
       icon: Wrench,
-      colorClass: 'text-blue-700',
-      borderClass: 'border-blue-200',
-      iconBgClass: 'bg-blue-100 text-blue-600',
       trend: formatTrendPct(summary?.trend?.totalWO),
     },
     {
       label: 'Revenue Hari Ini',
       value: `Rp ${(summary?.revenue || 0).toLocaleString('id-ID')}`,
       icon: DollarSign,
-      colorClass: 'text-emerald-700',
-      borderClass: 'border-emerald-200',
-      iconBgClass: 'bg-emerald-100 text-emerald-600',
       trend: formatTrendPct(summary?.trend?.revenue),
     },
     {
       label: 'Hotline Pending',
       value: (summary?.totalHotline || 0).toLocaleString('id-ID'),
       icon: Phone,
-      colorClass: 'text-amber-700',
-      borderClass: 'border-amber-200',
-      iconBgClass: 'bg-amber-100 text-amber-600',
     },
     {
       label: 'WO Open',
       value: (summary?.openWO || 0).toLocaleString('id-ID'),
       icon: Clock,
-      colorClass: 'text-purple-700',
-      borderClass: 'border-purple-200',
-      iconBgClass: 'bg-purple-100 text-purple-600',
     },
     {
       label: 'Stok Kritis > 365h',
       value: (summary?.criticalStock || 0).toLocaleString('id-ID'),
       icon: Package,
-      colorClass: 'text-red-700',
-      borderClass: 'border-red-200',
-      iconBgClass: 'bg-red-100 text-red-600',
     },
     {
       label: 'Stok > 180h',
       value: (summary?.attentionStock || 0).toLocaleString('id-ID'),
       icon: AlertTriangle,
-      colorClass: 'text-orange-700',
-      borderClass: 'border-orange-200',
-      iconBgClass: 'bg-orange-100 text-orange-600',
     },
   ]
 
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard Bengkel</h1>
-          <p className="text-sm text-slate-500 mt-1">Ringkasan operasional bengkel dan sparepart DXK</p>
-        </div>
-        <button
-          onClick={loadDashboard}
-          className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
-        >
-          <RefreshCw size={16} /> Refresh Data
-        </button>
-      </div>
+  const woColumns = [
+    { key: 'wo_number', label: 'No WO', mono: true, bold: true, className: 'text-accent' },
+    { key: 'customer_name', label: 'Customer' },
+    { key: 'unit', label: 'Unit' },
+    { key: 'mechanic', label: 'Mekanik' },
+    {
+      key: 'state',
+      label: 'State',
+      render: (val) => {
+        const stateColors = {
+          Open: { variant: 'warning' },
+          Selesai: { variant: 'success' },
+          Batal: { variant: 'danger' },
+        }
+        const c = stateColors[val] || { variant: 'default' }
+        return <Badge variant={c.variant}>{val}</Badge>
+      },
+    },
+    {
+      key: 'total',
+      label: 'Total',
+      align: 'right',
+      mono: true,
+      bold: true,
+      render: (val) => `Rp ${(val || 0).toLocaleString('id-ID')}`,
+    },
+  ]
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {cards.map((card) => (
-          <StatCard key={card.label} {...card} />
+  const freshnessColumns = [
+    { key: 'label', label: 'Modul', bold: true },
+    { key: 'last_import_at', label: 'Sync Terakhir', render: (v) => formatDateTime(v) },
+    { key: 'total_rows', label: 'Baris', align: 'right', mono: true },
+    { key: 'rows_success', label: 'OK', render: (v) => (
+      <span className="text-success font-semibold">{v || 0}</span>
+    )},
+    { key: 'rows_error', label: 'Error', render: (v) => v > 0 ? (
+      <span className="text-danger font-semibold">{v}</span>
+    ) : (
+      <span className="text-faint">0</span>
+    )},
+  ]
+
+  return (
+    <div className="space-y-5">
+      {/* Page Header */}
+      <PageHeader
+        title="Dashboard Bengkel"
+        description="Ringkasan operasional bengkel dan sparepart DXK"
+        timestamp={summary?.freshness?.[0]?.last_import_at
+          ? `Data per ${formatDateTime(summary.freshness[0].last_import_at)}`
+          : undefined}
+        action={
+          <button
+            onClick={loadDashboard}
+            className="flex items-center gap-2 px-4 py-2 bg-panel border border-border rounded-xl text-sm font-semibold text-muted hover:bg-hover hover:text-text-strong transition-all shadow-sm"
+          >
+            <RefreshCw size={15} /> Refresh Data
+          </button>
+        }
+      />
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+        {kpiCards.map((card) => (
+          <KpiCard key={card.label} {...card} />
         ))}
       </div>
 
-      {/* Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SectionCard 
-          title="Alert Kritis" 
-          icon={AlertTriangle} 
-          colorClass="text-red-600" 
-          bgClass="bg-red-100"
+      {/* Alerts + Open WO */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+        {/* Alert Kritis */}
+        <Card
+          title="Alert Kritis"
+          icon={AlertTriangle}
           badge={criticalCount}
         >
-          <div className="space-y-2 flex-1">
+          <div className="space-y-2">
             {(summary?.alerts?.critical || []).map((alert, i) => (
               <button
                 key={i}
                 onClick={() => navigate(alert.path)}
-                className="w-full text-left px-4 py-3 flex items-center gap-3 rounded-xl border border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all group"
+                className="w-full text-left px-3.5 py-2.5 flex items-center gap-2.5 rounded-xl border border-border hover:bg-hover hover:border-border-strong transition-all group"
               >
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 px-2 py-0.5 rounded-md">
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-danger-soft text-danger px-1.5 py-0.5 rounded-md">
                   {alert.type === 'stock' ? 'Stok' : alert.type === 'workshop' ? 'WO' : alert.type}
                 </span>
-                <span className="flex-1 text-sm font-semibold text-slate-700 truncate">
+                <span className="flex-1 text-sm font-semibold text-text truncate">
                   {alert.message}
                 </span>
-                <ArrowRight size={14} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                <ArrowRight size={14} className="text-faint group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
               </button>
             ))}
             {(summary?.alerts?.critical || []).length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full py-6 text-slate-400">
-                <CheckCircle size={32} className="text-emerald-500 mb-2 opacity-50" />
+              <div className="flex flex-col items-center justify-center py-8 text-faint">
+                <CheckCircle size={32} className="text-success mb-2 opacity-50" />
                 <p className="text-sm font-medium">Tidak ada alert kritis</p>
               </div>
             )}
           </div>
-        </SectionCard>
+        </Card>
 
-        <SectionCard 
-          title="Perlu Perhatian" 
-          icon={Bell} 
-          colorClass="text-orange-600" 
-          bgClass="bg-orange-100"
+        {/* Perlu Perhatian */}
+        <Card
+          title="Perlu Perhatian"
+          icon={Bell}
           badge={attentionCount}
         >
-          <div className="space-y-2 flex-1">
+          <div className="space-y-2">
             {(summary?.alerts?.attention || []).map((alert, i) => (
               <button
                 key={i}
                 onClick={() => navigate(alert.path)}
-                className="w-full text-left px-4 py-3 flex items-center gap-3 rounded-xl border border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all group"
+                className="w-full text-left px-3.5 py-2.5 flex items-center gap-2.5 rounded-xl border border-border hover:bg-hover hover:border-border-strong transition-all group"
               >
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700 px-2 py-0.5 rounded-md">
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-warning-soft text-warning px-1.5 py-0.5 rounded-md">
                   {alert.type === 'stock' ? 'Stok' : alert.type === 'workshop' ? 'WO' : alert.type}
                 </span>
-                <span className="flex-1 text-sm font-semibold text-slate-700 truncate">
+                <span className="flex-1 text-sm font-semibold text-text truncate">
                   {alert.message}
                 </span>
-                <ArrowRight size={14} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                <ArrowRight size={14} className="text-faint group-hover:text-accent group-hover:translate-x-0.5 transition-all" />
               </button>
             ))}
             {(summary?.alerts?.attention || []).length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full py-6 text-slate-400">
-                <CheckCircle size={32} className="text-emerald-500 mb-2 opacity-50" />
+              <div className="flex flex-col items-center justify-center py-8 text-faint">
+                <CheckCircle size={32} className="text-success mb-2 opacity-50" />
                 <p className="text-sm font-medium">Tidak ada peringatan</p>
               </div>
             )}
           </div>
-        </SectionCard>
+        </Card>
       </div>
 
-      {/* Freshness */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-100 mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-            <Database size={20} />
-          </div>
-          <div>
-            <h2 className="font-bold text-slate-800 text-lg">Freshness Data Bengkel</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Status import terakhir per modul</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {(summary?.freshness || []).map((item) => (
-            <div key={item.module} className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between group hover:bg-white hover:border-blue-200 hover:shadow-sm transition-all duration-300">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">{item.label}</p>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-700">
-                    {(item.total_rows || 0).toLocaleString('id-ID')} baris
-                  </span>
-                </div>
-                <p className="font-bold text-slate-800 text-sm mb-1">{formatDateTime(item.last_import_at)}</p>
-                {item.filename && (
-                  <p className="text-[10px] text-slate-400 truncate mb-3" title={item.filename}>
-                    {item.filename}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-3 text-xs font-semibold pt-3 border-t border-slate-200">
-                <span className="flex items-center gap-1 text-emerald-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  OK {item.rows_success || 0}
-                </span>
-                {item.rows_error > 0 && (
-                  <span className="flex items-center gap-1 text-red-600">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                    Error {item.rows_error}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Open Work Order */}
+      <Card
+        title="Open Work Order"
+        icon={Wrench}
+        action={
+          <span className="text-[11.5px] text-accent font-semibold cursor-pointer hover:underline">
+            Lihat semua →
+          </span>
+        }
+      >
+        <Table
+          columns={woColumns}
+          rows={summary?.openWOList || []}
+          onRowClick={(row) => row.path && navigate(row.path)}
+          emptyMessage="Tidak ada work order open"
+        />
+      </Card>
+
+      {/* Freshness Data Import */}
+      <Card
+        title="Kesegaran Data Import"
+        icon={Database}
+        action={
+          <span className="text-[11px] text-faint">snapshot harian dari sistem induk AHM</span>
+        }
+      >
+        <Table
+          columns={freshnessColumns}
+          rows={summary?.freshness || []}
+          emptyMessage="Belum ada data import"
+        />
+      </Card>
     </div>
   )
 }

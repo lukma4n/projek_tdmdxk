@@ -47,16 +47,16 @@ export default function ShowroomOtrPrice() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Master Harga</h1>
-          <p className="text-sm text-slate-500">Harga OTR, Off The Road, Beli Dealer, dan BBN Jual dari SK Main Deler</p>
+          <h1 className="text-2xl font-bold text-text-strong">Master Harga</h1>
+          <p className="text-sm text-muted">Harga OTR, Off The Road, Beli Dealer, dan BBN Jual dari SK Main Deler</p>
         </div>
-        <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+        <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 bg-panel border border-border rounded-lg text-sm text-muted hover:bg-hover">
           <RefreshCw size={16} /> Refresh
         </button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl border border-blue-200 bg-blue-50 text-blue-700">
+        <div className="p-4 rounded-xl border border-accent-soft bg-accent-soft text-accent-text">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Total Kode</p><BadgeDollarSign size={18} /></div>
           <p className="text-2xl font-bold mt-1">{summary?.total || 0}</p>
         </div>
@@ -68,42 +68,42 @@ export default function ShowroomOtrPrice() {
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Berlaku Sejak</p><Calendar size={18} /></div>
           <p className="text-xl font-bold mt-1">{formatDate(summary?.effectiveDate)}</p>
         </div>
-        <div className="p-4 rounded-xl border border-slate-200 bg-white text-slate-700">
+        <div className="p-4 rounded-xl border border-border bg-panel text-text">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Source</p><FileText size={18} /></div>
           <p className="text-sm font-semibold mt-1 truncate" title={summary?.sourceFile || ''}>{summary?.sourceFile || '-'}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+      <div className="bg-panel rounded-xl border border-border shadow-sm p-4">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari kode, tipe, deskripsi..." className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari kode, tipe, deskripsi..." className="w-full pl-9 pr-4 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
         </div>
       </div>
 
       {error && <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg text-sm text-danger-600">{error}</div>}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <span className="text-sm font-semibold text-slate-700">Daftar Master Harga</span>
-          <span className="text-xs text-slate-400">{(pagination.total || 0).toLocaleString('id-ID')} total data</span>
+      <div className="bg-panel rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <span className="text-sm font-semibold text-text">Daftar Master Harga</span>
+          <span className="text-xs text-faint">{(pagination.total || 0).toLocaleString('id-ID')} total data</span>
         </div>
         {loading ? (
-          <div className="flex items-center justify-center p-12"><Loader2 className="animate-spin text-blue-600" size={24} /></div>
+          <div className="flex items-center justify-center p-12"><Loader2 className="animate-spin text-accent" size={24} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead><tr className="bg-slate-50 border-b border-slate-200">{['Kode', 'Tipe', 'Deskripsi', 'Harga Beli', 'Harga Off', 'Harga OTR', 'BBN Jual'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">{h}</th>)}</tr></thead>
+              <thead><tr className="bg-hover border-b border-border">{['Kode', 'Tipe', 'Deskripsi', 'Harga Beli', 'Harga Off', 'Harga OTR', 'BBN Jual'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase whitespace-nowrap">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-3 font-mono text-sm font-semibold text-slate-800">{item.product_code}</td>
-                    <td className="px-4 py-3 text-sm text-slate-700">{item.model_name || '-'}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500">{item.description || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">{item.dealer_purchase_price ? formatCurrency(item.dealer_purchase_price) : '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">{item.off_road_price ? formatCurrency(item.off_road_price) : '-'}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-slate-800 whitespace-nowrap">{formatCurrency(item.otr_price)}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-blue-700 whitespace-nowrap">{item.otr_price && item.off_road_price ? formatCurrency(item.otr_price - item.off_road_price) : '-'}</td>
+                  <tr key={item.id} className="hover:bg-hover/50">
+                    <td className="px-4 py-3 font-mono text-sm font-semibold text-text">{item.product_code}</td>
+                    <td className="px-4 py-3 text-sm text-text">{item.model_name || '-'}</td>
+                    <td className="px-4 py-3 text-xs text-muted">{item.description || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-text whitespace-nowrap">{item.dealer_purchase_price ? formatCurrency(item.dealer_purchase_price) : '-'}</td>
+                    <td className="px-4 py-3 text-sm text-text whitespace-nowrap">{item.off_road_price ? formatCurrency(item.off_road_price) : '-'}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-text whitespace-nowrap">{formatCurrency(item.otr_price)}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-accent-text whitespace-nowrap">{item.otr_price && item.off_road_price ? formatCurrency(item.otr_price - item.off_road_price) : '-'}</td>
                   </tr>
                 ))}
               </tbody>

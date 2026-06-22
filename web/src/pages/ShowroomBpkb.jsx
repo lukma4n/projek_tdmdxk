@@ -226,8 +226,8 @@ export default function ShowroomBpkb() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Stock BPKB Showroom</h1>
-          <p className="text-sm text-slate-500">Monitoring dokumen BPKB cabang DXK</p>
+          <h1 className="text-2xl font-bold text-text-strong">Stock BPKB Showroom</h1>
+          <p className="text-sm text-muted">Monitoring dokumen BPKB cabang DXK</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {selectedCount > 0 && (
@@ -238,42 +238,42 @@ export default function ShowroomBpkb() {
               >
                 <Printer size={16} />
                 <span>Print Terpilih</span>
-                <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">{selectedCount}</span>
+                <span className="rounded-full bg-panel/20 px-2 py-0.5 text-xs font-bold">{selectedCount}</span>
               </button>
               <button
                 onClick={clearSelection}
-                className="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+                className="flex items-center justify-center w-9 h-9 rounded-lg bg-hover text-muted hover:bg-hover hover:text-text transition-colors"
                 title="Batal pilih"
               >
                 <X size={16} />
               </button>
             </div>
           )}
-          <button onClick={handlePrintAll} disabled={ printingAll || selectedCount > 0 || !(pagination.total || items.length) } className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-60">
+          <button onClick={handlePrintAll} disabled={ printingAll || selectedCount > 0 || !(pagination.total || items.length) } className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm text-white hover:brightness-110 disabled:opacity-60">
             {printingAll ? <Loader2 className="animate-spin" size={16} /> : <Printer size={16} />} Print Sesuai Filter
           </button>
-          <button onClick={handlePrintBatch} disabled={!items.length || selectedCount > 0} className="flex items-center gap-2 rounded-lg bg-slate-100 px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 disabled:opacity-60">
+          <button onClick={handlePrintBatch} disabled={!items.length || selectedCount > 0} className="flex items-center gap-2 rounded-lg bg-hover px-4 py-2 text-sm text-muted hover:bg-hover disabled:opacity-60">
             <Printer size={16} /> Print Halaman Ini
           </button>
           <button onClick={handleExport} disabled={exporting} className="flex items-center gap-2 px-4 py-2 bg-success-600 text-white rounded-lg text-sm hover:bg-success-700 disabled:opacity-60">
             {exporting ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />} Export Excel
           </button>
-          <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">
+          <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 bg-panel border border-border rounded-lg text-sm text-muted hover:bg-hover">
             <RefreshCw size={16} /> Refresh
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="p-4 rounded-xl border border-blue-200 bg-blue-50 text-blue-700">
+        <div className="p-4 rounded-xl border border-accent-soft bg-accent-soft text-accent-text">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Total BPKB</p><FileBadge size={18} /></div>
           <p className="text-2xl font-bold mt-1">{summary?.total || 0}</p>
         </div>
-        <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700">
+        <div className="p-4 rounded-xl border border-emerald-200 bg-success-soft text-success">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">💵 Cash</p><UserRound size={18} /></div>
           <p className="text-2xl font-bold mt-1">{summary?.byCustomerType?.cash || 0}</p>
         </div>
-        <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700">
+        <div className="p-4 rounded-xl border border-indigo-200 bg-accent-soft text-indigo-700">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">💳 Kredit</p><UserRound size={18} /></div>
           <p className="text-2xl font-bold mt-1">{summary?.byCustomerType?.kredit || 0}</p>
         </div>
@@ -281,72 +281,72 @@ export default function ShowroomBpkb() {
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Overdue &gt;= 365 Hari</p><AlertTriangle size={18} /></div>
           <p className="text-2xl font-bold mt-1">{summary?.overdue365 || 0}</p>
         </div>
-        <div className="p-4 rounded-xl border border-slate-200 bg-white text-slate-700">
+        <div className="p-4 rounded-xl border border-border bg-panel text-text">
           <div className="flex items-center justify-between"><p className="text-xs font-medium">Lokasi Terbanyak</p><MapPin size={18} /></div>
           <p className="text-lg font-bold mt-1 truncate">{summary?.byLocation?.[0]?.bpkb_location || '-'}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-wrap gap-3">
+      <div className="bg-panel rounded-xl border border-border shadow-sm p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[220px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari engine, no BPKB, nama, invoice..." className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari engine, no BPKB, nama, invoice..." className="w-full pl-9 pr-4 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
         </div>
-        <select value={location} onChange={(e) => setLocation(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+        <select value={location} onChange={(e) => setLocation(e.target.value)} className="px-3 py-2 bg-hover border border-border rounded-lg text-sm">
           <option value="all">Semua Lokasi</option>
           {filters.locations?.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <select value={customerType} onChange={(e) => setCustomerType(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium">
+        <select value={customerType} onChange={(e) => setCustomerType(e.target.value)} className="px-3 py-2 bg-hover border border-border rounded-lg text-sm font-medium">
           <option value="all">Semua: Cash & Kredit</option>
           <option value="CASH">💵 Cash</option>
           <option value="KREDIT">💳 Kredit</option>
         </select>
-        <div className="flex basis-full items-center gap-2 text-xs text-slate-500">
-          <Printer size={13} className="text-slate-400" />
+        <div className="flex basis-full items-center gap-2 text-xs text-muted">
+          <Printer size={13} className="text-faint" />
           <span>Print Sesuai Filter akan mencetak semua label dari lokasi/search yang sedang dipilih.</span>
         </div>
       </div>
 
       {error && <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg text-sm text-danger-600">{error}</div>}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <span className="text-sm font-semibold text-slate-700">Daftar Stock BPKB</span>
-          <span className="text-xs text-slate-400">{(pagination.total || 0).toLocaleString('id-ID')} total data</span>
+      <div className="bg-panel rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <span className="text-sm font-semibold text-text">Daftar Stock BPKB</span>
+          <span className="text-xs text-faint">{(pagination.total || 0).toLocaleString('id-ID')} total data</span>
         </div>
         {loading ? (
-          <div className="flex items-center justify-center p-12"><Loader2 className="animate-spin text-blue-600" size={24} /></div>
+          <div className="flex items-center justify-center p-12"><Loader2 className="animate-spin text-accent" size={24} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead><tr className="bg-slate-50 border-b border-slate-200">
+              <thead><tr className="bg-hover border-b border-border">
                 <th className="px-3 py-3 text-center w-10">
-                  <button onClick={toggleSelectAll} className="flex items-center justify-center w-6 h-6 rounded border border-slate-300 bg-white hover:bg-slate-100 transition-colors">
-                    {allPageSelected ? <Check size={14} className="text-blue-600" /> : null}
+                  <button onClick={toggleSelectAll} className="flex items-center justify-center w-6 h-6 rounded border border-border-strong bg-panel hover:bg-hover transition-colors">
+                    {allPageSelected ? <Check size={14} className="text-accent" /> : null}
                   </button>
                 </th>
-                {['Nama', 'Tipe', 'Engine/BPKB', 'Lokasi', 'Jadi BPKB', 'Leasing', 'Overdue', 'Salesman', 'Label'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">{h}</th>)}
+                {['Nama', 'Tipe', 'Engine/BPKB', 'Lokasi', 'Jadi BPKB', 'Leasing', 'Overdue', 'Salesman', 'Label'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase whitespace-nowrap">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/50">
+                  <tr key={item.id} className="hover:bg-hover/50">
                     <td className="px-3 py-3 text-center">
-                      <button onClick={() => toggleSelect(item)} className="flex items-center justify-center w-6 h-6 rounded border border-slate-300 bg-white hover:bg-slate-100 transition-colors">
-                        {selectedMap.has(item.id) ? <Check size={14} className="text-blue-600" /> : null}
+                      <button onClick={() => toggleSelect(item)} className="flex items-center justify-center w-6 h-6 rounded border border-border-strong bg-panel hover:bg-hover transition-colors">
+                        {selectedMap.has(item.id) ? <Check size={14} className="text-accent" /> : null}
                       </button>
                     </td>
-                    <td className="px-4 py-3"><p className="text-sm font-semibold text-slate-800">{item.stnk_name || '-'}</p><p className="text-xs text-slate-500 flex items-center gap-1"><UserRound size={12} />{item.applicant_name || item.requestor_name || '-'}</p></td>
-                    <td className="px-4 py-3 whitespace-nowrap"><span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${item.customer_type === 'CASH' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>{item.customer_type || '-'}</span></td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-600"><p>{item.engine_number}</p><p className="text-slate-400">{item.bpkb_number || '-'}</p></td>
-                    <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{item.bpkb_location || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{formatDate(item.bpkb_ready_date)}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">{item.finance_company_short || <span className="text-slate-400">-</span>}</td>
+                    <td className="px-4 py-3"><p className="text-sm font-semibold text-text">{item.stnk_name || '-'}</p><p className="text-xs text-muted flex items-center gap-1"><UserRound size={12} />{item.applicant_name || item.requestor_name || '-'}</p></td>
+                    <td className="px-4 py-3 whitespace-nowrap"><span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${item.customer_type === 'CASH' ? 'bg-success-soft text-success' : 'bg-indigo-100 text-indigo-700'}`}>{item.customer_type || '-'}</span></td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted"><p>{item.engine_number}</p><p className="text-faint">{item.bpkb_number || '-'}</p></td>
+                    <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{item.bpkb_location || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{formatDate(item.bpkb_ready_date)}</td>
+                    <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{item.finance_company_short || <span className="text-faint">-</span>}</td>
                     <td className="px-4 py-3 whitespace-nowrap"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${item.overdue_days >= 365 ? 'bg-danger-50 text-danger-600 border-danger-200' : 'bg-success-50 text-success-600 border-success-200'}`}>{item.overdue_days || 0} hari</span></td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{item.salesman || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-muted">{item.salesman || '-'}</td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => setSelectedItem(item)}
-                        className="rounded-lg bg-slate-100 p-1.5 text-slate-500 transition-colors hover:bg-blue-100 hover:text-blue-600"
+                        className="rounded-lg bg-hover p-1.5 text-muted transition-colors hover:bg-accent-soft hover:text-accent"
                         title="Print label BPKB"
                       >
                         <Printer size={14} />

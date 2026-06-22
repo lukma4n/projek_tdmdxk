@@ -7,15 +7,15 @@ function formatDateTime(value) {
   return new Date(value).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-function CountBar({ label, value, total, color = 'bg-blue-500' }) {
+function CountBar({ label, value, total, color = 'bg-accent' }) {
   const width = total ? Math.max((value / total) * 100, 4) : 0
   return (
     <div className="space-y-1.5 group">
       <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="text-slate-600 truncate font-medium">{label || '-'}</span>
-        <span className="font-bold text-slate-800 tabular-nums">{value}</span>
+        <span className="text-muted truncate font-medium">{label || '-'}</span>
+        <span className="font-bold text-text tabular-nums">{value}</span>
       </div>
-      <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+      <div className="h-2.5 rounded-full bg-hover overflow-hidden">
         <div
           className={`h-full rounded-full ${color} transition-all duration-700 ease-out group-hover:opacity-80`}
           style={{ width: `${width}%` }}
@@ -27,13 +27,13 @@ function CountBar({ label, value, total, color = 'bg-blue-500' }) {
 
 function StatCard({ label, value, icon: Icon, colorClass, borderClass, iconBgClass }) {
   return (
-    <div className={`relative overflow-hidden rounded-2xl border ${borderClass} bg-white p-5 shadow-sm hover:shadow-md transition-all duration-300 group`}>
+    <div className={`relative overflow-hidden rounded-xl border ${borderClass} bg-panel p-5 shadow-sm hover:shadow-md transition-all duration-300 group`}>
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted">{label}</p>
           <p className={`text-3xl font-black ${colorClass} tabular-nums`}>{value}</p>
         </div>
-        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${iconBgClass} shadow-sm`}>
+        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${iconBgClass} shadow-sm`}>
           <Icon size={24} />
         </div>
       </div>
@@ -44,13 +44,13 @@ function StatCard({ label, value, icon: Icon, colorClass, borderClass, iconBgCla
 
 function SectionCard({ title, icon: Icon, children }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5 hover:shadow-md transition-shadow duration-300">
-      <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+    <div className="bg-panel rounded-xl border border-border shadow-sm p-6 space-y-5 hover:shadow-md transition-shadow duration-300">
+      <div className="flex items-center gap-3 pb-3 border-b border-border">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent">
           <Icon size={20} />
         </div>
         <div>
-          <h2 className="font-bold text-slate-800 text-lg">{title}</h2>
+          <h2 className="font-bold text-text text-lg">{title}</h2>
         </div>
       </div>
       {children}
@@ -83,8 +83,8 @@ export default function ShowroomDashboard() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center space-y-3">
-          <Loader2 className="animate-spin text-blue-600 mx-auto" size={32} />
-          <p className="text-sm text-slate-500">Memuat data showroom...</p>
+          <Loader2 className="animate-spin text-accent mx-auto" size={32} />
+          <p className="text-sm text-muted">Memuat data showroom...</p>
         </div>
       </div>
     )
@@ -94,11 +94,11 @@ export default function ShowroomDashboard() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-3">
-            <AlertTriangle className="text-red-500" size={28} />
+          <div className="mx-auto w-16 h-16 bg-danger-soft rounded-full flex items-center justify-center mb-3">
+            <AlertTriangle className="text-danger" size={28} />
           </div>
-          <p className="text-red-600 font-medium">{error}</p>
-          <button onClick={loadData} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+          <p className="text-danger font-medium">{error}</p>
+          <button onClick={loadData} className="mt-4 px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:brightness-110 transition-colors">
             Coba Lagi
           </button>
         </div>
@@ -111,49 +111,49 @@ export default function ShowroomDashboard() {
       label: 'Total Unit',
       value: summary?.totalUnits || 0,
       icon: Bike,
-      colorClass: 'text-blue-700',
-      borderClass: 'border-blue-200',
-      iconBgClass: 'bg-blue-100 text-blue-600',
+      colorClass: 'text-accent-text',
+      borderClass: 'border-accent-soft',
+      iconBgClass: 'bg-accent-soft text-accent',
     },
     {
       label: 'Aging ≥ 60 Hari',
       value: summary?.aging60 || 0,
       icon: Timer,
-      colorClass: 'text-amber-700',
+      colorClass: 'text-warning',
       borderClass: 'border-amber-200',
-      iconBgClass: 'bg-amber-100 text-amber-600',
+      iconBgClass: 'bg-warning-soft text-warning',
     },
     {
       label: 'Aging ≥ 90 Hari',
       value: summary?.aging90 || 0,
       icon: AlertTriangle,
-      colorClass: 'text-red-700',
+      colorClass: 'text-danger',
       borderClass: 'border-red-200',
-      iconBgClass: 'bg-red-100 text-red-600',
+      iconBgClass: 'bg-danger-soft text-danger',
     },
     {
       label: 'STNK / BPKB',
       value: `${summary?.totalStnk || 0} / ${summary?.totalBpkb || 0}`,
       icon: FileText,
-      colorClass: 'text-emerald-700',
+      colorClass: 'text-success',
       borderClass: 'border-emerald-200',
-      iconBgClass: 'bg-emerald-100 text-emerald-600',
+      iconBgClass: 'bg-success-soft text-success',
     },
     {
       label: 'KSU Perlu Tindakan',
       value: (summary?.ksu?.belum_dicek || 0) + (summary?.ksu?.belum_lengkap || 0) + (summary?.ksu?.battery_mismatch || 0),
       icon: Bell,
-      colorClass: 'text-purple-700',
+      colorClass: 'text-accent',
       borderClass: 'border-purple-200',
-      iconBgClass: 'bg-purple-100 text-purple-600',
+      iconBgClass: 'bg-accent-soft text-accent',
     },
     {
       label: 'Kebutuhan Aki',
       value: summary?.ksu?.required_items?.battery || 0,
       icon: BatteryCharging,
-      colorClass: 'text-slate-700',
-      borderClass: 'border-slate-200',
-      iconBgClass: 'bg-slate-100 text-slate-600',
+      colorClass: 'text-text',
+      borderClass: 'border-border',
+      iconBgClass: 'bg-hover text-muted',
     },
   ]
 
@@ -167,12 +167,12 @@ export default function ShowroomDashboard() {
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard Unit</h1>
-          <p className="text-sm text-slate-500 mt-1">Ringkasan stock unit, aging, lokasi, series, dan dokumen showroom DXK</p>
+          <h1 className="text-3xl font-black text-text-strong tracking-tight">Dashboard Unit</h1>
+          <p className="text-sm text-muted mt-1">Ringkasan stock unit, aging, lokasi, series, dan dokumen showroom DXK</p>
         </div>
         <button
           onClick={loadData}
-          className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+          className="flex items-center gap-2 px-5 py-2.5 bg-panel border border-border rounded-xl text-sm font-semibold text-muted hover:bg-hover hover:border-border-strong transition-all shadow-sm"
         >
           <RefreshCw size={16} /> Refresh Data
         </button>
@@ -198,7 +198,7 @@ export default function ShowroomDashboard() {
         <SectionCard title="Stock Per Series" icon={Bike}>
           <div className="space-y-4">
             {(summary?.bySeries || []).map((item) => (
-              <CountBar key={item.series || 'unknown'} label={item.series} value={item._count} total={maxSeries} color="bg-emerald-500" />
+              <CountBar key={item.series || 'unknown'} label={item.series} value={item._count} total={maxSeries} color="bg-success" />
             ))}
           </div>
         </SectionCard>
@@ -209,7 +209,7 @@ export default function ShowroomDashboard() {
         <SectionCard title="STNK Per Lokasi" icon={FileText}>
           <div className="space-y-4">
             {(summary?.documents?.stnkByLocation || []).map((item) => (
-              <CountBar key={item.stnk_location || 'unknown'} label={item.stnk_location} value={item._count} total={maxStnkLocation} color="bg-blue-500" />
+              <CountBar key={item.stnk_location || 'unknown'} label={item.stnk_location} value={item._count} total={maxStnkLocation} color="bg-accent" />
             ))}
           </div>
         </SectionCard>
@@ -217,31 +217,31 @@ export default function ShowroomDashboard() {
         <SectionCard title="BPKB Per Lokasi" icon={FileBadge}>
           <div className="space-y-4">
             {(summary?.documents?.bpkbByLocation || []).map((item) => (
-              <CountBar key={item.bpkb_location || 'unknown'} label={item.bpkb_location} value={item._count} total={maxBpkbLocation} color="bg-amber-500" />
+              <CountBar key={item.bpkb_location || 'unknown'} label={item.bpkb_location} value={item._count} total={maxBpkbLocation} color="bg-warning" />
             ))}
           </div>
         </SectionCard>
       </div>
 
       {/* Freshness */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-100 mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+      <div className="bg-panel rounded-xl border border-border shadow-sm p-6">
+        <div className="flex items-center gap-3 pb-4 border-b border-border mb-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-hover text-muted">
             <TrendingUp size={20} />
           </div>
-          <h2 className="font-bold text-slate-800 text-lg">Freshness Data Showroom</h2>
+          <h2 className="font-bold text-text text-lg">Freshness Data Showroom</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           {[
-            { label: 'Stock Unit', value: formatDateTime(summary?.freshness?.stockUnit), color: 'text-blue-600', bg: 'bg-blue-50' },
-            { label: 'STNK', value: formatDateTime(summary?.freshness?.stnk), color: 'text-emerald-600', bg: 'bg-emerald-50' },
-            { label: 'BPKB', value: formatDateTime(summary?.freshness?.bpkb), color: 'text-amber-600', bg: 'bg-amber-50' },
-            { label: 'Master Harga', value: formatDateTime(summary?.freshness?.price), color: 'text-purple-600', bg: 'bg-purple-50', sub: `Berlaku ${formatDateTime(summary?.freshness?.priceEffectiveDate)}` },
+            { label: 'Stock Unit', value: formatDateTime(summary?.freshness?.stockUnit), color: 'text-accent', bg: 'bg-accent-soft' },
+            { label: 'STNK', value: formatDateTime(summary?.freshness?.stnk), color: 'text-success', bg: 'bg-success-soft' },
+            { label: 'BPKB', value: formatDateTime(summary?.freshness?.bpkb), color: 'text-warning', bg: 'bg-warning-soft' },
+            { label: 'Master Harga', value: formatDateTime(summary?.freshness?.price), color: 'text-accent', bg: 'bg-accent-soft', sub: `Berlaku ${formatDateTime(summary?.freshness?.priceEffectiveDate)}` },
           ].map((item) => (
-            <div key={item.label} className={`${item.bg} rounded-xl p-4 border border-slate-100`}>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{item.label}</p>
+            <div key={item.label} className={`${item.bg} rounded-xl p-4 border border-border`}>
+              <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-1">{item.label}</p>
               <p className={`font-bold ${item.color}`}>{item.value}</p>
-              {item.sub && <p className="text-xs text-slate-400 mt-1">{item.sub}</p>}
+              {item.sub && <p className="text-xs text-faint mt-1">{item.sub}</p>}
             </div>
           ))}
         </div>

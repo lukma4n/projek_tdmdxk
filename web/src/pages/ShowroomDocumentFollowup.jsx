@@ -12,8 +12,8 @@ const statuses = [
 ]
 
 const statusColors = {
-  belum_dihubungi: 'bg-slate-50 text-slate-600 border-slate-200',
-  sudah_dihubungi: 'bg-blue-50 text-blue-600 border-blue-200',
+  belum_dihubungi: 'bg-hover text-muted border-border',
+  sudah_dihubungi: 'bg-accent-soft text-accent border-accent-soft',
   diambil: 'bg-success-50 text-success-600 border-success-200',
   pending: 'bg-warning-50 text-warning-600 border-warning-200',
   batal: 'bg-danger-50 text-danger-600 border-danger-200',
@@ -188,12 +188,12 @@ export default function ShowroomDocumentFollowup({ type }) {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
-          <p className="text-sm text-slate-500">Pipeline follow-up pengambilan dokumen {isStnk ? 'STNK' : 'BPKB'} konsumen</p>
+          <h1 className="text-2xl font-bold text-text-strong">{title}</h1>
+          <p className="text-sm text-muted">Pipeline follow-up pengambilan dokumen {isStnk ? 'STNK' : 'BPKB'} konsumen</p>
           {!isStnk && <p className="text-xs text-warning-600 mt-1">Hanya BPKB pembelian cash. BPKB leasing tidak ditampilkan karena diserahkan ke leasing.</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={loadData} className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">
+          <button onClick={loadData} className="flex items-center gap-2 px-3 py-2 bg-panel border border-border rounded-lg text-sm font-medium text-muted hover:bg-hover">
             <RefreshCw size={15} /> Refresh
           </button>
           <button onClick={handleExport} disabled={exporting || filteredItems.length === 0} className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-lg text-sm font-medium shadow-lg shadow-green-600/20">
@@ -203,11 +203,11 @@ export default function ShowroomDocumentFollowup({ type }) {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl border border-blue-200 bg-blue-50 text-blue-700">
+        <div className="p-4 rounded-xl border border-accent-soft bg-accent-soft text-accent-text">
           <p className="text-xs font-medium opacity-80">Total Pipeline</p>
           <p className="text-2xl font-bold mt-1">{counts.all || 0}</p>
         </div>
-        <div className="p-4 rounded-xl border border-slate-200 bg-white text-slate-700">
+        <div className="p-4 rounded-xl border border-border bg-panel text-text">
           <p className="text-xs font-medium opacity-80">Belum Dihubungi</p>
           <p className="text-2xl font-bold mt-1">{counts.belum_dihubungi || 0}</p>
         </div>
@@ -221,13 +221,13 @@ export default function ShowroomDocumentFollowup({ type }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-wrap gap-3">
+      <div className="bg-panel rounded-xl border border-border shadow-sm p-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[220px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={isStnk ? 'Cari nama, no mesin, no polisi...' : 'Cari nama, no mesin, no BPKB...'} className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={isStnk ? 'Cari nama, no mesin, no polisi...' : 'Cari nama, no mesin, no BPKB...'} className="w-full pl-9 pr-4 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
         </div>
         {!isStnk && (
-          <select value={overdueMin} onChange={(e) => setOverdueMin(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+          <select value={overdueMin} onChange={(e) => setOverdueMin(e.target.value)} className="px-3 py-2 bg-hover border border-border rounded-lg text-sm">
             <option value="all">Semua Overdue</option>
             <option value="180">Overdue &gt;= 180 Hari</option>
             <option value="365">Overdue &gt;= 365 Hari</option>
@@ -237,7 +237,7 @@ export default function ShowroomDocumentFollowup({ type }) {
 
       <div className="flex flex-wrap gap-2">
         {statuses.map((item) => (
-          <button key={item.value} onClick={() => setStatus(item.value)} className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${status === item.value ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+          <button key={item.value} onClick={() => setStatus(item.value)} className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${status === item.value ? 'bg-accent border-accent text-white' : 'bg-panel border-border text-muted hover:bg-hover'}`}>
             {item.label} ({counts[item.value] || 0})
           </button>
         ))}
@@ -245,33 +245,33 @@ export default function ShowroomDocumentFollowup({ type }) {
 
       {error && <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg text-sm text-danger-600">{error}</div>}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-panel rounded-xl border border-border shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center p-12"><Loader2 className="animate-spin text-blue-600" size={26} /></div>
+          <div className="flex items-center justify-center p-12"><Loader2 className="animate-spin text-accent" size={26} /></div>
         ) : filteredItems.length === 0 ? (
-          <div className="p-12 text-center"><CheckCircle2 className="mx-auto text-success-400 mb-2" size={32} /><p className="text-sm text-slate-500">Tidak ada data follow-up sesuai filter</p></div>
+          <div className="p-12 text-center"><CheckCircle2 className="mx-auto text-success-400 mb-2" size={32} /><p className="text-sm text-muted">Tidak ada data follow-up sesuai filter</p></div>
         ) : (
           <div className="divide-y divide-slate-100">
             {filteredItems.map((item) => {
               const currentStatus = getStatus(item)
               const waUrl = buildWhatsappUrl(type, item)
               return (
-                <div key={item.engine_number} className="p-4 hover:bg-slate-50/60 transition-colors">
+                <div key={item.engine_number} className="p-4 hover:bg-hover/60 transition-colors">
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="space-y-2 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-blue-50 text-blue-600 border-blue-200"><Icon size={11} />{isStnk ? 'STNK' : 'BPKB'}</span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-accent-soft text-accent border-accent-soft"><Icon size={11} />{isStnk ? 'STNK' : 'BPKB'}</span>
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${statusColors[currentStatus] || statusColors.belum_dihubungi}`}>{statuses.find((s) => s.value === currentStatus)?.label || currentStatus}</span>
                         {!isStnk && <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium border bg-warning-50 text-warning-600 border-warning-200">{item.overdue_days || 0} hari</span>}
                       </div>
                       <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-                        <div className="flex items-center gap-2 min-w-0"><User size={15} className="text-slate-400 shrink-0" /><div className="min-w-0"><p className="text-sm font-semibold text-slate-800 truncate">{item.stnk_name || '-'}</p><p className="text-xs text-slate-400 truncate">Pemohon: {item.applicant_name || item.requestor_name || '-'}</p></div></div>
-                        <div className="flex items-center gap-2 min-w-0"><Phone size={15} className="text-slate-400 shrink-0" /><p className="text-sm text-slate-600 truncate">{item.mobile || item.customer_phone || '-'}</p></div>
-                        <div className="flex items-center gap-2 min-w-0"><Bike size={15} className="text-slate-400 shrink-0" /><p className="text-sm text-slate-600 truncate">{item.engine_number || '-'}</p></div>
-                        <div className="flex items-center gap-2 min-w-0"><MapPin size={15} className="text-slate-400 shrink-0" /><p className="text-sm text-slate-600 truncate">{isStnk ? item.stnk_location || '-' : item.bpkb_location || '-'}</p></div>
+                        <div className="flex items-center gap-2 min-w-0"><User size={15} className="text-faint shrink-0" /><div className="min-w-0"><p className="text-sm font-semibold text-text truncate">{item.stnk_name || '-'}</p><p className="text-xs text-faint truncate">Pemohon: {item.applicant_name || item.requestor_name || '-'}</p></div></div>
+                        <div className="flex items-center gap-2 min-w-0"><Phone size={15} className="text-faint shrink-0" /><p className="text-sm text-muted truncate">{item.mobile || item.customer_phone || '-'}</p></div>
+                        <div className="flex items-center gap-2 min-w-0"><Bike size={15} className="text-faint shrink-0" /><p className="text-sm text-muted truncate">{item.engine_number || '-'}</p></div>
+                        <div className="flex items-center gap-2 min-w-0"><MapPin size={15} className="text-faint shrink-0" /><p className="text-sm text-muted truncate">{isStnk ? item.stnk_location || '-' : item.bpkb_location || '-'}</p></div>
                       </div>
-                      <p className="text-xs text-slate-500">{isStnk ? `No Polisi: ${item.police_number || '-'} | Jadi STNK: ${formatDate(item.stnk_ready_date)}` : `No BPKB: ${item.bpkb_number || '-'} | Jadi BPKB: ${formatDate(item.bpkb_ready_date)}`}</p>
-                      {item.followup?.note && <p className="text-xs text-slate-500">Catatan terakhir: {item.followup.note}</p>}
+                      <p className="text-xs text-muted">{isStnk ? `No Polisi: ${item.police_number || '-'} | Jadi STNK: ${formatDate(item.stnk_ready_date)}` : `No BPKB: ${item.bpkb_number || '-'} | Jadi BPKB: ${formatDate(item.bpkb_ready_date)}`}</p>
+                      {item.followup?.note && <p className="text-xs text-muted">Catatan terakhir: {item.followup.note}</p>}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <button onClick={() => openWhatsapp(item)} disabled={!waUrl || savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-lg text-xs font-medium transition-colors">{savingKey === `${item.engine_number}:sudah_dihubungi` ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />} WhatsApp</button>

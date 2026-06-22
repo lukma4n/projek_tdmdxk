@@ -8,11 +8,11 @@ import {
 } from 'lucide-react'
 
 const statusColors = {
-  belum: 'bg-slate-50 text-slate-600 border-slate-200',
-  kpb1_due: 'bg-blue-50 text-blue-600 border-blue-200',
-  kpb2_due: 'bg-amber-50 text-amber-600 border-amber-200',
+  belum: 'bg-hover text-muted border-border',
+  kpb1_due: 'bg-accent-soft text-accent border-accent-soft',
+  kpb2_due: 'bg-warning-soft text-warning border-amber-200',
   kpb3_due: 'bg-danger-50 text-danger-600 border-danger-200',
-  kpb4_due: 'bg-purple-50 text-purple-600 border-purple-200',
+  kpb4_due: 'bg-accent-soft text-accent border-purple-200',
 }
 
 const followupStatuses = [
@@ -24,8 +24,8 @@ const followupStatuses = [
 ]
 
 const followupColors = {
-  belum_dihubungi: 'bg-slate-50 text-slate-600 border-slate-200',
-  sudah_dihubungi: 'bg-blue-50 text-blue-600 border-blue-200',
+  belum_dihubungi: 'bg-hover text-muted border-border',
+  sudah_dihubungi: 'bg-accent-soft text-accent border-accent-soft',
   booking: 'bg-warning-50 text-warning-600 border-warning-200',
   datang: 'bg-success-50 text-success-600 border-success-200',
   batal: 'bg-danger-50 text-danger-600 border-danger-200',
@@ -44,7 +44,7 @@ function KpbCell({ status, wo }) {
           <CheckCircle2 size={10} />
           <span>Done</span>
         </span>
-        <span className="text-xs text-slate-400 mt-1">{wo || 'WO'}</span>
+        <span className="text-xs text-faint mt-1">{wo || 'WO'}</span>
       </div>
     )
   }
@@ -57,7 +57,7 @@ function KpbCell({ status, wo }) {
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-slate-50 text-slate-400 border-slate-200">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-hover text-faint border-border">
       <span>-</span>
     </span>
   )
@@ -292,13 +292,13 @@ export default function Customers() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Data Konsumen</h1>
-          <p className="text-sm text-slate-500">Monitoring Service Berkala KPB (Kartu Perawatan Berkala)</p>
+          <h1 className="text-2xl font-bold text-text-strong">Data Konsumen</h1>
+          <p className="text-sm text-muted">Monitoring Service Berkala KPB (Kartu Perawatan Berkala)</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={loadAll}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-panel border border-border rounded-lg text-sm font-medium text-muted hover:bg-hover transition-all shadow-sm"
           >
             <RefreshCw size={16} />
             Refresh
@@ -311,11 +311,11 @@ export default function Customers() {
         {summaryCards.map((card) => {
           const Icon = card.icon
           const colorMap = {
-            blue: 'bg-blue-50 text-blue-600 border-blue-200',
+            blue: 'bg-accent-soft text-accent border-accent-soft',
             success: 'bg-success-50 text-success-600 border-success-200',
             warning: 'bg-warning-50 text-warning-600 border-warning-200',
             danger: 'bg-danger-50 text-danger-600 border-danger-200',
-            purple: 'bg-purple-50 text-purple-600 border-purple-200',
+            purple: 'bg-accent-soft text-accent border-purple-200',
           }
           return (
             <div key={card.label} className={`p-4 rounded-xl border ${colorMap[card.color]}`}>
@@ -331,7 +331,7 @@ export default function Customers() {
 
       {/* Alerts Panel */}
       {(alerts.data.length > 0 || alerts.summary.overdue > 0 || alerts.summary.warning > 0) && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-panel rounded-xl border border-border shadow-sm overflow-hidden">
           <button
             onClick={() => setShowAlerts(!showAlerts)}
             className="w-full px-5 py-4 flex items-center justify-between bg-danger-50 border-b border-danger-200"
@@ -350,41 +350,41 @@ export default function Customers() {
             <div className="overflow-x-auto scrollbar-hide">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
+                  <tr className="bg-hover border-b border-border">
                     {['Konsumen', 'Kontak', 'Motor', 'Tgl Beli', 'KPB', 'Tenggat', 'Status', 'Follow-up'].map((h) => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {alerts.data.slice(0, 10).map((alert, i) => (
-                    <tr key={i} className="hover:bg-slate-50/50">
+                    <tr key={i} className="hover:bg-hover/50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <User size={14} className="text-slate-400" />
-                          <span className="text-sm font-medium text-slate-700">{alert.customer}</span>
+                          <User size={14} className="text-faint" />
+                          <span className="text-sm font-medium text-text">{alert.customer}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <Phone size={14} className="text-slate-400" />
-                          <span className="text-sm text-slate-600">{alert.customer_mobile || '-'}</span>
+                          <Phone size={14} className="text-faint" />
+                          <span className="text-sm text-muted">{alert.customer_mobile || '-'}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <Bike size={14} className="text-slate-400" />
-                          <span className="text-sm text-slate-600">{alert.model || '-'} {alert.no_frame ? `(${alert.no_frame})` : ''}</span>
+                          <Bike size={14} className="text-faint" />
+                          <span className="text-sm text-muted">{alert.model || '-'} {alert.no_frame ? `(${alert.no_frame})` : ''}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">{formatDate(alert.so_date)}</td>
+                      <td className="px-4 py-3 text-sm text-muted">{formatDate(alert.so_date)}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${statusColors[alert.kpb_status] || 'bg-slate-50 text-slate-600'}`}>
+                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${statusColors[alert.kpb_status] || 'bg-hover text-muted'}`}>
                           {alert.kpb_label}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-sm text-slate-600">{formatDate(alert.kpb_due_date)}</p>
+                        <p className="text-sm text-muted">{formatDate(alert.kpb_due_date)}</p>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${getAlertBadge(alert.days_remaining)}`}>
@@ -394,7 +394,7 @@ export default function Customers() {
                       <td className="px-4 py-3">
                         <button
                           onClick={() => openFollowup(alert)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs font-medium text-blue-600 hover:bg-blue-100"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-accent-soft border border-accent-soft rounded-lg text-xs font-medium text-accent hover:bg-accent-soft"
                         >
                           <MessageSquare size={13} />
                           {alert.followup ? followupStatuses.find((s) => s.value === alert.followup.status)?.label || 'Follow-up' : 'Follow-up'}
@@ -410,22 +410,22 @@ export default function Customers() {
       )}
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-wrap items-center gap-3">
+      <div className="bg-panel rounded-xl border border-border shadow-sm p-4 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[240px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             type="text"
             placeholder="Cari nama, no HP, atau no rangka..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-4 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
 
         <select
           value={filterKpb}
           onChange={(e) => setFilterKpb(e.target.value)}
-          className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
         >
           <option value="all">Semua Status KPB</option>
           <option value="belum">Belum KPB</option>
@@ -438,7 +438,7 @@ export default function Customers() {
         <select
           value={filterYear}
           onChange={(e) => setFilterYear(e.target.value)}
-          className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
         >
           <option value="">Semua Tahun</option>
           <option value="2022">2022</option>
@@ -451,7 +451,7 @@ export default function Customers() {
         <select
           value={filterMonth}
           onChange={(e) => setFilterMonth(e.target.value)}
-          className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
         >
           <option value="">Semua Bulan</option>
           <option value="1">Januari</option>
@@ -471,7 +471,7 @@ export default function Customers() {
         <select
           value={filterModel}
           onChange={(e) => setFilterModel(e.target.value)}
-          className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
         >
           <option value="all">Semua Model</option>
           {models.map((m) => (
@@ -482,7 +482,7 @@ export default function Customers() {
         <button
           onClick={handleExportExcel}
           disabled={exporting || customers.length === 0}
-          className="flex items-center gap-1.5 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600 hover:bg-green-100 transition-all disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-2 bg-success-soft border border-green-200 rounded-lg text-sm text-success hover:bg-green-100 transition-all disabled:opacity-50"
         >
           {exporting ? (
             <Loader2 size={14} className="animate-spin" />
@@ -494,20 +494,20 @@ export default function Customers() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+      <div className="bg-panel rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Users size={16} className="text-slate-400" />
-            <span className="text-sm font-semibold text-slate-700">Daftar Konsumen</span>
+            <Users size={16} className="text-faint" />
+            <span className="text-sm font-semibold text-text">Daftar Konsumen</span>
           </div>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-faint">
             {(pagination?.total || 0).toLocaleString('id-ID')} total data
           </span>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center p-12">
-            <Loader2 className="animate-spin text-blue-600" size={24} />
+            <Loader2 className="animate-spin text-accent" size={24} />
           </div>
         ) : error ? (
           <div className="p-8 text-center">
@@ -518,47 +518,47 @@ export default function Customers() {
           <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
+                <tr className="bg-hover border-b border-border">
                   {['No', 'Nama Konsumen', 'Kontak', 'Motor', 'Tgl Beli', 'KPB1', 'KPB2', 'KPB3', 'KPB4', 'Status', 'Follow-up'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {customers.map((item, idx) => (
-                  <tr key={item.id || idx} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-4 py-3 text-sm text-slate-500">{idx + 1}</td>
+                  <tr key={item.id || idx} className="hover:bg-hover/50 transition-colors">
+                    <td className="px-4 py-3 text-sm text-muted">{idx + 1}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <User size={14} className="text-slate-400" />
-                        <span className="text-sm font-medium text-slate-700">{item.customer_name}</span>
+                        <User size={14} className="text-faint" />
+                        <span className="text-sm font-medium text-text">{item.customer_name}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
                         {item.customer_mobile && (
-                          <span className="text-sm text-slate-600 flex items-center gap-1">
+                          <span className="text-sm text-muted flex items-center gap-1">
                             <Phone size={12} /> {item.customer_mobile}
                           </span>
                         )}
                         {item.no_ktp && (
-                          <span className="text-xs text-slate-400">KTP: {item.no_ktp}</span>
+                          <span className="text-xs text-faint">KTP: {item.no_ktp}</span>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
                         {item.model && (
-                          <span className="text-sm font-medium text-slate-700">{item.model} ({item.color || '-'}) {item.type ? `[${item.type}]` : ''}</span>
+                          <span className="text-sm font-medium text-text">{item.model} ({item.color || '-'}) {item.type ? `[${item.type}]` : ''}</span>
                         )}
                         {item.no_frame && (
-                          <span className="text-xs text-slate-400 font-mono">{item.no_frame.substring(0, 20)}...</span>
+                          <span className="text-xs text-faint font-mono">{item.no_frame.substring(0, 20)}...</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
+                    <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">
                       <div className="flex items-center gap-1">
-                        <Calendar size={12} className="text-slate-400" />
+                        <Calendar size={12} className="text-faint" />
                         {formatDate(item.so_date)}
                       </div>
                     </td>
@@ -586,7 +586,7 @@ export default function Customers() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       <button
                         onClick={() => openFollowup(item)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-panel border border-border rounded-lg text-xs font-medium text-muted hover:bg-hover"
                       >
                         <MessageSquare size={13} />
                         {item.followup ? (
@@ -605,23 +605,23 @@ export default function Customers() {
 
         {customers.length === 0 && !loading && (
           <div className="p-8 text-center">
-            <Users className="mx-auto text-slate-300 mb-2" size={32} />
-            <p className="text-sm text-slate-500">Tidak ada data konsumen</p>
-            <p className="text-xs text-slate-400 mt-1">Data penjualan belum tersedia atau belum di-upload oleh Admin</p>
+            <Users className="mx-auto text-faint mb-2" size={32} />
+            <p className="text-sm text-muted">Tidak ada data konsumen</p>
+            <p className="text-xs text-faint mt-1">Data penjualan belum tersedia atau belum di-upload oleh Admin</p>
           </div>
         )}
       </div>
 
       {followupTarget && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={(e) => e.target === e.currentTarget && setFollowupTarget(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <div className="bg-panel rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-800">Follow-up KPB</h2>
-                <p className="text-sm text-slate-500">{followupTarget.customer_name} - {followupTarget.customer_mobile || '-'}</p>
+                <h2 className="text-lg font-bold text-text">Follow-up KPB</h2>
+                <p className="text-sm text-muted">{followupTarget.customer_name} - {followupTarget.customer_mobile || '-'}</p>
               </div>
-              <button onClick={() => setFollowupTarget(null)} className="p-1 hover:bg-slate-100 rounded-lg">
-                <X size={20} className="text-slate-400" />
+              <button onClick={() => setFollowupTarget(null)} className="p-1 hover:bg-hover rounded-lg">
+                <X size={20} className="text-faint" />
               </button>
             </div>
 
@@ -629,21 +629,21 @@ export default function Customers() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Level KPB</label>
+                    <label className="block text-sm font-medium text-text mb-1">Level KPB</label>
                     <select
                       value={followupForm.kpb_level}
                       onChange={(e) => setFollowupForm({ ...followupForm, kpb_level: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
                     >
                       {['KPB1', 'KPB2', 'KPB3', 'KPB4'].map((level) => <option key={level} value={level}>{level}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                    <label className="block text-sm font-medium text-text mb-1">Status</label>
                     <select
                       value={followupForm.status}
                       onChange={(e) => setFollowupForm({ ...followupForm, status: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
                     >
                       {followupStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}
                     </select>
@@ -651,12 +651,12 @@ export default function Customers() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Catatan</label>
+                  <label className="block text-sm font-medium text-text mb-1">Catatan</label>
                   <textarea
                     value={followupForm.note}
                     onChange={(e) => setFollowupForm({ ...followupForm, note: e.target.value })}
                     rows={4}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
                     placeholder="Contoh: konsumen bersedia datang Sabtu pagi"
                   />
                 </div>
@@ -664,7 +664,7 @@ export default function Customers() {
                 <button
                   onClick={saveFollowup}
                   disabled={followupLoading}
-                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg text-sm font-medium shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-accent hover:brightness-110 disabled:bg-border-strong text-white rounded-lg text-sm font-medium shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2"
                 >
                   {followupLoading ? <Loader2 size={16} className="animate-spin" /> : <MessageSquare size={16} />}
                   Simpan Follow-up
@@ -672,21 +672,21 @@ export default function Customers() {
               </div>
 
               <div className="space-y-3 max-h-80 overflow-y-auto">
-                <h3 className="text-sm font-semibold text-slate-700">Riwayat</h3>
+                <h3 className="text-sm font-semibold text-text">Riwayat</h3>
                 {followupLoading && followupHistory.length === 0 ? (
-                  <div className="flex items-center justify-center p-8"><Loader2 className="animate-spin text-blue-600" size={22} /></div>
+                  <div className="flex items-center justify-center p-8"><Loader2 className="animate-spin text-accent" size={22} /></div>
                 ) : followupHistory.length === 0 ? (
-                  <p className="text-sm text-slate-500">Belum ada follow-up.</p>
+                  <p className="text-sm text-muted">Belum ada follow-up.</p>
                 ) : followupHistory.map((item) => (
-                  <div key={item.id} className="p-3 rounded-lg border border-slate-200 bg-slate-50">
+                  <div key={item.id} className="p-3 rounded-lg border border-border bg-hover">
                     <div className="flex items-center justify-between gap-2">
                       <span className={`px-2 py-0.5 rounded-full border text-xs font-medium ${followupColors[item.status] || followupColors.belum_dihubungi}`}>
                         {item.kpb_level} - {followupStatuses.find((s) => s.value === item.status)?.label || item.status}
                       </span>
-                      <span className="text-xs text-slate-400">{formatDateTime(item.followup_at)}</span>
+                      <span className="text-xs text-faint">{formatDateTime(item.followup_at)}</span>
                     </div>
-                    {item.note && <p className="text-sm text-slate-700 mt-2">{item.note}</p>}
-                    <p className="text-xs text-slate-400 mt-2">Oleh {item.creator?.name || item.creator?.username || '-'}</p>
+                    {item.note && <p className="text-sm text-text mt-2">{item.note}</p>}
+                    <p className="text-xs text-faint mt-2">Oleh {item.creator?.name || item.creator?.username || '-'}</p>
                   </div>
                 ))}
               </div>

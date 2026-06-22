@@ -106,9 +106,9 @@ export const dashboardStatCards = (summary, period, analysis) => [
     value: summary.closingDo || 0,
     subtext: `Periode ${formatTanggalIndo(period?.from)}${period?.from !== period?.to ? ` - ${formatTanggalIndo(period?.to)}` : ''}`,
     icon: Bike,
-    colorClass: 'text-blue-700',
-    borderClass: 'border-blue-200',
-    iconBgClass: 'bg-blue-100 text-blue-600',
+    colorClass: 'text-accent-text',
+    borderClass: 'border-accent-soft',
+    iconBgClass: 'bg-accent-soft text-accent',
   },
   {
     label: 'Cash',

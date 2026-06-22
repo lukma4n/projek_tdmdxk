@@ -37,15 +37,15 @@ function formatTanggalLengkap(dateStr) {
 }
 
 
-function CountBar({ label, value, total, color = 'bg-blue-500' }) {
+function CountBar({ label, value, total, color = 'bg-accent' }) {
   const width = total ? Math.max((value / total) * 100, 4) : 0
   return (
     <div className="space-y-1.5 group">
       <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="text-slate-600 truncate font-medium">{label || '-'}</span>
-        <span className="font-bold text-slate-800 tabular-nums">{value.toLocaleString('id-ID')}</span>
+        <span className="text-muted truncate font-medium">{label || '-'}</span>
+        <span className="font-bold text-text tabular-nums">{value.toLocaleString('id-ID')}</span>
       </div>
-      <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+      <div className="h-2.5 rounded-full bg-hover overflow-hidden">
         <div
           className={`h-full rounded-full ${color} transition-all duration-700 ease-out group-hover:opacity-80`}
           style={{ width: `${width}%` }}
@@ -57,14 +57,14 @@ function CountBar({ label, value, total, color = 'bg-blue-500' }) {
 
 function StatCard({ label, value, subtext, icon: Icon, colorClass, borderClass, iconBgClass }) {
   return (
-    <div className={`relative overflow-hidden rounded-2xl border ${borderClass} bg-white p-5 shadow-sm hover:shadow-md transition-all duration-300 group`}>
+    <div className={`relative overflow-hidden rounded-xl border ${borderClass} bg-panel p-5 shadow-sm hover:shadow-md transition-all duration-300 group`}>
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted">{label}</p>
           <p className={`text-3xl font-black ${colorClass} tabular-nums`}>{(value || 0).toLocaleString('id-ID')}</p>
-          {subtext && <p className="text-xs text-slate-500">{subtext}</p>}
+          {subtext && <p className="text-xs text-muted">{subtext}</p>}
         </div>
-        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${iconBgClass} shadow-sm`}>
+        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${iconBgClass} shadow-sm`}>
           <Icon size={24} />
         </div>
       </div>
@@ -75,13 +75,13 @@ function StatCard({ label, value, subtext, icon: Icon, colorClass, borderClass, 
 
 function SectionCard({ title, icon: Icon, children, action }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5 hover:shadow-md transition-shadow duration-300">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+    <div className="bg-panel rounded-xl border border-border shadow-sm p-6 space-y-5 hover:shadow-md transition-shadow duration-300">
+      <div className="flex items-center justify-between pb-3 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent">
             <Icon size={20} />
           </div>
-          <h2 className="font-bold text-slate-800 text-lg">{title}</h2>
+          <h2 className="font-bold text-text text-lg">{title}</h2>
         </div>
         {action}
       </div>
@@ -92,15 +92,15 @@ function SectionCard({ title, icon: Icon, children, action }) {
 
 function AnomalyTable({ rows, columns, emptyMessage }) {
   if (rows.length === 0) {
-    return <p className="text-sm text-slate-400 py-4 text-center">{emptyMessage}</p>
+    return <p className="text-sm text-faint py-4 text-center">{emptyMessage}</p>
   }
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50">
+          <tr className="border-b border-border bg-hover">
             {columns.map((col) => (
-              <th key={col.key} className={`px-3 py-2 text-xs font-semibold uppercase text-slate-500 ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
+              <th key={col.key} className={`px-3 py-2 text-xs font-semibold uppercase text-muted ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
                 {col.label}
               </th>
             ))}
@@ -108,9 +108,9 @@ function AnomalyTable({ rows, columns, emptyMessage }) {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {rows.map((row, idx) => (
-            <tr key={`${row.engine_number}-${idx}`} className="hover:bg-slate-50">
+            <tr key={`${row.engine_number}-${idx}`} className="hover:bg-hover">
               {columns.map((col) => (
-                <td key={col.key} className={`px-3 py-2 ${col.align === 'right' ? 'text-right font-bold tabular-nums' : 'text-slate-600'}`}>
+                <td key={col.key} className={`px-3 py-2 ${col.align === 'right' ? 'text-right font-bold tabular-nums' : 'text-muted'}`}>
                   {col.render ? col.render(row) : row[col.key] || '-'}
                 </td>
               ))}
@@ -126,8 +126,8 @@ const STNK_COLUMNS = [
   { key: 'engine_number', label: 'No Mesin', render: (r) => <span className="font-mono text-xs">{r.engine_number}</span> },
   { key: 'stnk_name', label: 'Nama' },
   { key: 'series', label: 'Series' },
-  { key: 'customer_type', label: 'Tipe', render: (r) => <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${r.customer_type === 'CASH' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>{r.customer_type}</span> },
-  { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company_short || <span className="text-slate-400">CASH</span> },
+  { key: 'customer_type', label: 'Tipe', render: (r) => <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${r.customer_type === 'CASH' ? 'bg-success-soft text-success' : 'bg-indigo-100 text-indigo-700'}`}>{r.customer_type}</span> },
+  { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company_short || <span className="text-faint">CASH</span> },
   { key: 'tgl_mohon_faktur', label: 'Tgl Mohon Faktur', render: (r) => formatTanggalIndo(r.tgl_mohon_faktur) },
   { key: 'birojasa', label: 'Birojasa', render: (r) => r.birojasa || '-' },
 ]
@@ -145,7 +145,7 @@ const STNK_BELUM_DIAMBIL_COLUMNS = [
     render: (r) => {
       if (!r.tgl_terima_stnk) return '-'
       const days = Math.floor((new Date() - new Date(r.tgl_terima_stnk)) / (24 * 60 * 60 * 1000))
-      return <span className={days > 30 ? 'text-red-600' : days > 14 ? 'text-amber-600' : 'text-slate-700'}>{days} hari</span>
+      return <span className={days > 30 ? 'text-danger' : days > 14 ? 'text-warning' : 'text-text'}>{days} hari</span>
     },
   },
 
@@ -155,15 +155,15 @@ const BPKB_OVERDUE_COLUMNS = [
   { key: 'engine_number', label: 'No Mesin', render: (r) => <span className="font-mono text-xs">{r.engine_number}</span> },
   { key: 'stnk_name', label: 'Nama' },
   { key: 'series', label: 'Series' },
-  { key: 'customer_type', label: 'Tipe', render: (r) => <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${r.customer_type === 'CASH' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>{r.customer_type}</span> },
-  { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company_short || <span className="text-slate-400">CASH</span> },
+  { key: 'customer_type', label: 'Tipe', render: (r) => <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${r.customer_type === 'CASH' ? 'bg-success-soft text-success' : 'bg-indigo-100 text-indigo-700'}`}>{r.customer_type}</span> },
+  { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company_short || <span className="text-faint">CASH</span> },
   { key: 'tgl_jadi_bpkb', label: 'Tgl Jadi BPKB', render: (r) => formatTanggalIndo(r.tgl_jadi_bpkb) },
   { key: 'no_bpkb', label: 'No BPKB', render: (r) => <span className="font-mono text-xs">{r.no_bpkb || '-'}</span> },
   {
     key: 'days_overdue',
     label: 'Hari Overdue',
     align: 'right',
-    render: (r) => <span className="text-red-600 font-bold">{r.days_overdue} hari</span>,
+    render: (r) => <span className="text-danger font-bold">{r.days_overdue} hari</span>,
   },
 ]
 
@@ -253,27 +253,27 @@ export default function ShowroomStnkBpkbMonitoring() {
       value: summary.stnk?.BELUM_JADI || 0,
       subtext: `+ ${summary.stnk?.BELUM_DIAMBIL || 0} belum diambil`,
       icon: FileText,
-      colorClass: 'text-red-700',
+      colorClass: 'text-danger',
       borderClass: 'border-red-200',
-      iconBgClass: 'bg-red-100 text-red-600',
+      iconBgClass: 'bg-danger-soft text-danger',
     },
     {
       label: 'BPKB Belum Jadi',
       value: summary.bpkb?.BELUM_JADI || 0,
       subtext: `+ ${summary.bpkb?.BELUM_DIAMBIL || 0} belum diambil`,
       icon: FileBadge,
-      colorClass: 'text-amber-700',
+      colorClass: 'text-warning',
       borderClass: 'border-amber-200',
-      iconBgClass: 'bg-amber-100 text-amber-600',
+      iconBgClass: 'bg-warning-soft text-warning',
     },
     {
       label: 'Plat Belum Jadi',
       value: summary.platPending || 0,
       subtext: `${summary.fakturPending || 0} faktur belum`,
       icon: Clock,
-      colorClass: 'text-blue-700',
-      borderClass: 'border-blue-200',
-      iconBgClass: 'bg-blue-100 text-blue-600',
+      colorClass: 'text-accent-text',
+      borderClass: 'border-accent-soft',
+      iconBgClass: 'bg-accent-soft text-accent',
     },
     {
       label: 'BPKB Overdue > 180 hari',
@@ -289,9 +289,9 @@ export default function ShowroomStnkBpkbMonitoring() {
       value: summary.cashCount || 0,
       subtext: 'Tanpa finance company',
       icon: TrendingUp,
-      colorClass: 'text-emerald-700',
+      colorClass: 'text-success',
       borderClass: 'border-emerald-200',
-      iconBgClass: 'bg-emerald-100 text-emerald-600',
+      iconBgClass: 'bg-success-soft text-success',
     },
     {
       label: 'Kredit Customer',
@@ -300,7 +300,7 @@ export default function ShowroomStnkBpkbMonitoring() {
       icon: Briefcase,
       colorClass: 'text-indigo-700',
       borderClass: 'border-indigo-200',
-      iconBgClass: 'bg-indigo-100 text-indigo-600',
+      iconBgClass: 'bg-indigo-100 text-accent',
     },
   ]
 
@@ -308,8 +308,8 @@ export default function ShowroomStnkBpkbMonitoring() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center space-y-3">
-          <Loader2 className="animate-spin text-blue-600 mx-auto" size={32} />
-          <p className="text-sm text-slate-500">Memuat data monitoring STNK & BPKB...</p>
+          <Loader2 className="animate-spin text-accent mx-auto" size={32} />
+          <p className="text-sm text-muted">Memuat data monitoring STNK & BPKB...</p>
         </div>
       </div>
     )
@@ -319,11 +319,11 @@ export default function ShowroomStnkBpkbMonitoring() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-3">
-            <AlertTriangle className="text-red-500" size={28} />
+          <div className="mx-auto w-16 h-16 bg-danger-soft rounded-full flex items-center justify-center mb-3">
+            <AlertTriangle className="text-danger" size={28} />
           </div>
-          <p className="text-red-600 font-medium">{error}</p>
-          <button onClick={loadData} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+          <p className="text-danger font-medium">{error}</p>
+          <button onClick={loadData} className="mt-4 px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:brightness-110 transition-colors">
             Coba Lagi
           </button>
         </div>
@@ -339,11 +339,11 @@ export default function ShowroomStnkBpkbMonitoring() {
       {/* Refresh indicator */}
       {loading && data && (
         <div className="fixed top-0 left-0 right-0 z-50">
-          <div className="h-0.5 bg-blue-500 animate-pulse" />
+          <div className="h-0.5 bg-accent animate-pulse" />
         </div>
       )}
       {error && data && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+        <div className="flex items-center gap-2 px-4 py-2 bg-danger-soft border border-red-200 rounded-lg text-sm text-danger">
           <AlertTriangle size={16} />
           <span>{error}</span>
           <button onClick={loadData} className="ml-auto text-xs font-semibold underline">Coba Lagi</button>
@@ -353,11 +353,11 @@ export default function ShowroomStnkBpkbMonitoring() {
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Monitoring STNK & BPKB</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-3xl font-black text-text-strong tracking-tight">Monitoring STNK & BPKB</h1>
+          <p className="text-sm text-muted mt-1">
             Tracking dokumen STNK & BPKB yang belum jadi / belum diambil · {data?.totalRows || 0} unit
             {data?.syncedAt && (
-              <span className="ml-2 text-xs text-slate-400">
+              <span className="ml-2 text-xs text-faint">
                 (sinkron terakhir: {formatTanggalLengkap(data.syncedAt)})
               </span>
             )}
@@ -366,7 +366,7 @@ export default function ShowroomStnkBpkbMonitoring() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={loadData}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-panel border border-border rounded-xl text-sm font-semibold text-muted hover:bg-hover transition-all shadow-sm"
           >
             <RefreshCw size={16} /> Refresh
           </button>
@@ -382,18 +382,18 @@ export default function ShowroomStnkBpkbMonitoring() {
       </div>
 
       {/* Filter Section */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 animate-fadeIn">
+      <div className="bg-panel rounded-xl border border-border shadow-sm p-5 animate-fadeIn">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 flex-1">
             <div className="flex items-center gap-2 shrink-0">
-              <Filter size={18} className="text-blue-600" />
-              <h3 className="font-bold text-slate-800">Filter</h3>
+              <Filter size={18} className="text-accent" />
+              <h3 className="font-bold text-text">Filter</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
               <select
                 value={filters.birojasa}
                 onChange={(e) => setFilters({ ...filters, birojasa: e.target.value })}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
               >
                 <option value="">Semua Biro Jasa</option>
                 {facets.birojasas.map((b) => <option key={b} value={b}>{b}</option>)}
@@ -401,7 +401,7 @@ export default function ShowroomStnkBpkbMonitoring() {
               <select
                 value={filters.customer_type}
                 onChange={(e) => setFilters({ ...filters, customer_type: e.target.value })}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
               >
                 <option value="">Cash & Kredit</option>
                 <option value="CASH">Cash</option>
@@ -410,7 +410,7 @@ export default function ShowroomStnkBpkbMonitoring() {
               <select
                 value={filters.status_stnk}
                 onChange={(e) => setFilters({ ...filters, status_stnk: e.target.value })}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
               >
                 <option value="">Status STNK: Semua</option>
                 <option value="BELUM_JADI">Belum Jadi</option>
@@ -422,13 +422,13 @@ export default function ShowroomStnkBpkbMonitoring() {
           <div className="flex items-center gap-2 ml-4 shrink-0">
             <button
               onClick={handleApplyFilters}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+              className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-semibold hover:brightness-110 transition-colors shadow-sm"
             >
               Terapkan
             </button>
             <button
               onClick={handleResetFilters}
-              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors"
+              className="px-4 py-2 bg-hover text-text rounded-lg text-sm font-semibold hover:bg-hover transition-colors"
             >
               Reset
             </button>
@@ -451,19 +451,19 @@ export default function ShowroomStnkBpkbMonitoring() {
               label="Belum Jadi (Tgl Terima STNK kosong)"
               value={summary.stnk?.BELUM_JADI || 0}
               total={summary.total || 1}
-              color="bg-red-500"
+              color="bg-danger"
             />
             <CountBar
               label="Belum Diambil (STNK jadi, belum diserahkan)"
               value={summary.stnk?.BELUM_DIAMBIL || 0}
               total={summary.total || 1}
-              color="bg-amber-500"
+              color="bg-warning"
             />
             <CountBar
               label="Sudah Diambil / Closed"
               value={summary.stnk?.SUDAH_DIAMBIL || 0}
               total={summary.total || 1}
-              color="bg-emerald-500"
+              color="bg-success"
             />
           </div>
         </SectionCard>
@@ -474,19 +474,19 @@ export default function ShowroomStnkBpkbMonitoring() {
               label="Belum Jadi (Tgl Jadi BPKB kosong)"
               value={summary.bpkb?.BELUM_JADI || 0}
               total={summary.total || 1}
-              color="bg-red-500"
+              color="bg-danger"
             />
             <CountBar
               label="Belum Diambil (BPKB jadi, belum diserahkan)"
               value={summary.bpkb?.BELUM_DIAMBIL || 0}
               total={summary.total || 1}
-              color="bg-amber-500"
+              color="bg-warning"
             />
             <CountBar
               label="Sudah Diambil / Closed"
               value={summary.bpkb?.SUDAH_DIAMBIL || 0}
               total={summary.total || 1}
-              color="bg-emerald-500"
+              color="bg-success"
             />
           </div>
         </SectionCard>
@@ -534,7 +534,7 @@ export default function ShowroomStnkBpkbMonitoring() {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase text-left">
+                  <tr className="border-b border-border text-muted font-semibold uppercase text-left">
                     <th className="pb-2">Leasing</th>
                     <th className="pb-2 text-right">Jumlah</th>
                     <th className="pb-2 text-right">Persentase</th>
@@ -548,7 +548,7 @@ export default function ShowroomStnkBpkbMonitoring() {
                       return (
                         <tr
                           key={row.name}
-                          className="hover:bg-slate-50 cursor-pointer text-slate-700 font-medium"
+                          className="hover:bg-hover cursor-pointer text-text font-medium"
                           onClick={() => {
                             setFilters((prev) => ({ ...prev, finance_company: row.name }))
                             setTimeout(() => void loadData(), 0)
@@ -559,7 +559,7 @@ export default function ShowroomStnkBpkbMonitoring() {
                             <span className="font-semibold">{financeShortName(row.name) || row.name}</span>
                           </td>
                           <td className="py-2 text-right font-bold tabular-nums">{row.count} unit</td>
-                          <td className="py-2 text-right text-slate-500 font-medium tabular-nums">{pct}%</td>
+                          <td className="py-2 text-right text-muted font-medium tabular-nums">{pct}%</td>
                         </tr>
                       )
                     })
@@ -569,7 +569,7 @@ export default function ShowroomStnkBpkbMonitoring() {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-slate-400 py-4 text-center">Belum ada data leasing.</p>
+          <p className="text-sm text-faint py-4 text-center">Belum ada data leasing.</p>
         )}
       </SectionCard>
 
@@ -577,7 +577,7 @@ export default function ShowroomStnkBpkbMonitoring() {
       <SectionCard
         title="Per Biro Jasa (STNK/BPKB Belum Jadi)"
         icon={Briefcase}
-        action={<span className="text-sm font-semibold text-slate-500">{(data?.byBirojasa || []).length} biro jasa</span>}
+        action={<span className="text-sm font-semibold text-muted">{(data?.byBirojasa || []).length} biro jasa</span>}
       >
         {(data?.byBirojasa || []).length > 0 ? (
           <>
@@ -585,13 +585,13 @@ export default function ShowroomStnkBpkbMonitoring() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase text-slate-500">Biro Jasa</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-slate-500">STNK Belum Jadi</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-slate-500">Plat Belum Jadi</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-slate-500">BPKB Belum Jadi</th>
+                  <tr className="border-b border-border bg-hover">
+                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase text-muted">Biro Jasa</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-muted">STNK Belum Jadi</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-muted">Plat Belum Jadi</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-muted">BPKB Belum Jadi</th>
                     <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-rose-600">BPKB Overdue</th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-slate-500">Total</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold uppercase text-muted">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -600,42 +600,42 @@ export default function ShowroomStnkBpkbMonitoring() {
                     return (
                       <tr
                         key={row.name}
-                        className="hover:bg-slate-50 cursor-pointer"
+                        className="hover:bg-hover cursor-pointer"
                         onClick={() => {
                           setFilters((prev) => ({ ...prev, birojasa: row.name }))
                           setTimeout(() => void loadData(), 0)
                         }}
                       >
-                        <td className="px-3 py-2.5 text-slate-700 font-medium">{row.name}</td>
+                        <td className="px-3 py-2.5 text-text font-medium">{row.name}</td>
                         <td className="px-3 py-2.5 text-right tabular-nums">
                           {row.stnk_belum_jadi > 0 ? (
-                            <span className="inline-flex px-2 py-0.5 rounded bg-red-50 text-red-700 font-semibold text-xs">{row.stnk_belum_jadi}</span>
+                            <span className="inline-flex px-2 py-0.5 rounded bg-danger-soft text-danger font-semibold text-xs">{row.stnk_belum_jadi}</span>
                           ) : (
-                            <span className="text-slate-300">-</span>
+                            <span className="text-faint">-</span>
                           )}
                         </td>
                         <td className="px-3 py-2.5 text-right tabular-nums">
                           {row.plat_belum_jadi > 0 ? (
-                            <span className="inline-flex px-2 py-0.5 rounded bg-amber-50 text-amber-700 font-semibold text-xs">{row.plat_belum_jadi}</span>
+                            <span className="inline-flex px-2 py-0.5 rounded bg-warning-soft text-warning font-semibold text-xs">{row.plat_belum_jadi}</span>
                           ) : (
-                            <span className="text-slate-300">-</span>
+                            <span className="text-faint">-</span>
                           )}
                         </td>
                         <td className="px-3 py-2.5 text-right tabular-nums">
                           {row.bpkb_belum_jadi > 0 ? (
-                            <span className="inline-flex px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold text-xs">{row.bpkb_belum_jadi}</span>
+                            <span className="inline-flex px-2 py-0.5 rounded bg-accent-soft text-accent-text font-semibold text-xs">{row.bpkb_belum_jadi}</span>
                           ) : (
-                            <span className="text-slate-300">-</span>
+                            <span className="text-faint">-</span>
                           )}
                         </td>
                         <td className="px-3 py-2.5 text-right tabular-nums">
                           {row.bpkb_overdue > 0 ? (
                             <span className="inline-flex px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-bold text-xs">{row.bpkb_overdue}</span>
                           ) : (
-                            <span className="text-slate-300">-</span>
+                            <span className="text-faint">-</span>
                           )}
                         </td>
-                        <td className="px-3 py-2.5 text-right font-black text-slate-800 tabular-nums">{total}</td>
+                        <td className="px-3 py-2.5 text-right font-black text-text tabular-nums">{total}</td>
                       </tr>
                     )
                   })}
@@ -647,13 +647,13 @@ export default function ShowroomStnkBpkbMonitoring() {
                     const totalOverdue = data.byBirojasa.reduce((sum, r) => sum + r.bpkb_overdue, 0)
                     const grandTotal = data.byBirojasa.reduce((sum, r) => sum + r.stnk_belum_jadi + r.bpkb_belum_jadi, 0)
                     return (
-                      <tr className="bg-slate-50 font-bold border-t-2 border-slate-200">
-                        <td className="px-3 py-3 text-slate-800 uppercase tracking-wider text-xs">Total Akumulasi</td>
-                        <td className="px-3 py-3 text-right tabular-nums text-red-700">{totalStnk.toLocaleString('id-ID')}</td>
-                        <td className="px-3 py-3 text-right tabular-nums text-amber-700">{totalPlat.toLocaleString('id-ID')}</td>
-                        <td className="px-3 py-3 text-right tabular-nums text-blue-700">{totalBpkb.toLocaleString('id-ID')}</td>
+                      <tr className="bg-hover font-bold border-t-2 border-border">
+                        <td className="px-3 py-3 text-text uppercase tracking-wider text-xs">Total Akumulasi</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-danger">{totalStnk.toLocaleString('id-ID')}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-warning">{totalPlat.toLocaleString('id-ID')}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-accent-text">{totalBpkb.toLocaleString('id-ID')}</td>
                         <td className="px-3 py-3 text-right tabular-nums text-rose-700">{totalOverdue.toLocaleString('id-ID')}</td>
-                        <td className="px-3 py-3 text-right tabular-nums text-slate-900">{grandTotal.toLocaleString('id-ID')}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-text-strong">{grandTotal.toLocaleString('id-ID')}</td>
                       </tr>
                     )
                   })()}
@@ -662,7 +662,7 @@ export default function ShowroomStnkBpkbMonitoring() {
             </div>
           </>
         ) : (
-          <p className="text-sm text-slate-400 py-4 text-center">Belum ada data biro jasa. Semua unit sudah selesai.</p>
+          <p className="text-sm text-faint py-4 text-center">Belum ada data biro jasa. Semua unit sudah selesai.</p>
         )}
       </SectionCard>
 
@@ -673,7 +673,7 @@ export default function ShowroomStnkBpkbMonitoring() {
         action={
           <button
             onClick={() => setAnomalyExpanded(!anomalyExpanded)}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            className="text-faint hover:text-muted transition-colors"
           >
             {anomalyExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </button>
@@ -681,7 +681,7 @@ export default function ShowroomStnkBpkbMonitoring() {
       >
         {anomalyExpanded && (
           <>
-            <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-4">
+            <div className="flex gap-1 p-1 bg-hover rounded-xl mb-4">
               {[
                 { key: 'stnkBelumJadi', label: `STNK Belum Jadi (${anomalies.stnkBelumJadiBelumFollowup?.count || 0})` },
                 { key: 'stnkSudahJadi', label: `STNK Belum Diserahkan (${anomalies.stnkSudahJadiBelumDiambil?.count || 0})` },
@@ -692,8 +692,8 @@ export default function ShowroomStnkBpkbMonitoring() {
                   onClick={() => setActiveAnomalyTab(tab.key)}
                   className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                     activeAnomalyTab === tab.key
-                      ? 'bg-white text-blue-700 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-panel text-accent-text shadow-sm'
+                      : 'text-muted hover:text-text'
                   }`}
                 >
                   {tab.label}
@@ -737,15 +737,15 @@ export default function ShowroomStnkBpkbMonitoring() {
             { key: 'engine_number', label: 'No Mesin', render: (r) => <span className="font-mono text-xs">{r.engine_number}</span> },
             { key: 'stnk_name', label: 'Nama' },
             { key: 'series', label: 'Series' },
-            { key: 'customer_type', label: 'Tipe', render: (r) => <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${r.customer_type === 'CASH' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>{r.customer_type}</span> },
-            { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company_short || <span className="text-slate-400">CASH</span> },
+            { key: 'customer_type', label: 'Tipe', render: (r) => <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${r.customer_type === 'CASH' ? 'bg-success-soft text-success' : 'bg-indigo-100 text-indigo-700'}`}>{r.customer_type}</span> },
+            { key: 'finance_company', label: 'Leasing', render: (r) => r.finance_company_short || <span className="text-faint">CASH</span> },
             { key: 'birojasa', label: 'Birojasa' },
             { key: 'tgl_mohon_faktur', label: 'Tgl Mohon Faktur', render: (r) => formatTanggalIndo(r.tgl_mohon_faktur) },
             {
               key: 'days_pending',
               label: 'Hari Pending',
               align: 'right',
-              render: (r) => <span className={r.days_pending > 90 ? 'text-red-600 font-bold' : r.days_pending > 30 ? 'text-amber-600' : 'text-slate-700'}>{r.days_pending} hari</span>,
+              render: (r) => <span className={r.days_pending > 90 ? 'text-danger font-bold' : r.days_pending > 30 ? 'text-warning' : 'text-text'}>{r.days_pending} hari</span>,
             },
 
           ]}

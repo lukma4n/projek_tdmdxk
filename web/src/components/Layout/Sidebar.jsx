@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -18,22 +18,11 @@ import {
   Contact,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
-import { useThemeStore } from '../../stores/themeStore'
 import { displayRole as displayRoleImpl } from '../../config/roles'
 
-// Skydash Admin design tokens
-const C = {
-  primary: '#4B49AC',
-  primaryLight: '#B9B8EE',
-  textPrimary: '#1F1F1F',
-  textSecondary: '#6C7383',
-  border: '#CED4DA',
-  surface: '#F8F9FA',
-}
-
-// Struktur menu: top-level item bisa punya `children` (sub-menu ala Skydash)
+// Struktur menu: top-level item bisa punya `children` (sub-menu)
 // Kalau ada `children`, parent hanya jadi label collapsible (tidak punya path sendiri)
-// Kecuali parent juga punya `path` → clickable + expandable (typical Skydash pattern)
+// Kecuali parent juga punya `path` → clickable + expandable
 const navStructure = [
   // Bengkel — nested
   {
@@ -81,7 +70,7 @@ const navStructure = [
     ],
   },
 
-  // Showroom — nested (Penjualan / Marketing / Unit / STNK & BPKB)
+  // Showroom — nested
   {
     type: 'group', id: 'showroom', label: 'Showroom',
     items: [
@@ -168,7 +157,6 @@ function filterByPermission(items, userRole, permissionsMap) {
 
 function isPathActive(location, item) {
   if (!item.path) return false
-  // Exact match OR prefix match (untuk nested routes)
   return location.pathname === item.path
 }
 
@@ -177,38 +165,22 @@ function hasActiveChild(location, item) {
   return item.children.some((c) => isPathActive(location, c))
 }
 
-function SubMenuItem({ child, isActive, isDark, primaryColor, onNavigate }) {
+function SubMenuItem({ child, isActive, onNavigate }) {
   return (
     <li className="relative">
       <span
         aria-hidden
-        className="absolute"
-        style={{
-          left: '20px',
-          top: '50%',
-          width: '6px',
-          height: '6px',
-          marginTop: '-3px',
-          borderRadius: '50%',
-          background: isActive ? primaryColor : '#CBD5E1',
-          transition: 'background 0.2s',
-        }}
+        className="absolute left-5 top-1/2 h-1.5 w-1.5 -mt-[3px] rounded-full transition-colors duration-200"
+        style={{ background: isActive ? 'var(--accent)' : 'var(--text-faint)' }}
       />
       <Link
         to={child.path}
         onClick={onNavigate}
-        className={`block py-[0.65rem] pl-10 pr-4 text-sm leading-none transition-colors duration-150 ${isActive
-            ? isDark
-              ? 'text-white font-bold'
-              : 'font-bold'
-            : isDark
-              ? 'text-slate-300 hover:text-white'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        style={{
-          color: isActive && !isDark ? primaryColor : undefined,
-          fontWeight: isActive ? 600 : 400,
-        }}
+        className={`block py-[0.65rem] pl-10 pr-4 text-sm leading-none transition-colors duration-150 ${
+          isActive
+            ? 'font-bold text-accent'
+            : 'text-muted hover:text-text-strong'
+        }`}
       >
         {child.label}
       </Link>
@@ -216,37 +188,21 @@ function SubMenuItem({ child, isActive, isDark, primaryColor, onNavigate }) {
   )
 }
 
-function ParentNavItem({ item, isActive, isExpanded, onToggle, isDark, primaryColor }) {
+function ParentNavItem({ item, isActive, isExpanded, onToggle }) {
   const Icon = item.icon
   return (
     <li className="px-4">
       <button
         type="button"
         onClick={onToggle}
-        className={`group mb-[0.2rem] flex w-full items-center gap-3 px-3 py-[0.8125rem] text-left text-sm transition-colors duration-300 ${isActive
-            ? 'text-white'
-            : isDark
-              ? 'text-slate-300'
-              : 'text-[#6C7383]'
-          }`}
-        style={{
-          borderRadius: '8px',
-          backgroundColor: isActive ? primaryColor : 'transparent',
-          fontWeight: 500,
-        }}
-        onMouseEnter={(e) => {
-          if (!isActive) e.currentTarget.style.backgroundColor = primaryColor
-        }}
-        onMouseLeave={(e) => {
-          if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'
-        }}
+        className={`group mb-[0.2rem] flex w-full items-center gap-3 px-3 py-[0.8125rem] text-left text-sm transition-colors duration-200 rounded-lg ${
+          isActive
+            ? 'bg-accent-soft text-accent font-semibold'
+            : 'text-muted hover:bg-hover hover:text-text-strong'
+        }`}
         aria-expanded={isExpanded}
       >
-        <span
-          className={`flex shrink-0 items-center justify-center transition-colors ${isActive ? 'text-white' : isDark ? 'text-slate-300 group-hover:text-white' : 'text-[#6C7383] group-hover:text-white'
-            }`}
-          style={{ fontSize: '1rem' }}
-        >
+        <span className="flex shrink-0 items-center justify-center transition-colors" style={{ fontSize: '1rem' }}>
           <Icon size={17} />
         </span>
         <span className="menu-title flex-1 leading-none">{item.label}</span>
@@ -254,7 +210,7 @@ function ParentNavItem({ item, isActive, isExpanded, onToggle, isDark, primaryCo
           size={14}
           className="transition-transform duration-200"
           style={{
-            color: isActive ? '#FFFFFF' : isDark ? '#cbd5e1' : '#6C7383',
+            color: isActive ? 'var(--accent)' : 'var(--text-faint)',
             transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
           }}
         />
@@ -263,12 +219,12 @@ function ParentNavItem({ item, isActive, isExpanded, onToggle, isDark, primaryCo
   )
 }
 
-function GroupLabel({ label, isDark, withBorder }) {
+function GroupLabel({ label, withBorder }) {
   return (
     <p
-      className={`mb-2 mt-5 px-6 text-[10px] font-black uppercase tracking-[0.18em] first:mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'
-        }`}
-      style={withBorder ? { borderTop: `1px solid ${C.border}`, paddingTop: '14px' } : undefined}
+      className={`mb-2 mt-5 px-6 text-[10px] font-black uppercase tracking-[0.18em] first:mt-2 text-faint ${
+        withBorder ? 'border-t border-border pt-[14px]' : ''
+      }`}
     >
       {label}
     </p>
@@ -278,10 +234,8 @@ function GroupLabel({ label, isDark, withBorder }) {
 export default function Sidebar({ onNavigate }) {
   const location = useLocation()
   const { logout, user, permissions } = useAuthStore()
-  const { theme } = useThemeStore()
-  const isDark = theme === 'dark'
 
-  // Active parent per current route (derived, tidak perlu state).
+  // Active parent per current route (derived)
   const activeParentIds = useMemo(
     () => new Set(
       navStructure
@@ -290,19 +244,19 @@ export default function Sidebar({ onNavigate }) {
         .filter((p) => hasActiveChild(location, p))
         .map((p) => p.id)
     ),
-    [location.pathname],
+    [location],
   )
 
-  // Lazy initial state: buka parent yang aktif saat mount.
+  // Lazy initial state. Reset HANYA saat route berubah (bukan tiap render),
+  // supaya grup yang dibuka manual oleh user tidak langsung ter-reset.
   const [openIds, setOpenIds] = useState(() => new Set(activeParentIds))
-
-  // Saat route berubah, sinkronkan dengan parent aktif (accordion: hanya 1 terbuka).
-  useEffect(() => {
+  const [prevActive, setPrevActive] = useState(activeParentIds)
+  if (prevActive !== activeParentIds) {
+    setPrevActive(activeParentIds)
     setOpenIds(new Set(activeParentIds))
-  }, [location.pathname])
+  }
 
-  // Accordion: klik parent baru → tutup semua, buka hanya yang diklik.
-  // Klik parent yang sudah terbuka → tutup.
+  // Accordion: klik parent baru → tutup semua, buka hanya yang diklik
   const toggleParent = (id) => {
     setOpenIds((prev) => {
       if (prev.has(id)) return new Set()
@@ -313,33 +267,18 @@ export default function Sidebar({ onNavigate }) {
   const displayRole = displayRoleImpl
 
   return (
-    <aside
-      className={`relative flex h-full w-72 shrink-0 flex-col overflow-hidden ${isDark
-          ? 'bg-slate-950 text-white shadow-2xl shadow-slate-950/30'
-          : 'border-r border-slate-200 bg-white text-slate-900 shadow-sm'
-        }`}
-    >
-      {isDark && (
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(37,99,235,0.28),transparent_32%),linear-gradient(180deg,#020617_0%,#0f172a_55%,#020617_100%)]" />
-      )}
-      {isDark && (
-        <div className="absolute inset-0 opacity-[0.05] [background-image:linear-gradient(rgba(255,255,255,.55)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.55)_1px,transparent_1px)] [background-size:34px_34px]" />
-      )}
-
+    <aside className="relative flex h-full w-72 shrink-0 flex-col overflow-hidden bg-sidebar text-text border-r border-border">
       {/* Logo */}
-      <div className={`relative border-b p-5 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+      <div className="relative border-b border-border p-5">
         <div className="flex items-center gap-3">
-          <div
-            className={`flex h-11 w-11 items-center justify-center rounded-2xl shadow-sm ${isDark ? 'bg-white text-slate-950 shadow-blue-950/20' : 'bg-blue-600 text-white'
-              }`}
-          >
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent text-white shadow-sm">
             <Bike size={22} />
           </div>
           <div>
-            <h1 className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-950'}`}>
+            <h1 className="text-lg font-black tracking-tight text-text-strong">
               TDM Ketapang
             </h1>
-            <p className={isDark ? 'mt-0.5 text-xs text-slate-400' : 'mt-0.5 text-xs text-slate-500'}>
+            <p className="mt-0.5 text-xs text-muted">
               Operation System
             </p>
           </div>
@@ -348,42 +287,32 @@ export default function Sidebar({ onNavigate }) {
 
       {/* User Info */}
       <div className="relative p-4">
-        <div
-          className={`rounded-2xl border p-3 ${isDark ? 'border-white/10 bg-white/[0.07] backdrop-blur' : 'border-slate-200 bg-slate-50'
-            }`}
-        >
-          <p className={`text-sm font-bold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+        <div className="rounded-2xl border border-border bg-hover p-3">
+          <p className="text-sm font-bold text-text-strong">
             {user?.name || 'User'}
           </p>
-          <p
-            className={`mt-0.5 text-xs capitalize ${isDark ? 'text-slate-400' : 'text-slate-500'
-              }`}
-          >
+          <p className="mt-0.5 text-xs capitalize text-muted">
             {displayRole(user?.role)}
           </p>
         </div>
       </div>
 
-      {/* Navigation — Skydash pattern: nested sub-menu dengan dot indicator, solid purple bg */}
-      <nav
-        className="relative flex-1 overflow-y-auto pb-4"
-        style={{ fontFamily: '"Nunito", sans-serif' }}
-      >
+      {/* Navigation */}
+      <nav className="relative flex-1 overflow-y-auto pb-4">
         {navStructure.map((group) => {
           const visibleItems = filterByPermission(group.items || [], user?.role, permissions)
           if (visibleItems.length === 0) return null
 
           const groupLabel = group.label
           const showGroupLabel = !!groupLabel
-          // Separator untuk group Showroom saja (bukan Bengkel/Administrasi)
           const withBorder = group.id === 'showroom'
 
           return (
             <div key={group.id}>
-              {showGroupLabel && <GroupLabel label={groupLabel} isDark={isDark} withBorder={withBorder} />}
+              {showGroupLabel && <GroupLabel label={groupLabel} withBorder={withBorder} />}
               <ul className="m-0 flex list-none flex-col p-0">
                 {visibleItems.map((item) => {
-                  // === Sub-menu parent (collapsible) ===
+                  // Sub-menu parent (collapsible)
                   if (item.children) {
                     const visibleChildren = filterByPermission(item.children, user?.role, permissions)
                     if (visibleChildren.length === 0) return null
@@ -396,17 +325,9 @@ export default function Sidebar({ onNavigate }) {
                           isActive={isActive}
                           isExpanded={isOpen}
                           onToggle={() => toggleParent(item.id)}
-                          isDark={isDark}
-                          primaryColor={C.primary}
                         />
                         {isOpen && (
-                          <ul
-                            className="m-0 mb-1 list-none p-0"
-                            style={{
-                              background: 'transparent',
-                              padding: '2px 0 4px 0',
-                            }}
-                          >
+                          <ul className="m-0 mb-1 list-none p-0">
                             {visibleChildren.map((child) => {
                               const childActive = isPathActive(location, child)
                               return (
@@ -414,8 +335,6 @@ export default function Sidebar({ onNavigate }) {
                                   key={child.path}
                                   child={child}
                                   isActive={childActive}
-                                  isDark={isDark}
-                                  primaryColor={C.primary}
                                   onNavigate={onNavigate}
                                 />
                               )
@@ -426,7 +345,7 @@ export default function Sidebar({ onNavigate }) {
                     )
                   }
 
-                  // === Flat nav item ===
+                  // Flat nav item
                   const isActive = isPathActive(location, item)
                   const Icon = item.icon
                   return (
@@ -434,33 +353,13 @@ export default function Sidebar({ onNavigate }) {
                       <Link
                         to={item.path}
                         onClick={onNavigate}
-                        className={`group mb-[0.2rem] flex items-center gap-3 px-3 py-[0.8125rem] text-sm transition-colors duration-300 ${isActive
-                            ? 'text-white'
-                            : isDark
-                              ? 'text-slate-300'
-                              : 'text-[#6C7383]'
-                          }`}
-                        style={{
-                          borderRadius: '8px',
-                          backgroundColor: isActive ? C.primary : 'transparent',
-                          fontWeight: 500,
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isActive) e.currentTarget.style.backgroundColor = C.primary
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'
-                        }}
+                        className={`group mb-[0.2rem] flex items-center gap-3 px-3 py-[0.8125rem] text-sm transition-colors duration-200 rounded-lg ${
+                          isActive
+                            ? 'bg-accent-soft text-accent font-semibold'
+                            : 'text-muted hover:bg-hover hover:text-text-strong'
+                        }`}
                       >
-                        <span
-                          className={`flex shrink-0 items-center justify-center transition-colors ${isActive
-                              ? 'text-white'
-                              : isDark
-                                ? 'text-slate-300 group-hover:text-white'
-                                : 'text-[#6C7383] group-hover:text-white'
-                            }`}
-                          style={{ fontSize: '1rem' }}
-                        >
+                        <span className="flex shrink-0 items-center justify-center transition-colors" style={{ fontSize: '1rem' }}>
                           <Icon size={17} />
                         </span>
                         <span className="menu-title inline-block leading-none">{item.label}</span>
@@ -475,13 +374,10 @@ export default function Sidebar({ onNavigate }) {
       </nav>
 
       {/* Logout */}
-      <div className={`relative border-t p-4 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+      <div className="relative border-t border-border p-4">
         <button
           onClick={logout}
-          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all ${isDark
-              ? 'text-slate-400 hover:bg-white/10 hover:text-white'
-              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-950'
-            }`}
+          className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all text-muted hover:bg-hover hover:text-text-strong"
         >
           <LogOut size={18} />
           <span>Keluar</span>

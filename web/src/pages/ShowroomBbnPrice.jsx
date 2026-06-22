@@ -223,13 +223,13 @@ export default function ShowroomBbnPrice() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Master BBN</h1>
-          <p className="text-sm text-slate-500">Notice, PNBP/STCK, jasa, dan total biaya BBN internal per kode unit dan area.</p>
+          <h1 className="text-2xl font-bold text-text-strong">Master BBN</h1>
+          <p className="text-sm text-muted">Notice, PNBP/STCK, jasa, dan total biaya BBN internal per kode unit dan area.</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={startCreate} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"><Plus size={16} /> Tambah Master</button>
-          <button onClick={loadData} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"><RefreshCw size={16} /> Refresh</button>
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900">
+          <button onClick={startCreate} className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:brightness-110"><Plus size={16} /> Tambah Master</button>
+          <button onClick={loadData} className="flex items-center gap-2 rounded-lg border border-border bg-panel px-4 py-2 text-sm text-muted hover:bg-hover"><RefreshCw size={16} /> Refresh</button>
+          <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:brightness-110">
             {uploading ? <Loader2 className="animate-spin" size={16} /> : <FileUp size={16} />} Import BBN
             <input type="file" accept=".html,.htm,.xlsx,.xls,.csv" onChange={importFile} className="hidden" disabled={uploading} />
           </label>
@@ -237,32 +237,32 @@ export default function ShowroomBbnPrice() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-700"><p className="text-xs font-medium">Total Data</p><p className="mt-1 text-2xl font-bold">{summary?.total || 0}</p></div>
+        <div className="rounded-xl border border-accent-soft bg-accent-soft p-4 text-accent-text"><p className="text-xs font-medium">Total Data</p><p className="mt-1 text-2xl font-bold">{summary?.total || 0}</p></div>
         <div className="rounded-xl border border-success-200 bg-success-50 p-4 text-success-700"><p className="text-xs font-medium">Area/Kota</p><p className="mt-1 text-2xl font-bold">{summary?.cityCount || 0}</p></div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 text-slate-700"><p className="text-xs font-medium">Source</p><p className="mt-1 truncate text-sm font-semibold">{summary?.sourceFile || '-'}</p></div>
+        <div className="rounded-xl border border-border bg-panel p-4 text-text"><p className="text-xs font-medium">Source</p><p className="mt-1 truncate text-sm font-semibold">{summary?.sourceFile || '-'}</p></div>
       </div>
 
       {message && <div className="rounded-lg border border-success-200 bg-success-50 p-3 text-sm text-success-700">{message}</div>}
       {error && <div className="rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-600">{error}</div>}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-xl border border-border bg-panel p-4 shadow-sm">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari kode unit atau area..." className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari kode unit atau area..." className="w-full rounded-lg border border-border bg-hover py-2 pl-9 pr-4 text-sm" />
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <span className="text-sm font-semibold text-slate-700">Daftar Master BBN</span>
-          <span className="text-xs text-slate-400">{(pagination.total || 0).toLocaleString('id-ID')} total data</span>
+      <div className="overflow-hidden rounded-xl border border-border bg-panel shadow-sm">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <span className="text-sm font-semibold text-text">Daftar Master BBN</span>
+          <span className="text-xs text-faint">{(pagination.total || 0).toLocaleString('id-ID')} total data</span>
         </div>
-        {loading ? <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600" /></div> : (
+        {loading ? <div className="flex justify-center p-12"><Loader2 className="animate-spin text-accent" /></div> : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead><tr className="border-b border-slate-200 bg-slate-50">{['Kode', 'Area', 'Notice', 'PNBP/STCK', 'Jasa', 'Jasa Area', 'Biaya Tambahan', 'Total', 'Aksi'].map((h) => <th key={h} className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">{h}</th>)}</tr></thead>
+              <thead><tr className="border-b border-border bg-hover">{['Kode', 'Area', 'Notice', 'PNBP/STCK', 'Jasa', 'Jasa Area', 'Biaya Tambahan', 'Total', 'Aksi'].map((h) => <th key={h} className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase text-muted">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-slate-100">
-                {items.map((item) => <tr key={item.id} className="hover:bg-slate-50/50"><td className="px-4 py-3 font-mono text-sm font-semibold text-slate-800">{item.product_code}</td><td className="px-4 py-3 text-sm text-slate-600"><span className="inline-flex items-center gap-1"><MapPin size={13} />{item.city_code ? `[${item.city_code}] ` : ''}{item.city_name}</span></td><td className="px-4 py-3 text-sm">{currency(item.notice)}</td><td className="px-4 py-3 text-sm">{currency(item.pnbp_stck)}</td><td className="px-4 py-3 text-sm">{currency(item.jasa)}</td><td className="px-4 py-3 text-sm">{currency(item.jasa_area)}</td><td className="px-4 py-3 text-sm">{currency(item.fee_pusat)}</td><td className="px-4 py-3 text-sm font-bold text-blue-700">{currency(item.total)}</td><td className="px-4 py-3"><button onClick={() => startEdit(item)} className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-blue-100 hover:text-blue-700"><Pencil size={13} /> Edit</button></td></tr>)}
+                {items.map((item) => <tr key={item.id} className="hover:bg-hover/50"><td className="px-4 py-3 font-mono text-sm font-semibold text-text">{item.product_code}</td><td className="px-4 py-3 text-sm text-muted"><span className="inline-flex items-center gap-1"><MapPin size={13} />{item.city_code ? `[${item.city_code}] ` : ''}{item.city_name}</span></td><td className="px-4 py-3 text-sm">{currency(item.notice)}</td><td className="px-4 py-3 text-sm">{currency(item.pnbp_stck)}</td><td className="px-4 py-3 text-sm">{currency(item.jasa)}</td><td className="px-4 py-3 text-sm">{currency(item.jasa_area)}</td><td className="px-4 py-3 text-sm">{currency(item.fee_pusat)}</td><td className="px-4 py-3 text-sm font-bold text-accent-text">{currency(item.total)}</td><td className="px-4 py-3"><button onClick={() => startEdit(item)} className="inline-flex items-center gap-1 rounded-lg bg-hover px-2.5 py-1.5 text-xs font-semibold text-muted hover:bg-accent-soft hover:text-accent-text"><Pencil size={13} /> Edit</button></td></tr>)}
               </tbody>
             </table>
           </div>
@@ -271,13 +271,13 @@ export default function ShowroomBbnPrice() {
 
       {editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={(event) => event.target === event.currentTarget && closeEdit()}>
-          <form onSubmit={saveEdit} className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <form onSubmit={saveEdit} className="w-full max-w-3xl overflow-hidden rounded-xl bg-panel shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <div>
-                <h2 className="text-lg font-bold text-slate-800">{editingItem ? 'Edit Master BBN' : 'Tambah Master BBN'}</h2>
-                <p className="text-xs text-slate-500">Gunakan tambah master jika kode unit + area belum tersedia di data import. Total dihitung otomatis.</p>
+                <h2 className="text-lg font-bold text-text">{editingItem ? 'Edit Master BBN' : 'Tambah Master BBN'}</h2>
+                <p className="text-xs text-muted">Gunakan tambah master jika kode unit + area belum tersedia di data import. Total dihitung otomatis.</p>
               </div>
-              <button type="button" onClick={closeEdit} className="rounded-lg p-1 hover:bg-slate-100"><X size={20} className="text-slate-400" /></button>
+              <button type="button" onClick={closeEdit} className="rounded-lg p-1 hover:bg-hover"><X size={20} className="text-faint" /></button>
             </div>
             <div className="grid grid-cols-1 gap-3 p-6 md:grid-cols-2">
               <Input label="Kode Unit" value={editForm.product_code} onChange={(v) => setEditField('product_code', v.toUpperCase())} />
@@ -290,9 +290,9 @@ export default function ShowroomBbnPrice() {
               <Input label="Jasa Area" value={editForm.jasa_area} onChange={(v) => setEditField('jasa_area', v)} numeric />
               <Input label="Biaya Tambahan" value={editForm.fee_pusat} onChange={(v) => setEditField('fee_pusat', v)} numeric />
             </div>
-            <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50 px-6 py-4">
-              <button type="button" onClick={closeEdit} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-              <button disabled={saving} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">{saving ? 'Menyimpan...' : editingItem ? 'Simpan Perubahan' : 'Tambah Master'}</button>
+            <div className="flex justify-end gap-2 border-t border-border bg-hover px-6 py-4">
+              <button type="button" onClick={closeEdit} className="rounded-lg border border-border bg-panel px-4 py-2 text-sm font-semibold text-muted hover:bg-hover">Batal</button>
+              <button disabled={saving} className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-60">{saving ? 'Menyimpan...' : editingItem ? 'Simpan Perubahan' : 'Tambah Master'}</button>
             </div>
           </form>
         </div>
@@ -306,13 +306,13 @@ function Input({ label, value, onChange, placeholder = '', numeric = false }) {
     onChange(numeric ? formatNumericInput(event.target.value) : event.target.value)
   }
 
-  return <label className="block"><span className="mb-1 block text-xs font-semibold text-blue-700">{label}</span><input value={value} placeholder={placeholder} inputMode={numeric ? 'numeric' : undefined} onChange={handleChange} className="w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm" /></label>
+  return <label className="block"><span className="mb-1 block text-xs font-semibold text-accent-text">{label}</span><input value={value} placeholder={placeholder} inputMode={numeric ? 'numeric' : undefined} onChange={handleChange} className="w-full rounded-lg border border-accent-soft bg-panel px-3 py-2 text-sm" /></label>
 }
 
 function AreaInput({ label, value, onChange, options }) {
-  return <label className="block"><span className="mb-1 block text-xs font-semibold text-blue-700">{label}</span><input list="bbn-area-options" value={value} placeholder="Ketik kode/nama area, lalu pilih dari daftar..." onChange={(event) => onChange(event.target.value)} className="w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm" /><datalist id="bbn-area-options">{options.map((area) => <option key={areaValue(area)} value={areaLabel(area)} />)}</datalist><span className="mt-1 block text-[11px] text-slate-400">Area wajib dipilih dari daftar standar yang muncul.</span></label>
+  return <label className="block"><span className="mb-1 block text-xs font-semibold text-accent-text">{label}</span><input list="bbn-area-options" value={value} placeholder="Ketik kode/nama area, lalu pilih dari daftar..." onChange={(event) => onChange(event.target.value)} className="w-full rounded-lg border border-accent-soft bg-panel px-3 py-2 text-sm" /><datalist id="bbn-area-options">{options.map((area) => <option key={areaValue(area)} value={areaLabel(area)} />)}</datalist><span className="mt-1 block text-[11px] text-faint">Area wajib dipilih dari daftar standar yang muncul.</span></label>
 }
 
 function ReadOnly({ label, value }) {
-  return <label className="block"><span className="mb-1 block text-xs font-semibold text-blue-700">{label}</span><div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700">{value}</div></label>
+  return <label className="block"><span className="mb-1 block text-xs font-semibold text-accent-text">{label}</span><div className="rounded-lg border border-accent-soft bg-accent-soft px-3 py-2 text-sm font-bold text-accent-text">{value}</div></label>
 }

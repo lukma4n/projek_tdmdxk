@@ -161,8 +161,8 @@ export default function ShowroomLabelBukuService() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center space-y-3">
-          <Loader2 className="animate-spin text-blue-600 mx-auto" size={32} />
-          <p className="text-sm text-slate-500">Memuat data label buku service...</p>
+          <Loader2 className="animate-spin text-accent mx-auto" size={32} />
+          <p className="text-sm text-muted">Memuat data label buku service...</p>
         </div>
       </div>
     )
@@ -172,11 +172,11 @@ export default function ShowroomLabelBukuService() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-3">
-            <AlertTriangle className="text-red-500" size={28} />
+          <div className="mx-auto w-16 h-16 bg-danger-soft rounded-full flex items-center justify-center mb-3">
+            <AlertTriangle className="text-danger" size={28} />
           </div>
-          <p className="text-red-600 font-medium">{error}</p>
-          <button onClick={loadData} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+          <p className="text-danger font-medium">{error}</p>
+          <button onClick={loadData} className="mt-4 px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:brightness-110 transition-colors">
             Coba Lagi
           </button>
         </div>
@@ -189,8 +189,8 @@ export default function ShowroomLabelBukuService() {
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Label Buku Service</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-3xl font-black text-text-strong tracking-tight">Label Buku Service</h1>
+          <p className="text-sm text-muted mt-1">
             Cetak label stiker untuk buku service fisik customer
           </p>
         </div>
@@ -199,30 +199,30 @@ export default function ShowroomLabelBukuService() {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="px-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
+            className="px-4 py-2.5 text-sm border border-border rounded-xl bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft shadow-sm"
           />
           <button
             onClick={() => handleShortcut('today')}
-            className="px-3 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-3 py-2 text-xs font-semibold bg-accent text-white rounded-lg hover:brightness-110 transition-colors"
           >
             Hari Ini
           </button>
           <button
             onClick={() => handleShortcut('yesterday')}
-            className="px-3 py-2 text-xs font-semibold bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+            className="px-3 py-2 text-xs font-semibold bg-hover text-text rounded-lg hover:bg-hover transition-colors"
           >
             Kemarin
           </button>
           <button
             onClick={loadData}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-panel border border-border rounded-xl text-sm font-semibold text-muted hover:bg-hover transition-all shadow-sm"
           >
             <RefreshCw size={16} /> Refresh
           </button>
           <button
             onClick={handlePrintAll}
             disabled={!filteredItems.length}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Printer size={16} /> Print Semua ({filteredItems.length * 3} label)
           </button>
@@ -232,62 +232,62 @@ export default function ShowroomLabelBukuService() {
       {/* Search & Count */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-md">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             type="text"
             placeholder="Cari SO, customer, no mesin, atau salesman..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
+            className="w-full pl-9 pr-4 py-2.5 text-sm border border-border rounded-xl bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft shadow-sm"
           />
         </div>
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-muted">
           <CalendarDays size={16} />
           <span className="font-medium">{filteredItems.length} transaksi</span>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-panel rounded-xl border border-border shadow-sm overflow-hidden">
         {filteredItems.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-left">
-                  <th className="py-3 px-4 font-semibold text-slate-600">No</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600">SO Number</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600">Tanggal</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600">Customer</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600">No Mesin</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600">Type</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600">Model</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600">Salesman</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600">Leasing</th>
-                  <th className="py-3 px-4 font-semibold text-slate-600 text-center">Action</th>
+                <tr className="border-b border-border bg-hover text-left">
+                  <th className="py-3 px-4 font-semibold text-muted">No</th>
+                  <th className="py-3 px-4 font-semibold text-muted">SO Number</th>
+                  <th className="py-3 px-4 font-semibold text-muted">Tanggal</th>
+                  <th className="py-3 px-4 font-semibold text-muted">Customer</th>
+                  <th className="py-3 px-4 font-semibold text-muted">No Mesin</th>
+                  <th className="py-3 px-4 font-semibold text-muted">Type</th>
+                  <th className="py-3 px-4 font-semibold text-muted">Model</th>
+                  <th className="py-3 px-4 font-semibold text-muted">Salesman</th>
+                  <th className="py-3 px-4 font-semibold text-muted">Leasing</th>
+                  <th className="py-3 px-4 font-semibold text-muted text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredItems.map((item) => (
                   <tr
                     key={item.so_number}
-                    className="border-b border-slate-100 hover:bg-blue-50/50 transition-colors"
+                    className="border-b border-border hover:bg-accent-soft/50 transition-colors"
                   >
-                    <td className="py-3 px-4 text-slate-500 tabular-nums">{item.no}</td>
-                    <td className="py-3 px-4 font-mono text-xs text-slate-700">{item.so_number}</td>
-                    <td className="py-3 px-4 text-slate-600">{item.so_date}</td>
-                    <td className="py-3 px-4 font-medium text-slate-800">{item.customer_name}</td>
-                    <td className="py-3 px-4 font-mono text-xs text-slate-600">{item.no_engine}</td>
-                    <td className="py-3 px-4 text-slate-600">{item.type}</td>
-                    <td className="py-3 px-4 text-slate-600">{item.model}</td>
-                    <td className="py-3 px-4 text-slate-600">{item.salesman}</td>
+                    <td className="py-3 px-4 text-muted tabular-nums">{item.no}</td>
+                    <td className="py-3 px-4 font-mono text-xs text-text">{item.so_number}</td>
+                    <td className="py-3 px-4 text-muted">{item.so_date}</td>
+                    <td className="py-3 px-4 font-medium text-text">{item.customer_name}</td>
+                    <td className="py-3 px-4 font-mono text-xs text-muted">{item.no_engine}</td>
+                    <td className="py-3 px-4 text-muted">{item.type}</td>
+                    <td className="py-3 px-4 text-muted">{item.model}</td>
+                    <td className="py-3 px-4 text-muted">{item.salesman}</td>
                     <td className="py-3 px-4">
                       <span
                         className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
                           item.sales_type === 'Cash'
-                            ? 'bg-emerald-100 text-emerald-700'
+                            ? 'bg-success-soft text-success'
                             : item.sales_type === 'FIF'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-slate-100 text-slate-600'
+                            ? 'bg-accent-soft text-accent-text'
+                            : 'bg-hover text-muted'
                         }`}
                       >
                         {item.sales_type}
@@ -296,7 +296,7 @@ export default function ShowroomLabelBukuService() {
                     <td className="py-3 px-4 text-center">
                       <button
                         onClick={() => setSelectedItem(item)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent-soft text-accent-text rounded-lg text-xs font-semibold hover:bg-accent-soft transition-colors"
                         title="Preview & Print Label"
                       >
                         <Printer size={14} /> Print
@@ -308,7 +308,7 @@ export default function ShowroomLabelBukuService() {
             </table>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+          <div className="flex flex-col items-center justify-center py-16 text-faint">
             <BookOpen size={40} className="mb-3" />
             <p className="text-sm">Tidak ada transaksi untuk tanggal ini</p>
             <p className="text-xs mt-1">Pilih tanggal lain atau import data penjualan terlebih dahulu</p>

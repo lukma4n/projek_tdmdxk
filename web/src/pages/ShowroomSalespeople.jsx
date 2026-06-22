@@ -127,14 +127,14 @@ export default function ShowroomSalespeople() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Master Sales</h1>
-          <p className="text-sm text-slate-500">Daftar Sales dan Team Leader untuk laporan performance.</p>
+          <h1 className="text-2xl font-bold text-text-strong">Master Sales</h1>
+          <p className="text-sm text-muted">Daftar Sales dan Team Leader untuk laporan performance.</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={loadData} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+          <button onClick={loadData} className="flex items-center gap-2 rounded-lg border border-border bg-panel px-4 py-2 text-sm text-muted hover:bg-hover">
             <RefreshCw size={16} /> Refresh
           </button>
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+          <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:brightness-110">
             <FileUp size={16} /> Import Data
             <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileSelect} disabled={importing} />
           </label>
@@ -142,15 +142,15 @@ export default function ShowroomSalespeople() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-700">
+        <div className="rounded-xl border border-accent-soft bg-accent-soft p-4 text-accent-text">
           <p className="text-xs font-medium">Total Sales</p>
           <p className="mt-1 text-2xl font-bold">{summary?.total || 0}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 text-slate-700">
+        <div className="rounded-xl border border-border bg-panel p-4 text-text">
           <p className="text-xs font-medium">Source</p>
           <p className="mt-1 truncate text-sm font-semibold">{summary?.sourceFile || '-'}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 text-slate-700">
+        <div className="rounded-xl border border-border bg-panel p-4 text-text">
           <p className="text-xs font-medium">Last Sync</p>
           <p className="mt-1 text-sm font-semibold">
             {summary?.latestSyncedAt ? new Date(summary.latestSyncedAt).toLocaleDateString('id-ID') : '-'}
@@ -163,20 +163,20 @@ export default function ShowroomSalespeople() {
 
       {/* Import Preview */}
       {showPreview && previewData && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm space-y-4">
+        <div className="rounded-xl border border-amber-200 bg-warning-soft p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-slate-800">Preview Import ({previewData.total} rows)</h2>
+            <h2 className="font-semibold text-text">Preview Import ({previewData.total} rows)</h2>
             <div className="flex gap-2">
-              <button onClick={() => { setShowPreview(false); setPreviewData(null); setPendingFile(null) }} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Batal</button>
-              <button onClick={handleImportConfirm} disabled={importing} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+              <button onClick={() => { setShowPreview(false); setPreviewData(null); setPendingFile(null) }} className="rounded-lg border border-border bg-panel px-4 py-2 text-sm text-muted hover:bg-hover">Batal</button>
+              <button onClick={handleImportConfirm} disabled={importing} className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-60">
                 {importing && <Loader2 className="animate-spin" size={16} />} Konfirmasi Import
               </button>
             </div>
           </div>
-          <div className="overflow-x-auto rounded-lg bg-white">
+          <div className="overflow-x-auto rounded-lg bg-panel">
             <table className="w-full">
-              <thead><tr className="bg-slate-50 border-b border-slate-200">
-                {['No', 'Nama', 'Team Leader'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500">{h}</th>)}
+              <thead><tr className="bg-hover border-b border-border">
+                {['No', 'Nama', 'Team Leader'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {(previewData.sample || []).map((row, i) => (
@@ -193,16 +193,16 @@ export default function ShowroomSalespeople() {
       )}
 
       {/* Form tambah */}
-      <form onSubmit={saveItem} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-        <h2 className="font-semibold text-slate-800">Tambah / Edit Sales</h2>
+      <form onSubmit={saveItem} className="rounded-xl border border-border bg-panel p-5 shadow-sm space-y-4">
+        <h2 className="font-semibold text-text">Tambah / Edit Sales</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">Nama Sales *</label>
-            <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Contoh: GUNAWAN" />
+            <label className="block text-xs font-semibold text-muted mb-1">Nama Sales *</label>
+            <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm" placeholder="Contoh: GUNAWAN" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">Team Leader</label>
-            <select value={form.team_leader} onChange={(e) => setForm({ ...form, team_leader: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+            <label className="block text-xs font-semibold text-muted mb-1">Team Leader</label>
+            <select value={form.team_leader} onChange={(e) => setForm({ ...form, team_leader: e.target.value })} className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm">
               <option value="">-- Pilih Team Leader --</option>
               {teamLeaders.map((tl) => (
                 <option key={tl.id} value={tl.name}>{tl.name}</option>
@@ -211,43 +211,43 @@ export default function ShowroomSalespeople() {
           </div>
         </div>
         <div className="flex gap-2">
-          <button type="submit" disabled={saving} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+          <button type="submit" disabled={saving} className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-60">
             {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Simpan
           </button>
-          <button type="button" onClick={() => setForm({ name: '', team_leader: '' })} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Reset</button>
+          <button type="button" onClick={() => setForm({ name: '', team_leader: '' })} className="rounded-lg border border-border bg-panel px-4 py-2 text-sm text-muted hover:bg-hover">Reset</button>
         </div>
       </form>
 
       {/* Tabel */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <span className="text-sm font-semibold text-slate-700">Daftar Sales</span>
+      <div className="rounded-xl border border-border bg-panel shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <span className="text-sm font-semibold text-text">Daftar Sales</span>
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama atau team leader..." className="w-64 rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama atau team leader..." className="w-64 rounded-lg border border-border bg-hover py-2 pl-9 pr-4 text-sm" />
           </div>
         </div>
         {loading ? (
-          <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-600" size={24} /></div>
+          <div className="flex justify-center p-12"><Loader2 className="animate-spin text-accent" size={24} /></div>
         ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">Tidak ada data Sales.</div>
+          <div className="p-8 text-center text-sm text-muted">Tidak ada data Sales.</div>
         ) : (
           <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  {['No', 'Nama', 'Team Leader', 'Aksi'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">{h}</th>)}
+                <tr className="border-b border-border bg-hover">
+                  {['No', 'Nama', 'Team Leader', 'Aksi'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted">{h}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-3 text-sm text-slate-600">{item.no || '-'}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-slate-800">{item.name}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{item.team_leader || '-'}</td>
+                  <tr key={item.id} className="hover:bg-hover/50">
+                    <td className="px-4 py-3 text-sm text-muted">{item.no || '-'}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-text">{item.name}</td>
+                    <td className="px-4 py-3 text-sm text-muted">{item.team_leader || '-'}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        <button onClick={() => setForm({ name: item.name, team_leader: item.team_leader || '' })} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">Edit</button>
+                        <button onClick={() => setForm({ name: item.name, team_leader: item.team_leader || '' })} className="rounded-lg border border-border bg-panel px-3 py-1.5 text-xs text-muted hover:bg-hover">Edit</button>
                         <button onClick={() => handleDelete(item.id)} className="rounded-lg border border-danger-200 bg-danger-50 px-3 py-1.5 text-xs text-danger-600 hover:bg-danger-100"><Trash2 size={14} /></button>
                       </div>
                     </td>

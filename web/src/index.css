@@ -1,9 +1,141 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Design System DXK — Semantic CSS Custom Properties
+   Theme: light (default), dark, accent (biru/indigo/teal), density
+   ============================================================ */
+
+:root {
+  /* Surface */
+  --bg: #f1f5f9;
+  --bg-deep: #e8edf3;
+  --panel: #ffffff;
+  --sidebar: #ffffff;
+
+  /* Border */
+  --border: #e4e8ee;
+  --border-strong: #cbd5e1;
+
+  /* Text */
+  --text: #1e293b;
+  --text-strong: #0f172a;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
+
+  /* Accent (biru) */
+  --accent: #2563eb;
+  --accent-text: #1d4ed8;
+  --accent-soft: #eef4ff;
+
+  /* Semantic */
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --success: #16a34a;
+  --success-soft: #effdf3;
+  --warning: #d97706;
+  --warning-soft: #fff8ed;
+
+  /* Interactive */
+  --hover: #f1f5f9;
+
+  /* Spacing density */
+  --rpad: 7px;
+}
+
+/* ===== DARK THEME ===== */
+[data-theme="dark"] {
+  --bg: #020617;
+  --bg-deep: #0b1120;
+  --panel: #0f172a;
+  --sidebar: #0f172a;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --text: #e2e8f0;
+  --text-strong: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+  --accent: #3b82f6;
+  --accent-text: #7dabfb;
+  --accent-soft: rgba(59, 130, 246, 0.15);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.14);
+  --success: #4ade80;
+  --success-soft: rgba(74, 222, 128, 0.14);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.14);
+  --hover: rgba(255, 255, 255, 0.05);
+}
+
+/* ===== ACCENT: INDIGO ===== */
+[data-accent="indigo"] {
+  --accent: #4f46e5;
+  --accent-text: #4338ca;
+  --accent-soft: #eef2ff;
+}
+[data-theme="dark"][data-accent="indigo"] {
+  --accent: #6366f1;
+  --accent-text: #a5b4fc;
+  --accent-soft: rgba(99, 102, 241, 0.16);
+}
+
+/* ===== ACCENT: TEAL ===== */
+[data-accent="teal"] {
+  --accent: #0d9488;
+  --accent-text: #0f766e;
+  --accent-soft: #effdfa;
+}
+[data-theme="dark"][data-accent="teal"] {
+  --accent: #14b8a6;
+  --accent-text: #5eead4;
+  --accent-soft: rgba(20, 184, 166, 0.16);
+}
+
+/* ===== DENSITY ===== */
+[data-density="comfortable"] {
+  --rpad: 11px;
+}
+
+/* ============================================================
+   Tailwind v4 @theme — petakan CSS var ke utility classes
+   ============================================================ */
 @theme {
-  --font-sans: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Font */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
-  
+
+  /* Surface */
+  --color-bg: var(--bg);
+  --color-bg-deep: var(--bg-deep);
+  --color-panel: var(--panel);
+  --color-sidebar: var(--sidebar);
+
+  /* Border */
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  /* Text */
+  --color-text: var(--text);
+  --color-text-strong: var(--text-strong);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+
+  /* Accent */
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+
+  /* Semantic */
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+
+  /* Interactive */
+  --color-hover: var(--hover);
+
+  /* Legacy color scales (backward compat) */
   --color-primary-50: #eff6ff;
   --color-primary-100: #dbeafe;
   --color-primary-200: #bfdbfe;
@@ -41,49 +173,73 @@
   --color-success-600: #16a34a;
 }
 
+/* ============================================================
+   Base layer
+   ============================================================ */
 @layer base {
+  html {
+    background-color: var(--bg);
+    color: var(--text);
+  }
+
   body {
     font-family: var(--font-sans);
     font-weight: 500;
-    background-color: #F8F9FA;
+    background-color: var(--bg);
+    color: var(--text);
   }
 
   code, .font-mono {
     font-family: var(--font-mono);
   }
+
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 9px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  input::placeholder {
+    color: var(--text-faint);
+  }
 }
 
+/* ============================================================
+   Utility layer
+   ============================================================ */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
-  
+
   /* Hide scrollbar for Chrome, Safari and Opera */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  
+
   /* Hide scrollbar for IE, Edge and Firefox */
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
-  
-  /* Optional: Custom thin scrollbar (alternative) */
+
+  /* Custom thin scrollbar (alternative) */
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
-  
   .scrollbar-thin::-webkit-scrollbar-track {
     background: transparent;
   }
-  
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 3px;
   }
-  
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
   }

@@ -31,10 +31,10 @@ const MONTHS = [
 ]
 
 const STATUS_BADGE = {
-  aman: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  waspada: 'bg-amber-50 text-amber-700 border-amber-200',
+  aman: 'bg-success-soft text-success border-emerald-200',
+  waspada: 'bg-warning-soft text-warning border-amber-200',
   kritis: 'bg-rose-50 text-rose-700 border-rose-200',
-  no_target: 'bg-slate-50 text-slate-500 border-slate-200',
+  no_target: 'bg-hover text-muted border-border',
 }
 
 const STATUS_LABEL = {
@@ -177,8 +177,8 @@ export default function ShowroomMarketingTarget() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Target Marketing</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-text-strong">Target Marketing</h1>
+          <p className="text-sm text-muted">
             Setting target jualan per Team Leader per bulan. Actual dihitung otomatis dari closing DO.
           </p>
         </div>
@@ -186,27 +186,27 @@ export default function ShowroomMarketingTarget() {
           <select
             value={year}
             onChange={(e) => setYear(parseInt(e.target.value, 10))}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+            className="rounded-lg border border-border bg-panel px-3 py-2 text-sm text-text"
           >
             {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
           <select
             value={month}
             onChange={(e) => setMonth(parseInt(e.target.value, 10))}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+            className="rounded-lg border border-border bg-panel px-3 py-2 text-sm text-text"
           >
             {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
           </select>
           <button
             onClick={loadData}
-            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            className="flex items-center gap-2 rounded-lg border border-border bg-panel px-3 py-2 text-sm text-muted hover:bg-hover"
           >
             <RefreshCw size={16} /> Refresh
           </button>
           {isEditable && (
             <button
               onClick={openCreateForm}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:brightness-110"
             >
               <Target size={16} /> Tambah Target
             </button>
@@ -215,7 +215,7 @@ export default function ShowroomMarketingTarget() {
       </div>
 
       {!isEditable && (
-        <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">
+        <div className="flex items-center gap-2 rounded-lg border border-accent-soft bg-accent-soft p-3 text-sm text-accent-text">
           <Award size={16} />
           <span>Mode baca saja. Hanya Kepala Cabang yang dapat mengubah target marketing.</span>
         </div>
@@ -226,19 +226,19 @@ export default function ShowroomMarketingTarget() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-medium text-slate-500">Jumlah Tim</p>
-          <p className="mt-1 text-2xl font-bold text-slate-800 tabular-nums">{totalSummary.team_count || 0}</p>
+        <div className="rounded-xl border border-border bg-panel p-4">
+          <p className="text-xs font-medium text-muted">Jumlah Tim</p>
+          <p className="mt-1 text-2xl font-bold text-text tabular-nums">{totalSummary.team_count || 0}</p>
         </div>
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-700">
+        <div className="rounded-xl border border-accent-soft bg-accent-soft p-4 text-accent-text">
           <p className="text-xs font-medium">Total Target Unit</p>
           <p className="mt-1 text-2xl font-bold tabular-nums">{(totalSummary.total_target || 0).toLocaleString('id-ID')}</p>
         </div>
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-700">
+        <div className="rounded-xl border border-emerald-200 bg-success-soft p-4 text-success">
           <p className="text-xs font-medium">Total Actual</p>
           <p className="mt-1 text-2xl font-bold tabular-nums">{(totalSummary.total_actual || 0).toLocaleString('id-ID')}</p>
         </div>
-        <div className={`rounded-xl border p-4 ${totalSummary.total_gap <= 0 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+        <div className={`rounded-xl border p-4 ${totalSummary.total_gap <= 0 ? 'border-emerald-200 bg-success-soft text-success' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
           <p className="text-xs font-medium">Pencapaian</p>
           <p className="mt-1 text-2xl font-bold tabular-nums">
             {totalSummary.total_target > 0 ? `${totalSummary.total_achievement_percent}%` : '-'}
@@ -252,26 +252,26 @@ export default function ShowroomMarketingTarget() {
       </div>
 
       {/* Tabel per-TL */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+      <div className="rounded-xl border border-border bg-panel shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div>
-            <span className="text-sm font-semibold text-slate-700">Pencapaian per Team Leader</span>
-            <p className="text-xs text-slate-500">Actual dihitung dari tabel customers (closing DO) untuk {MONTHS.find((m) => m.value === month)?.label} {year}.</p>
+            <span className="text-sm font-semibold text-text">Pencapaian per Team Leader</span>
+            <p className="text-xs text-muted">Actual dihitung dari tabel customers (closing DO) untuk {MONTHS.find((m) => m.value === month)?.label} {year}.</p>
           </div>
         </div>
         {loading ? (
           <div className="flex justify-center p-12">
-            <Loader2 className="animate-spin text-blue-600" size={24} />
+            <Loader2 className="animate-spin text-accent" size={24} />
           </div>
         ) : data.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500">Belum ada Team Leader aktif di master.</div>
+          <div className="p-8 text-center text-sm text-muted">Belum ada Team Leader aktif di master.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className="border-b border-border bg-hover">
                   {['No', 'Team Leader', '# Sales', 'Target', 'Actual', 'Pencapaian', 'Sisa', 'Status', 'Aksi'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -279,14 +279,14 @@ export default function ShowroomMarketingTarget() {
                 {data.map((row, idx) => {
                   const periodRows = row.targets || []
                   return (
-                    <tr key={row.team_leader} className="hover:bg-slate-50/50">
-                      <td className="px-4 py-3 text-sm text-slate-500">{idx + 1}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-slate-800">{row.team_leader}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600 tabular-nums">{row.sales_count}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-slate-800 tabular-nums">
+                    <tr key={row.team_leader} className="hover:bg-hover/50">
+                      <td className="px-4 py-3 text-sm text-muted">{idx + 1}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-text">{row.team_leader}</td>
+                      <td className="px-4 py-3 text-sm text-muted tabular-nums">{row.sales_count}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-text tabular-nums">
                         {row.target_unit > 0 ? row.target_unit.toLocaleString('id-ID') : '-'}
                       </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-emerald-700 tabular-nums">
+                      <td className="px-4 py-3 text-sm font-semibold text-success tabular-nums">
                         {row.actual_unit.toLocaleString('id-ID')}
                       </td>
                       <td className="px-4 py-3 text-sm tabular-nums">
@@ -295,7 +295,7 @@ export default function ShowroomMarketingTarget() {
                       <td className="px-4 py-3 text-sm tabular-nums">
                         {row.target_unit > 0
                           ? (row.gap <= 0
-                            ? <span className="text-emerald-700">+{Math.abs(row.gap)}</span>
+                            ? <span className="text-success">+{Math.abs(row.gap)}</span>
                             : <span className="text-rose-700">-{row.gap}</span>)
                           : '-'}
                       </td>
@@ -311,10 +311,10 @@ export default function ShowroomMarketingTarget() {
                         {isEditable && periodRows.length > 0 ? (
                           <div className="flex gap-1">
                             {periodRows.map((p) => (
-                              <div key={p.id} className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-xs">
+                              <div key={p.id} className="flex items-center gap-1 rounded-lg border border-border bg-panel px-1.5 py-1 text-xs">
                                 <button
                                   onClick={() => openEditForm({ id: p.id, team_leader: row.team_leader, period_year: p.period_year, period_month: p.period_month, target_unit: p.target_unit, notes: p.notes })}
-                                  className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                  className="rounded p-1 text-muted hover:bg-hover hover:text-text"
                                   title="Edit"
                                 >
                                   <Pencil size={12} />
@@ -330,7 +330,7 @@ export default function ShowroomMarketingTarget() {
                             ))}
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-400">-</span>
+                          <span className="text-xs text-faint">-</span>
                         )}
                       </td>
                     </tr>
@@ -348,76 +348,76 @@ export default function ShowroomMarketingTarget() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={(event) => event.target === event.currentTarget && closeForm()}
         >
-          <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+          <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-4 rounded-xl border border-border bg-panel p-6 shadow-xl">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-800">{editingId ? 'Edit Target' : 'Tambah Target Marketing'}</h2>
-              <button type="button" onClick={closeForm} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+              <h2 className="text-lg font-bold text-text">{editingId ? 'Edit Target' : 'Tambah Target Marketing'}</h2>
+              <button type="button" onClick={closeForm} className="rounded-lg p-1 text-faint hover:bg-hover hover:text-text">
                 <X size={18} />
               </button>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-500">Team Leader *</label>
+                <label className="mb-1 block text-xs font-semibold text-muted">Team Leader *</label>
                 <select
                   required
                   value={form.team_leader}
                   onChange={(e) => setForm({ ...form, team_leader: upper(e.target.value) })}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
                 >
                   <option value="">-- Pilih Team Leader --</option>
                   {teamLeaders.map((tl) => <option key={tl.id} value={tl.name}>{tl.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-500">Target Unit *</label>
+                <label className="mb-1 block text-xs font-semibold text-muted">Target Unit *</label>
                 <input
                   required
                   type="number"
                   min="0"
                   value={form.target_unit}
                   onChange={(e) => setForm({ ...form, target_unit: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
                   placeholder="Contoh: 10"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-500">Tahun *</label>
+                <label className="mb-1 block text-xs font-semibold text-muted">Tahun *</label>
                 <select
                   required
                   value={form.period_year}
                   onChange={(e) => setForm({ ...form, period_year: parseInt(e.target.value, 10) })}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
                 >
                   {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-500">Bulan *</label>
+                <label className="mb-1 block text-xs font-semibold text-muted">Bulan *</label>
                 <select
                   required
                   value={form.period_month}
                   onChange={(e) => setForm({ ...form, period_month: parseInt(e.target.value, 10) })}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
                 >
                   {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                 </select>
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-500">Catatan (opsional)</label>
+              <label className="mb-1 block text-xs font-semibold text-muted">Catatan (opsional)</label>
               <textarea
                 rows={2}
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
                 placeholder="Catatan / alasan target..."
               />
             </div>
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={closeForm} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+              <button type="button" onClick={closeForm} className="rounded-lg border border-border bg-panel px-4 py-2 text-sm text-muted hover:bg-hover">
                 Batal
               </button>
-              <button type="submit" disabled={saving} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+              <button type="submit" disabled={saving} className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-60">
                 {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} Simpan
               </button>
             </div>
@@ -425,7 +425,7 @@ export default function ShowroomMarketingTarget() {
         </div>
       )}
 
-      <div className="flex items-center gap-2 text-xs text-slate-500">
+      <div className="flex items-center gap-2 text-xs text-muted">
         <Users size={14} /> {data.length} tim • {data.reduce((s, r) => s + r.sales_count, 0)} sales aktif • {MONTHS.find((m) => m.value === month)?.label} {year}
       </div>
     </div>

@@ -124,58 +124,58 @@ export default function WorkshopTarget() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-black text-slate-900">Target Bengkel</h1>
-          <p className="text-sm text-slate-500 mt-1">Kelola target unit dan pendapatan mekanik secara detail</p>
+          <h1 className="text-3xl font-black text-text-strong">Target Bengkel</h1>
+          <p className="text-sm text-muted mt-1">Kelola target unit dan pendapatan mekanik secara detail</p>
         </div>
         <button 
           onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 shadow-sm"
         >
           <Plus size={16} /> Tambah Target
         </button>
       </div>
 
-      {loading && <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-600" size={32}/></div>}
+      {loading && <div className="flex justify-center py-20"><Loader2 className="animate-spin text-accent" size={32}/></div>}
       
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-center gap-3">
+        <div className="bg-danger-soft text-danger p-4 rounded-xl flex items-center gap-3">
           <AlertTriangle /> {error}
         </div>
       )}
 
       {!loading && !error && (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto shadow-sm">
+        <div className="bg-panel rounded-xl border border-border overflow-x-auto shadow-sm">
           <table className="w-full text-sm whitespace-nowrap">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="bg-hover border-b border-border">
               <tr>
-                <th className="text-left p-4 font-semibold text-slate-600">Periode</th>
-                <th className="text-left p-4 font-semibold text-slate-600">Mekanik</th>
-                <th className="text-right p-4 font-semibold text-slate-600">Target Unit</th>
-                <th className="text-right p-4 font-semibold text-slate-600">Target Jasa</th>
-                <th className="text-right p-4 font-semibold text-slate-600">Target Part</th>
-                <th className="text-right p-4 font-semibold text-slate-600">Target Oli</th>
-                <th className="text-right p-4 font-semibold text-slate-600">Target LCR</th>
-                <th className="text-center p-4 font-semibold text-slate-600">Aksi</th>
+                <th className="text-left p-4 font-semibold text-muted">Periode</th>
+                <th className="text-left p-4 font-semibold text-muted">Mekanik</th>
+                <th className="text-right p-4 font-semibold text-muted">Target Unit</th>
+                <th className="text-right p-4 font-semibold text-muted">Target Jasa</th>
+                <th className="text-right p-4 font-semibold text-muted">Target Part</th>
+                <th className="text-right p-4 font-semibold text-muted">Target Oli</th>
+                <th className="text-right p-4 font-semibold text-muted">Target LCR</th>
+                <th className="text-center p-4 font-semibold text-muted">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {targets.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-slate-400">Belum ada target yang dibuat</td>
+                  <td colSpan={8} className="p-8 text-center text-faint">Belum ada target yang dibuat</td>
                 </tr>
               ) : (
                 targets.map(t => (
-                  <tr key={t.id} className="hover:bg-slate-50">
+                  <tr key={t.id} className="hover:bg-hover">
                     <td className="p-4">{t.period_year}-{String(t.period_month).padStart(2, '0')}</td>
-                    <td className="p-4 font-medium text-slate-800">{t.mechanic}</td>
+                    <td className="p-4 font-medium text-text">{t.mechanic}</td>
                     <td className="p-4 text-right">{t.target_unit}</td>
                     <td className="p-4 text-right">Rp {(t.target_jasa || 0).toLocaleString('id-ID')}</td>
                     <td className="p-4 text-right">Rp {(t.target_part || 0).toLocaleString('id-ID')}</td>
                     <td className="p-4 text-right">Rp {(t.target_oli || 0).toLocaleString('id-ID')}</td>
                     <td className="p-4 text-right">{t.target_lcr || 0}</td>
                     <td className="p-4 flex justify-center gap-2">
-                      <button onClick={() => handleOpenModal(t)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit size={16}/></button>
-                      <button onClick={() => handleDelete(t.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={16}/></button>
+                      <button onClick={() => handleOpenModal(t)} className="p-1.5 text-accent hover:bg-accent-soft rounded-lg"><Edit size={16}/></button>
+                      <button onClick={() => handleDelete(t.id)} className="p-1.5 text-danger hover:bg-danger-soft rounded-lg"><Trash2 size={16}/></button>
                     </td>
                   </tr>
                 ))
@@ -187,13 +187,13 @@ export default function WorkshopTarget() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <h3 className="text-xl font-bold text-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg-deep/80 backdrop-blur-sm">
+          <div className="bg-panel rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <h3 className="text-xl font-bold text-text">
                 {editingTarget ? 'Edit Target' : 'Tambah Target'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl">
+              <button onClick={() => setIsModalOpen(false)} className="p-2 text-faint hover:text-muted hover:bg-hover rounded-xl">
                 <X size={20} />
               </button>
             </div>
@@ -201,51 +201,51 @@ export default function WorkshopTarget() {
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Tahun</label>
-                  <input required type="number" value={formData.period_year} onChange={e => setFormData({...formData, period_year: parseInt(e.target.value)})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  <label className="block text-sm font-medium text-text mb-1">Tahun</label>
+                  <input required type="number" value={formData.period_year} onChange={e => setFormData({...formData, period_year: parseInt(e.target.value)})} className="w-full px-4 py-2 border border-border rounded-xl focus:ring-2 focus:ring-accent focus:border-accent" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Bulan</label>
-                  <input required type="number" min="1" max="12" value={formData.period_month} onChange={e => setFormData({...formData, period_month: parseInt(e.target.value)})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  <label className="block text-sm font-medium text-text mb-1">Bulan</label>
+                  <input required type="number" min="1" max="12" value={formData.period_month} onChange={e => setFormData({...formData, period_month: parseInt(e.target.value)})} className="w-full px-4 py-2 border border-border rounded-xl focus:ring-2 focus:ring-accent focus:border-accent" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Mekanik (Ketik ALL untuk target cabang)</label>
-                <input required type="text" value={formData.mechanic} onChange={e => setFormData({...formData, mechanic: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Nama Mekanik / ALL" />
+                <label className="block text-sm font-medium text-text mb-1">Mekanik (Ketik ALL untuk target cabang)</label>
+                <input required type="text" value={formData.mechanic} onChange={e => setFormData({...formData, mechanic: e.target.value})} className="w-full px-4 py-2 border border-border rounded-xl focus:ring-2 focus:ring-accent focus:border-accent" placeholder="Nama Mekanik / ALL" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Target Unit</label>
-                  <input required type="number" value={formData.target_unit} onChange={e => setFormData({...formData, target_unit: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  <label className="block text-sm font-medium text-text mb-1">Target Unit</label>
+                  <input required type="number" value={formData.target_unit} onChange={e => setFormData({...formData, target_unit: e.target.value})} className="w-full px-4 py-2 border border-border rounded-xl focus:ring-2 focus:ring-accent focus:border-accent" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Target Jasa (Rp)</label>
-                  <input required type="number" value={formData.target_jasa} onChange={e => setFormData({...formData, target_jasa: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  <label className="block text-sm font-medium text-text mb-1">Target Jasa (Rp)</label>
+                  <input required type="number" value={formData.target_jasa} onChange={e => setFormData({...formData, target_jasa: e.target.value})} className="w-full px-4 py-2 border border-border rounded-xl focus:ring-2 focus:ring-accent focus:border-accent" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Target Part (Rp)</label>
-                  <input required type="number" value={formData.target_part} onChange={e => setFormData({...formData, target_part: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  <label className="block text-sm font-medium text-text mb-1">Target Part (Rp)</label>
+                  <input required type="number" value={formData.target_part} onChange={e => setFormData({...formData, target_part: e.target.value})} className="w-full px-4 py-2 border border-border rounded-xl focus:ring-2 focus:ring-accent focus:border-accent" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Target Oli (Rp)</label>
-                  <input required type="number" value={formData.target_oli} onChange={e => setFormData({...formData, target_oli: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  <label className="block text-sm font-medium text-text mb-1">Target Oli (Rp)</label>
+                  <input required type="number" value={formData.target_oli} onChange={e => setFormData({...formData, target_oli: e.target.value})} className="w-full px-4 py-2 border border-border rounded-xl focus:ring-2 focus:ring-accent focus:border-accent" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Target LCR (Unit)</label>
-                  <input required type="number" value={formData.target_lcr} onChange={e => setFormData({...formData, target_lcr: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                  <label className="block text-sm font-medium text-text mb-1">Target LCR (Unit)</label>
+                  <input required type="number" value={formData.target_lcr} onChange={e => setFormData({...formData, target_lcr: e.target.value})} className="w-full px-4 py-2 border border-border rounded-xl focus:ring-2 focus:ring-accent focus:border-accent" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Catatan Tambahan</label>
-                <textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows={2} />
+                <label className="block text-sm font-medium text-text mb-1">Catatan Tambahan</label>
+                <textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full px-4 py-2 border border-border rounded-xl focus:ring-2 focus:ring-accent focus:border-accent" rows={2} />
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">Batal</button>
-                <button type="submit" className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl">Simpan Target</button>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 text-sm font-medium text-muted bg-hover hover:bg-hover rounded-xl">Batal</button>
+                <button type="submit" className="px-5 py-2.5 text-sm font-medium text-white bg-accent hover:brightness-110 rounded-xl">Simpan Target</button>
               </div>
             </form>
           </div>
