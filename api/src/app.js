@@ -30,6 +30,32 @@ import publicRoutes from './routes/publicRoutes.js'
 
 dotenv.config()
 
+// Validasi environment kritis saat boot. Fail-fast di produksi agar tidak
+// pernah jalan dengan secret kosong/lemah; di non-produksi cukup warning.
+function validateEnv() {
+  const isProd = process.env.NODE_ENV === 'production'
+  const problems = []
+  // Secret lemah yang pernah bocor di histori git — jangan pernah dipakai lagi.
+  const LEAKED_SECRETS = ['***REMOVED-SECRET***', 'your-secret-key-here']
+  const secret = process.env.JWT_SECRET
+
+  if (!secret) problems.push('JWT_SECRET belum di-set')
+  else if (LEAKED_SECRETS.includes(secret)) problems.push('JWT_SECRET memakai nilai default/bocor — ganti dengan `openssl rand -hex 32`')
+  else if (secret.length < 32) problems.push('JWT_SECRET terlalu pendek (minimal 32 karakter)')
+
+  if (!process.env.DATABASE_URL) problems.push('DATABASE_URL belum di-set')
+
+  if (problems.length === 0) return
+  const msg = ['Konfigurasi environment tidak valid:', ...problems.map((p) => `  - ${p}`)].join('\n')
+  if (isProd) {
+    console.error(`❌ ${msg}\nServer dihentikan.`)
+    process.exit(1)
+  } else {
+    console.warn(`⚠️  ${msg}`)
+  }
+}
+validateEnv()
+
 const app = express()
 const PORT = process.env.PORT || 3001
 

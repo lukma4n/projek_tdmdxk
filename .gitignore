@@ -3,10 +3,11 @@ api/node_modules/
 web/node_modules/
 mobile/node_modules/
 
+# Environment files — ignore ALL real env files (any level), keep only *.example templates
 .env
-*.env
-api/.env
-web/.env
+.env.*
+!.env.example
+!.env.*.example
 
 *.log
 npm-debug.log*
