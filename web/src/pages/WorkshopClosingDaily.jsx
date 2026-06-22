@@ -154,14 +154,6 @@ export default function WorkshopClosingDaily() {
       return Math.round((aktual / current_effective_day) * effective_days)
     }
 
-    const calcGrowth = (curr, prev) => {
-      if (prev === 0) return 0
-      const currPacing = current_effective_day > 0 ? curr / current_effective_day : 0
-      const prevPacing = effective_days > 0 ? prev / effective_days : 0 
-      if (prevPacing === 0) return 0
-      return (((currPacing / prevPacing) - 1) * 100).toFixed(1)
-    }
-
     const sections = [
       { 
         title: 'UNIT ENTRY (UE)', 

@@ -224,9 +224,6 @@ export default function ShowroomStnkBpkbMonitoring() {
     setTimeout(() => void loadData(), 0)
   }
 
-  // Active filter count for badge indicator
-  const activeFilterCount = [filters.birojasa, filters.tahun, filters.customer_type, filters.status_stnk].filter(Boolean).length
-
   const handleExport = async () => {
     try {
       setExporting(true)

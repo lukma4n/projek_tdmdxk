@@ -46,20 +46,22 @@ export default function RoleManagement() {
   const [savingKey, setSavingKey] = useState(null)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    loadPermissions()
-  }, [])
-
   const loadPermissions = async () => {
     try {
       const data = await fetchWithAuth('/permissions')
       setPermissions(data)
-    } catch (err) {
+    } catch {
       setError('Gagal memuat hak akses dari server')
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    // loadPermissions mengeset loading state untuk UX fetch — pola fetch-on-mount yang disengaja.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadPermissions()
+  }, [])
 
   const togglePermission = (menuKey, role) => {
     setPermissions(prev => {
@@ -84,7 +86,7 @@ export default function RoleManagement() {
       })
       // Refresh global store so changes take effect immediately
       await fetchPermissions()
-    } catch (err) {
+    } catch {
       setError('Gagal menyimpan perubahan. Pastikan Anda memiliki akses IT Master.')
     } finally {
       setSavingKey(null)

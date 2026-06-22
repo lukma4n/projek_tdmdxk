@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
-import { api, API_BASE } from '../services/api'
-import { Loader2, AlertTriangle, RefreshCw, BarChart, Users, Settings } from 'lucide-react'
+import { API_BASE } from '../services/api'
+import { Loader2, AlertTriangle, RefreshCw, Users, Settings } from 'lucide-react'
 
 export default function WorkshopSalesAnalysis() {
   const [data, setData] = useState(null)
@@ -26,6 +26,8 @@ export default function WorkshopSalesAnalysis() {
   }, [period.from, period.to])
 
   useEffect(() => {
+    // loadData mengeset loading state untuk UX fetch — pola fetch-on-deps yang disengaja.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData()
   }, [loadData])
 

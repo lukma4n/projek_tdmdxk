@@ -36,6 +36,8 @@ export default function WorkshopTarget() {
   }
 
   useEffect(() => {
+    // loadData mengeset loading state untuk UX fetch — pola fetch-on-mount yang disengaja.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData()
   }, [])
 

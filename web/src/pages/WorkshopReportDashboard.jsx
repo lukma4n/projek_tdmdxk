@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { API_BASE } from '../services/api'
-import { Loader2, Calendar, Target, Award, Wrench, BarChart3, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Loader2, Calendar, CheckCircle2, AlertCircle } from 'lucide-react'
 
 export default function WorkshopReportDashboard() {
   const [activeTab, setActiveTab] = useState('mechanic') // mechanic | kpb | branch
@@ -29,6 +29,8 @@ export default function WorkshopReportDashboard() {
   }
 
   useEffect(() => {
+    // loadData mengeset loading state untuk UX fetch — pola fetch-on-deps yang disengaja.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData()
   }, [activeTab, filterYear, filterMonth])
 
@@ -204,8 +206,6 @@ export default function WorkshopReportDashboard() {
       </div>
     )
   }
-
-  const renderBranch = () => null // Moved to Laporan Harian
 
   return (
     <div className="space-y-6 pb-20">
