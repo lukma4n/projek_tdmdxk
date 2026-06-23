@@ -189,6 +189,7 @@ async function start() {
 export { app }
 
 const isMainModule = import.meta.url === new URL(process.argv[1], import.meta.url).href
-if (isMainModule) {
+const isPm2 = 'pm_id' in process.env
+if (isMainModule || isPm2) {
   start().catch(console.error)
 }
