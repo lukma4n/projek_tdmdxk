@@ -5,7 +5,7 @@ import os from 'os'
 import path from 'path'
 import xlsx from 'xlsx'
 
-process.env.DATABASE_URL = 'file:./prisma/test.db'
+process.env.DATABASE_URL = 'file:./test.db'
 
 import { request, app } from './helpers.js'
 import { prismaTest, seedKnownUsers } from './helpers.js'

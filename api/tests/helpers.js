@@ -3,7 +3,9 @@ import { app } from '../src/app.js'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
-const TEST_DB_URL = 'file:./prisma/test.db'
+// Prisma me-resolve path SQLite relatif terhadap lokasi schema.prisma (api/prisma/),
+// jadi 'file:./test.db' → api/prisma/test.db (BUKAN nested api/prisma/prisma/).
+const TEST_DB_URL = 'file:./test.db'
 
 // Helper to point Prisma to test DB
 // Note: Prisma caches the env var, so we patch process.env before tests run

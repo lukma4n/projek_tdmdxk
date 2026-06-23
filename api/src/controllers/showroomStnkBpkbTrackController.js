@@ -615,8 +615,15 @@ export async function getPickupRequestKtp(req, res, next) {
       return res.status(404).json({ error: 'Foto KTP tidak ditemukan' })
     }
 
-    const filePath = request.ktp_photo_url.replace(/^\//, '')
-    res.sendFile(filePath, { root: process.cwd() })
+    // Defense-in-depth: resolve path & pastikan tetap di dalam folder pickup-ktp.
+    // ktp_photo_url disetel server (multer), tapi jangan percaya nilai dari DB
+    // secara membabi buta — cegah path traversal bila data pernah dimanipulasi.
+    const ktpDir = path.resolve(process.cwd(), 'uploads/pickup-ktp')
+    const filePath = path.resolve(process.cwd(), request.ktp_photo_url.replace(/^\//, ''))
+    if (filePath !== ktpDir && !filePath.startsWith(ktpDir + path.sep)) {
+      return res.status(404).json({ error: 'Foto KTP tidak ditemukan' })
+    }
+    res.sendFile(filePath)
   } catch (error) {
     next(error)
   }

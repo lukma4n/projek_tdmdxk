@@ -15,6 +15,9 @@ import {
   Bike,
   Monitor,
   Smartphone,
+  ArrowUp,
+  ArrowDown,
+  ChevronsUpDown,
 } from 'lucide-react'
 import {
   getTodayStr,
@@ -36,12 +39,9 @@ export default function ShowroomClosingDaily() {
   const reportRef = useRef(null)
   const today = getTodayStr()
   const [closingDate, setClosingDate] = useState(today)
-  
-  // Filter states
-  const [filterLeasing, setFilterLeasing] = useState('all')
-  const [filterTeam, setFilterTeam] = useState('all')
-  const [filterSales, setFilterSales] = useState('all')
-  const [searchQuery, setSearchQuery] = useState('')
+
+  // Urutkan tabel via klik header kolom. { key, dir: 'asc' | 'desc' }
+  const [sortConfig, setSortConfig] = useState(null)
 
   const loadData = useCallback(async () => {
     try {
@@ -147,58 +147,72 @@ export default function ShowroomClosingDaily() {
     team.total > (max?.total || 0) ? team : max, null
   )
 
-  // Filter transaksi
-  const filteredTransactions = (data?.transactions || []).filter(tx => {
-    // Filter by leasing
-    const txLeasing = tx.sales_type === 'Cash' ? 'Cash' : (tx.finco || tx.sales_type || '-')
-    if (filterLeasing !== 'all' && txLeasing !== filterLeasing) return false
-    
-    // Filter by team
-    if (filterTeam !== 'all' && tx.sales_coord_name !== filterTeam) return false
-    
-    // Filter by sales
-    if (filterSales !== 'all' && tx.salesman !== filterSales) return false
-    
-    // Search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      const matchSO = (tx.so_number || '').toLowerCase().includes(query)
-      const matchCustomer = (tx.customer_name || '').toLowerCase().includes(query)
-      const matchModel = (tx.model || '').toLowerCase().includes(query)
-      const matchSales = (tx.salesman || '').toLowerCase().includes(query)
-      if (!matchSO && !matchCustomer && !matchModel && !matchSales) return false
-    }
-    
-    return true
-  })
+  const allTransactions = data?.transactions || []
 
-  // Hitung total transaksi per leasing untuk footer tabel (dari filtered)
-  const leasingTotals = filteredTransactions.reduce((acc, tx) => {
+  // Nilai yang dipakai untuk mengurutkan tiap kolom.
+  const sortValue = (tx, key) => {
+    switch (key) {
+      case 'so_number': return (tx.so_number || '').toLowerCase()
+      case 'so_date': return tx.so_date ? new Date(tx.so_date).getTime() : 0
+      case 'coord': return (tx.sales_coord_name || '').toLowerCase()
+      case 'sales': return (tx.salesman || '').toLowerCase()
+      case 'customer': return (tx.customer_name || '').toLowerCase()
+      case 'type': return (tx.type || '').toLowerCase()
+      case 'model': return (tx.model || '').toLowerCase()
+      case 'leasing': return tx.sales_type === 'Cash' ? 'Cash' : (tx.finco || tx.sales_type || '')
+      default: return ''
+    }
+  }
+  // Klik header: urut asc; klik lagi -> desc; klik ke-3 -> hapus urutan.
+  const handleSort = (key) => {
+    setSortConfig(prev => {
+      if (prev?.key !== key) return { key, dir: 'asc' }
+      if (prev.dir === 'asc') return { key, dir: 'desc' }
+      return null
+    })
+  }
+  const transactions = [...allTransactions]
+  if (sortConfig) {
+    const { key, dir } = sortConfig
+    transactions.sort((a, b) => {
+      const va = sortValue(a, key)
+      const vb = sortValue(b, key)
+      if (va < vb) return dir === 'asc' ? -1 : 1
+      if (va > vb) return dir === 'asc' ? 1 : -1
+      return 0
+    })
+  }
+
+  // Hitung total transaksi per leasing untuk footer tabel
+  const leasingTotals = transactions.reduce((acc, tx) => {
     const leasing = tx.sales_type === 'Cash' ? 'Cash' : (tx.finco || tx.sales_type || 'Lainnya')
     acc[leasing] = (acc[leasing] || 0) + 1
     return acc
   }, {})
-  
-  // Extract unique values untuk dropdown filter
-  const uniqueLeasings = [...new Set((data?.transactions || []).map(tx => 
-    tx.sales_type === 'Cash' ? 'Cash' : (tx.finco || tx.sales_type || '-')
-  ))].filter(Boolean).sort()
-  
-  const uniqueTeams = [...new Set((data?.transactions || []).map(tx => 
-    tx.sales_coord_name
-  ))].filter(Boolean).sort()
-  
-  const uniqueSalesmen = [...new Set((data?.transactions || []).map(tx => 
-    tx.salesman
-  ))].filter(Boolean).sort()
-  
-  // Reset filters when date changes
+
   const handleDateChange = (newDate) => {
     setClosingDate(newDate)
-    setFilterLeasing('all')
-    setFilterTeam('all')
-    setFilterSales('all')
-    setSearchQuery('')
+    setSortConfig(null)
+  }
+
+  // Header kolom yang bisa diklik untuk mengurutkan tabel.
+  const renderSortTh = (key, label) => {
+    const active = sortConfig?.key === key
+    return (
+      <th className="text-left py-2 px-2 font-semibold whitespace-nowrap">
+        <button
+          type="button"
+          onClick={() => handleSort(key)}
+          className={`inline-flex items-center gap-1 select-none cursor-pointer ${active ? 'text-accent' : 'text-muted hover:text-text'}`}
+          title="Klik untuk urutkan kolom ini"
+        >
+          {label}
+          {active
+            ? (sortConfig.dir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)
+            : <ChevronsUpDown size={12} className="opacity-40" />}
+        </button>
+      </th>
+    )
   }
 
   // Inline stat cards (size=small) untuk report yang compact
@@ -483,132 +497,30 @@ export default function ShowroomClosingDaily() {
             <Receipt size={16} className="text-accent" />
             <h3 className="font-bold text-text text-sm">Detail Transaksi</h3>
             <span className="text-xs text-muted ml-auto">
-              {filteredTransactions.length} dari {(data?.transactions || []).length} transaksi
+              {transactions.length} transaksi
             </span>
           </div>
-          
-          {(data?.transactions || []).length > 0 ? (
+
+          {allTransactions.length > 0 ? (
             <>
-              {/* Filter Controls */}
-              <div className="bg-hover border border-border rounded-lg p-4 mb-4 space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {/* Search */}
-                  <div>
-                    <label className="block text-xs font-semibold text-muted mb-1.5">
-                      🔍 Cari
-                    </label>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="SO, Customer, Model, Sales..."
-                      className="w-full px-3 py-2 text-xs border border-border rounded-lg bg-panel text-text placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-accent-soft"
-                    />
-                  </div>
-                  
-                  {/* Filter Leasing */}
-                  <div>
-                    <label className="block text-xs font-semibold text-muted mb-1.5">
-                      💳 Leasing
-                    </label>
-                    <select
-                      value={filterLeasing}
-                      onChange={(e) => setFilterLeasing(e.target.value)}
-                      className="w-full px-3 py-2 text-xs border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
-                    >
-                      <option value="all">Semua Leasing</option>
-                      {uniqueLeasings.map(leasing => (
-                        <option key={leasing} value={leasing}>{leasing}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  {/* Filter Team */}
-                  <div>
-                    <label className="block text-xs font-semibold text-muted mb-1.5">
-                      👥 Team Leader
-                    </label>
-                    <select
-                      value={filterTeam}
-                      onChange={(e) => setFilterTeam(e.target.value)}
-                      className="w-full px-3 py-2 text-xs border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
-                    >
-                      <option value="all">Semua Team</option>
-                      {uniqueTeams.map(team => (
-                        <option key={team} value={team}>{team.toUpperCase()}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  {/* Filter Sales */}
-                  <div>
-                    <label className="block text-xs font-semibold text-muted mb-1.5">
-                      👤 Sales
-                    </label>
-                    <select
-                      value={filterSales}
-                      onChange={(e) => setFilterSales(e.target.value)}
-                      className="w-full px-3 py-2 text-xs border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
-                    >
-                      <option value="all">Semua Sales</option>
-                      {uniqueSalesmen.map(sales => (
-                        <option key={sales} value={sales}>{sales.toUpperCase()}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                
-                {/* Reset Filter Button */}
-                {(filterLeasing !== 'all' || filterTeam !== 'all' || filterSales !== 'all' || searchQuery) && (
-                  <div className="flex items-center justify-between pt-2 border-t border-border">
-                    <span className="text-xs text-muted">
-                      Filter aktif: <strong>{filteredTransactions.length}</strong> transaksi ditampilkan
-                    </span>
-                    <button
-                      onClick={() => {
-                        setFilterLeasing('all')
-                        setFilterTeam('all')
-                        setFilterSales('all')
-                        setSearchQuery('')
-                      }}
-                      className="px-3 py-1.5 text-xs font-semibold text-muted bg-panel border border-border-strong rounded-lg hover:bg-hover transition-colors"
-                    >
-                      Reset Filter
-                    </button>
-                  </div>
-                )}
-              </div>
-              
-              {/* Tabel atau Empty State */}
-              {filteredTransactions.length === 0 ? (
-                <div className="bg-hover border border-border rounded-lg p-8 text-center">
-                  <div className="mx-auto w-16 h-16 bg-hover rounded-full flex items-center justify-center mb-3">
-                    <Receipt className="text-faint" size={28} />
-                  </div>
-                  <p className="text-sm font-semibold text-muted mb-1">Tidak ada transaksi ditemukan</p>
-                  <p className="text-xs text-muted">
-                    Coba ubah filter atau kata kunci pencarian
-                  </p>
-                </div>
-              ) : (
               <div className="overflow-x-auto -mx-2 px-2 scrollbar-hide mb-4">
                 <div className="inline-block min-w-full align-middle">
                   <table className="w-full text-xs border-collapse">
                     <thead>
                       <tr className="border-b-2 border-border bg-hover">
                         <th className="text-left py-2 px-2 font-semibold text-muted whitespace-nowrap">No.</th>
-                        <th className="text-left py-2 px-2 font-semibold text-muted whitespace-nowrap">SO Number</th>
-                        <th className="text-left py-2 px-2 font-semibold text-muted whitespace-nowrap">Tanggal</th>
-                        <th className="text-left py-2 px-2 font-semibold text-muted whitespace-nowrap">Coordinator</th>
-                        <th className="text-left py-2 px-2 font-semibold text-muted whitespace-nowrap">Sales</th>
-                        <th className="text-left py-2 px-2 font-semibold text-muted whitespace-nowrap">Customer</th>
-                        <th className="text-left py-2 px-2 font-semibold text-muted whitespace-nowrap">Tipe</th>
-                        <th className="text-left py-2 px-2 font-semibold text-muted whitespace-nowrap">Model</th>
-                        <th className="text-left py-2 px-2 font-semibold text-muted whitespace-nowrap">Leasing</th>
+                        {renderSortTh('so_number', 'SO Number')}
+                        {renderSortTh('so_date', 'Tanggal')}
+                        {renderSortTh('coord', 'Coordinator')}
+                        {renderSortTh('sales', 'Sales')}
+                        {renderSortTh('customer', 'Customer')}
+                        {renderSortTh('type', 'Tipe')}
+                        {renderSortTh('model', 'Model')}
+                        {renderSortTh('leasing', 'Leasing')}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {filteredTransactions.map((tx, idx) => {
+                      {transactions.map((tx, idx) => {
                         const leasingLabel = tx.sales_type === 'Cash' ? 'Cash' : (tx.finco || tx.sales_type || '-')
                         const leasingPillClass = leasingLabel === 'Cash'
                           ? 'bg-success-soft text-success border-emerald-200'
@@ -652,10 +564,9 @@ export default function ShowroomClosingDaily() {
                   </table>
                 </div>
               </div>
-              )}
-              
-              {/* Total Summary (Outside Table for Responsive) - Only show if has data */}
-              {filteredTransactions.length > 0 && (
+
+              {/* Total Summary (Outside Table for Responsive) */}
+              {transactions.length > 0 && (
               <div className="bg-hover border-t-2 border-border-strong rounded-lg p-4">
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <span className="text-sm font-bold text-text uppercase tracking-wide">Total</span>

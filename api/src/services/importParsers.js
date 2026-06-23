@@ -1,4 +1,5 @@
 import xlsx from 'xlsx'
+import { validateExcelFile } from '../utils/excelValidator.js'
 
 function parseAgingDays(agingStr) {
   if (!agingStr) return 0
@@ -18,6 +19,7 @@ function isValidDate(date) {
 }
 
 function readRows(filePath) {
+  validateExcelFile(filePath)
   const workbook = xlsx.readFile(filePath)
   const sheet = workbook.Sheets[workbook.SheetNames[0]]
   return xlsx.utils.sheet_to_json(sheet, { header: 1 })
@@ -458,6 +460,7 @@ export function parseImportFile(module, filePath) {
  */
 export function parseStnkBpkbTrackFile(filePath, options = {}) {
   const { branchFilter = 'DXK', branchNameFilter = 'Cabang Ketapang' } = options
+  validateExcelFile(filePath)
   const workbook = xlsx.readFile(filePath)
   const sheet = workbook.Sheets[workbook.SheetNames[0]]
   const allRows = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: null, blankrows: false })

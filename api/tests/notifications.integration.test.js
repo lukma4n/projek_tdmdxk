@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-process.env.DATABASE_URL = 'file:./prisma/test.db'
+process.env.DATABASE_URL = 'file:./test.db'
 
 import { request, app, prismaTest, seedKnownUsers } from './helpers.js'
 

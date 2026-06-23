@@ -1,4 +1,5 @@
 import xlsx from 'xlsx'
+import { safeReadExcel } from '../utils/excelValidator.js'
 import { rmSync } from 'fs'
 import path from 'path'
 import os from 'os'
@@ -36,7 +37,7 @@ import {
 } from '../utils/excelUtils.js'
 
 function parseStockUnitFile(filePath) {
-  const workbook = xlsx.readFile(filePath)
+  const workbook = safeReadExcel(filePath)
   const sheet = workbook.Sheets[workbook.SheetNames[0]]
   const rows = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: null, blankrows: false }).slice(4)
   const records = []

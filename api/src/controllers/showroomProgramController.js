@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import xlsx from 'xlsx'
+import { safeReadExcel } from '../utils/excelValidator.js'
 import { PDFParse } from 'pdf-parse'
 import { clampLimit } from '../utils/pagination.js'
 import pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js'
@@ -53,7 +54,7 @@ function extractCodes(prefix) {
 }
 
 function parseLeasingPrograms(filePath, sourceFile) {
-  const wb = xlsx.readFile(filePath)
+  const wb = safeReadExcel(filePath)
   const ws = wb.Sheets.TAC
   if (!ws) return []
   return xlsx.utils.sheet_to_json(ws, { defval: '' })
@@ -69,7 +70,7 @@ function parseLeasingPrograms(filePath, sourceFile) {
 }
 
 function parseMdPrograms(filePath, sourceFile) {
-  const wb = xlsx.readFile(filePath)
+  const wb = safeReadExcel(filePath)
   const ws = wb.Sheets.SCP
   if (!ws) return []
   return xlsx.utils.sheet_to_json(ws, { defval: '' })

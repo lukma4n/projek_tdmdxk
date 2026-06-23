@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import xlsx from 'xlsx'
+import { safeReadExcel } from '../utils/excelValidator.js'
 import { prisma } from '../config/db.js'
 import { clampLimit } from '../utils/pagination.js'
 import { withImportLock } from '../services/importLockService.js'
@@ -90,7 +91,7 @@ function dedupeBbnRows(rows) {
 }
 
 export function parseBbnWorkbook(filePath, sourceFile = null) {
-  const wb = xlsx.readFile(filePath)
+  const wb = safeReadExcel(filePath)
   const sheetName = wb.SheetNames.find((name) => name.toLowerCase() === 'notice') || wb.SheetNames[0]
   const rows = xlsx.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' })
   return rows.map((row) => normalizeBbnRow(row, sourceFile)).filter(Boolean)

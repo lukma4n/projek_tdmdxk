@@ -4,7 +4,12 @@ module.exports = {
       name: 'dxk-api',
       cwd: './api',
       script: 'src/app.js',
-      instances: 2,
+      // instances: 1 — rate limiter pakai store in-memory (per-proses). Dengan >1
+      // worker, limit login/brute-force jadi tidak konsisten (terbagi antar proses).
+      // App juga pakai SQLite (single writer) + Redis opsional, jadi 1 instance
+      // adalah pilihan tepat untuk deployment single-site. Naikkan hanya bila rate
+      // limiter dipindah ke store bersama (Redis) — lihat docs/rencana_perbaikan.md.
+      instances: 1,
       exec_mode: 'cluster',
       env: {
         NODE_ENV: 'production',

@@ -37,7 +37,8 @@ export default function ShowroomPickupRequests() {
     try {
       const params = filterStatus ? { status: filterStatus } : {}
       const res = await api.getPickupRequests(params)
-      setRows(Array.isArray(res) ? res : (res?.data || []))
+      // getPickupRequests mengembalikan array telanjang; guard bila bentuk berubah.
+      setRows(Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []))
     } catch (err) {
       setError(err.message || 'Gagal memuat data')
     } finally {
@@ -156,8 +157,6 @@ export default function ShowroomPickupRequests() {
     },
   ]
 
-  const tableRows = rows.map((r) => ({ ...r, id: r.id }))
-
   return (
     <div className="px-4 py-5 sm:px-6 lg:px-8">
       <PageHeader
@@ -210,7 +209,7 @@ export default function ShowroomPickupRequests() {
         ) : (
           <Table
             columns={columns}
-            rows={tableRows}
+            rows={rows}
             emptyMessage={
               filterStatus === 'PENDING'
                 ? 'Tidak ada permintaan menunggu tindakan.'

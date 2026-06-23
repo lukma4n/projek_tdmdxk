@@ -1,4 +1,5 @@
 import xlsx from 'xlsx'
+import { safeReadExcel } from '../utils/excelValidator.js'
 import { prisma } from '../config/db.js'
 
 function clean(value = '') {
@@ -82,7 +83,7 @@ export async function getDealerBurdenSummary(req, res, next) {
 export async function previewDealerBurdenImport(req, res, next) {
   try {
     if (!req.file) return res.status(400).json({ error: 'File wajib diupload' })
-    const wb = xlsx.readFile(req.file.path)
+    const wb = safeReadExcel(req.file.path)
     const ws = wb.Sheets[wb.SheetNames[0]]
     if (!ws) {
       return res.status(400).json({ error: 'Sheet tidak ditemukan' })
@@ -106,7 +107,7 @@ export async function previewDealerBurdenImport(req, res, next) {
 export async function uploadDealerBurdenImport(req, res, next) {
   try {
     if (!req.file) return res.status(400).json({ error: 'File wajib diupload' })
-    const wb = xlsx.readFile(req.file.path)
+    const wb = safeReadExcel(req.file.path)
     const ws = wb.Sheets[wb.SheetNames[0]]
     if (!ws) {
       return res.status(400).json({ error: 'Sheet tidak ditemukan' })
