@@ -125,6 +125,27 @@ test('Pickup: POST request-pickup dengan token valid + KTP → 201 + status PEND
   assert.ok(res.body.id > 0)
 })
 
+test('Pickup: token one-time-use — pemakaian kedua ditolak 409 (anti-replay)', async () => {
+  const check = await checkEligible()
+  const token = check.body.pickup_token
+
+  const first = await request(app)
+    .post('/api/public/stnk-bpkb/request-pickup')
+    .attach('ktp_photo', KTP_PHOTO, 'ktp.jpg')
+    .field('engine_number', ELIGIBLE_ENGINE)
+    .field('pickup_token', token)
+    .field('consumer_phone', PHONE)
+  assert.equal(first.status, 201)
+
+  const replay = await request(app)
+    .post('/api/public/stnk-bpkb/request-pickup')
+    .attach('ktp_photo', KTP_PHOTO, 'ktp.jpg')
+    .field('engine_number', ELIGIBLE_ENGINE)
+    .field('pickup_token', token)
+    .field('consumer_phone', PHONE)
+  assert.equal(replay.status, 409)
+})
+
 test('Pickup: POST request-pickup tanpa token → 400', async () => {
   const res = await request(app)
     .post('/api/public/stnk-bpkb/request-pickup')

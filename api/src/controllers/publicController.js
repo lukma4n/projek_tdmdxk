@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken'
+import { randomUUID } from 'crypto'
 import { prisma } from '../config/db.js'
+import { isTokenUsed, markTokenUsed } from '../services/usedTokenStore.js'
 
 // Umur token permintaan ambil dokumen yang dikeluarkan /check setelah verifikasi.
 // Konsumen sudah terverifikasi identitasnya saat /check — token ini hanya
@@ -146,7 +148,7 @@ export async function checkStnkBpkb(req, res, next) {
       responseData.pickup_token = jwt.sign(
         { engine_number: track.engine_number, purpose: 'pickup' },
         process.env.JWT_SECRET,
-        { expiresIn: PICKUP_TOKEN_TTL }
+        { expiresIn: PICKUP_TOKEN_TTL, jwtid: randomUUID() }
       )
     } else {
       responseData.pickup_eligible = false
@@ -185,6 +187,11 @@ export async function requestPickup(req, res, next) {
 
     if (payload.purpose !== 'pickup' || payload.engine_number !== String(engine_number).trim().toUpperCase()) {
       return res.status(401).json({ error: 'Token permintaan tidak sesuai dengan Nomor Mesin.' })
+    }
+
+    // One-time-use: tolak token yang sudah pernah dipakai (cegah replay).
+    if (isTokenUsed(payload.jti)) {
+      return res.status(409).json({ error: 'Permintaan ini sudah dikirim sebelumnya. Silakan periksa ulang status dokumen Anda jika ingin mengajukan lagi.' })
     }
 
     // Foto KTP wajib dilampirkan — staf memverifikasi identitas saat pengambilan.
@@ -227,6 +234,11 @@ export async function requestPickup(req, res, next) {
         status: 'PENDING',
       }
     })
+
+    // Tandai token terpakai setelah request berhasil dibuat (one-time-use).
+    // TTL = sisa umur token agar entri dibersihkan saat token kedaluwarsa.
+    const ttlMs = (payload.exp ? payload.exp * 1000 : Date.now()) - Date.now()
+    markTokenUsed(payload.jti, ttlMs)
 
     res.status(201).json({
       id: request.id,
