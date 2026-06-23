@@ -42,13 +42,16 @@ export async function getSummary(req, res, next) {
       }),
       prisma.sync_logs.findMany({
         orderBy: { synced_at: 'desc' },
-        take: 20,
+        take: 500,
       }),
       Promise.all([
         prisma.hotlines.count(),
         prisma.stock_parts.count(),
         prisma.work_orders.count(),
         prisma.customers.count({ where: { branch_code: 'DXK' } }),
+        prisma.showroom_stock_units.count(),
+        prisma.showroom_otr_prices.count(),
+        prisma.showroom_stnk_bpkb_tracks.count(),
       ]),
     ])
 
@@ -77,15 +80,23 @@ export async function getSummary(req, res, next) {
 
     const moduleLabels = {
       hotline: 'Hotline',
-      stock: 'Stock',
+      stock: 'Stock Sparepart',
       workshop: 'Workshop',
       sales: 'Data Konsumen',
+      showroom_stock_unit: 'Stok Unit Showroom',
+      showroom_otr_price: 'Harga OTR',
+      showroom_off_purchase_price: 'Harga Beli (Off-road)',
+      showroom_stnk_bpkb_track: 'STNK/BPKB Track',
     }
     const countMap = {
       hotline: moduleCounts[0],
       stock: moduleCounts[1],
       workshop: moduleCounts[2],
       sales: moduleCounts[3],
+      showroom_stock_unit: moduleCounts[4],
+      showroom_otr_price: moduleCounts[5],
+      showroom_off_purchase_price: moduleCounts[5], // off-road tersimpan di tabel OTR
+      showroom_stnk_bpkb_track: moduleCounts[6],
     }
     const latestByModule = new Map()
     for (const log of syncLogs) {
@@ -120,7 +131,7 @@ export async function getSummary(req, res, next) {
           ...(openWO > 0 ? [{ type: 'workshop', message: `${openWO} WO masih open`, path: '/workshop' }] : []),
         ],
       },
-      freshness: ['hotline', 'stock', 'workshop', 'sales'].map((module) => {
+      freshness: Object.keys(moduleLabels).map((module) => {
         const log = latestByModule.get(module)
         return {
           module,
