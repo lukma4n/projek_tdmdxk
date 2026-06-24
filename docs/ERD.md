@@ -32,7 +32,7 @@ Database berisi data operasional bengkel, sparepart, showroom, dokumen kendaraan
 
 | Kelompok | Tabel |
 |----------|-------|
-| Core | `users`, `sync_logs`, `audit_logs` |
+| Core | `users`, `sync_logs`, `audit_logs`, `login_logs` |
 | Workshop & Sparepart | `work_orders`, `stock_parts`, `hotlines`, `hotline_items` |
 | Opname Sparepart | `opname_sessions`, `opname_items` |
 | Customers & KPB | `customers`, `kpb_followups` |
@@ -89,12 +89,14 @@ Menyimpan akun login dan role.
 | `username` | String | Unique |
 | `password_hash` | String | Hash bcrypt |
 | `name` | String | Nama user |
-| `role` | String | Role operasional |
+| `role` | String | Role operasional (nilai pakai spasi, mis. `IT Master`) |
 | `created_at` | DateTime | Default now |
+| `session_id` | String? | Single-session: id sesi aktif (cocokkan dgn `sid` di JWT) |
+| `session_last_active` | DateTime? | Waktu aktivitas terakhir (window 60 mnt utk anti-sharing) |
 
 Relasi keluar:
 
-- Membuat `sync_logs`, `audit_logs`, `opname_sessions`, `kpb_followups`, `showroom_document_followups`, `showroom_opname_sessions`, dan `showroom_sales_order_margins`.
+- Membuat `sync_logs`, `audit_logs`, `login_logs`, `opname_sessions`, `kpb_followups`, `showroom_document_followups`, `showroom_opname_sessions`, dan `showroom_sales_order_margins`.
 - Menjadi scanner/checker/reviewer pada opname dan KSU.
 
 ### 4.2 `sync_logs`
@@ -112,7 +114,7 @@ Mencatat riwayat import.
 
 ### 4.3 `audit_logs`
 
-Mencatat aktivitas perubahan tertentu, termasuk import final, backup manual, dan restore.
+Mencatat aktivitas perubahan tertentu, termasuk import final, backup manual, restore, dan aksi IT Master (`table_name = 'it_master_action'`).
 
 | Field | Catatan |
 |-------|---------|
@@ -122,6 +124,19 @@ Mencatat aktivitas perubahan tertentu, termasuk import final, backup manual, dan
 | `old_value`, `new_value` | Nilai sebelum/sesudah |
 | `user_id` | FK ke `users` |
 | `changed_at` | Waktu audit |
+
+### 4.4 `login_logs`
+
+Audit login & deteksi penyalahgunaan akun (single-session). Ditampilkan di halaman `/security-audit` (IT Master).
+
+| Field | Catatan |
+|-------|---------|
+| `user_id` | Nullable FK ke `users` (ON DELETE SET NULL) |
+| `username` | Username saat kejadian |
+| `event` | `login_success` \| `login_blocked` \| `logout` \| `session_reset` |
+| `ip` | IP klien (X-Forwarded-For aware) |
+| `user_agent` | Browser/perangkat |
+| `created_at` | Waktu kejadian (indexed) |
 
 ---
 

@@ -48,20 +48,23 @@ npm run dev          # vite, port 5173, proxy /api ke :3001
 
 ## 5. Role & Hak Akses
 
+**Nilai role di DB pakai spasi, bukan underscore** (sumber tunggal `web/src/config/roles.js`).
+
 | DB value | Label UI | Akses singkat |
 |----------|----------|---------------|
-| `IT_Master` | IT Master | **Superadmin**. Bypass semua auth guard backend & frontend. Kelola role_permissions (siapa dapat akses menu apa), Manajemen User, Backup & Restore |
-| `Admin` | Admin Showroom | Dashboard Showroom, Stock Unit/Harga/STNK/BPKB |
+| `IT Master` | IT Master | **Superadmin**. Bypass semua auth guard. Kelola role_permissions, **Manajemen User, Backup & Restore, Audit Login & Sesi (semua khusus IT Master)** |
+| `Admin` | Admin Showroom | Dashboard Showroom, Stock Unit/Harga/STNK/BPKB, Kesegaran Data Import |
 | `CRM` | Admin CRM | Data Konsumen, Follow-up KPB/STNK/BPKB |
-| `PIC_StockOpname` | PIC Stock opname | Opname Unit/STNK/BPKB |
+| `PIC Stock opname` | PIC Stock opname | Opname Unit/STNK/BPKB |
 | `ADH` | ADH | Verifikator 1 opname |
-| `Kepala_Cabang` | Kepala Cabang | Dashboard Bengkel+Showroom, Master Harga, manajemen user, backup/restore, target marketing |
-| `Kepala_Bengkel` | Kepala Bengkel | Semua (termasuk performa mekanik, user, backup/restore) |
+| `Kepala Cabang` | Kepala Cabang | Dashboard Bengkel+Showroom, Master Harga, target marketing, Kesegaran Data Import |
+| `Kepala Bengkel` | Kepala Bengkel | Semua menu bengkel (termasuk performa mekanik), Kesegaran Data Import |
 | `Frondesk` | Frondesk | Dashboard Bengkel, Workshop, Follow-up KPB |
-| `Service_Advisor` | Service Advisor | Dashboard Bengkel, Hotline, Stock, Workshop, Program AHM, Konsumen, Follow-up KPB |
+| `Service Advisor` | Service Advisor | Dashboard Bengkel, Hotline, Stock, Workshop, Program AHM, Konsumen, Follow-up KPB |
 | `Partman` | Partman | Dashboard Bengkel, Stock, Hotline, Opname |
+| `Salesman` | Salesman | Document Handling, Cek Ketersediaan Unit |
 
-Role guard di backend (`authorize(...roles)`) dan frontend (`web/src/config/roles.js`). API return `403` untuk role tak berhak. **IT Master** mendapat bypass total di `api/src/middleware/auth.js` (cek `req.user.role === 'IT_Master'` sebelum authorize list). Konfigurasi & label UI lengkap di `web/src/config/roles.js`.
+Role guard di backend (`authorize(...roles)`) dan frontend (`web/src/config/roles.js`). API return `403` untuk role tak berhak. **IT Master** mendapat bypass total di `api/src/middleware/auth.js` (cek `req.user.role === 'IT Master'` sebelum authorize list). **Manajemen User & Backup dipersempit ke IT Master saja** (keputusan tim K1).
 
 Akses menu per role dikontrol secara dinamis dari tabel `role_permissions` (database). IT Master adalah satu-satunya role yang TIDAK perlu entri di `role_permissions` karena bypass penuh.
 
@@ -86,36 +89,38 @@ cd web && npm run dev          # vite :5173
 
 # Verifikasi urut
 cd api && npx prisma validate
-cd api && npm test             # 7 file, 26/26 pass
+cd api && npm test             # node --test, 61 pass
 cd web && npm run lint
 cd web && npm run build
 curl http://localhost:3001/health
 
-# Database
-cd api && npx prisma migrate dev --name <desc>
-cd api && npx prisma migrate deploy
+# Database — CATATAN: `prisma migrate` rusak di setup ini (schema-engine
+# "invalid characters"). Pakai db push untuk terapkan perubahan schema (dev & prod):
+cd api && npx prisma db push && npx prisma generate
 cd api && npx prisma db seed
 cd api && npx prisma studio
 sqlite3 api/prisma/dev.db ".tables"     # ad-hoc query
 
-# Backup & restore (Kepala Bengkel/Cabang only)
-# UI di /backups. Manual + restore di audit log. API: /api/backups/*
+# Backup & restore (IT Master only). UI di /backups. API: /api/sync/backups/*
+# Backup terjadwal: cron 02:00 WIB -> api/scripts/backup-db.js (keep 14)
 ```
 
 ## 8. Konvensi & Gotcha
 
 - **SQLite + Prisma**: tidak ada `mode: 'insensitive'`. Pakai raw SQL `WHERE LOWER(x) = LOWER(?)` atau normalisasi `UPPER(TRIM(x))` di memory (helper `normalizeKey` di `api/src/utils/salesPerformance.js`).
 - **Login username case-insensitive** di auth controller.
-- **Migration**: urut timestamp. Migration yang reference FK harus dijamin tabel referentinya dibuat di migration sebelumnya. Daftar saat ini: `20260501095828_init`, `20260607010000_add_showroom_dealer_burdens_and_salespeople`, `20260607120000_add_showroom_stnk_bpkb_tracks`, `20260608000000_add_track_v2_fields`, `20260612021618_add_showroom_marketing_targets`, `20260616140000_add_showroom_team_leaders`.
+- **Migration RUSAK di setup ini** (schema-engine "invalid characters"). Riwayat sudah di-squash ke 1 baseline `20260621000000_baseline_current_schema`; perubahan setelahnya (`...add_pickup_requests`, `...add_pickup_ktp_photo`, `20260624000000_add_single_session_and_login_logs`) diterapkan via **`prisma db push`**, bukan `migrate dev/deploy`. Folder migrasi disimpan untuk histori saja.
 - **JWT_COOKIE_NAME = 'token'** di auth controller + middleware. Jangan rename tanpa update keduanya.
-- **apiLimiter** (`api/src/app.js:52-58`, max 500/15min) **didefinisikan tapi BELUM dipasang** `app.use()` -> P1 #20.
+- **apiLimiter** (`api/src/app.js`, max 2000/15min) **sudah dipasang** `app.use('/api/', apiLimiter)`. Login `authLimiter` 20/15min, publik 60/15min, import 30/15min.
+- **Single-session** (`api/src/services/sessionService.js`): 1 akun = 1 sesi. Login ke-2 ditolak 409 selama sesi aktif (≤60 mnt). Token bawa `sid`; `authenticate` tolak bila `sid` ≠ `users.session_id`. OFF saat test; override `ENFORCE_SINGLE_SESSION`.
+- **Font self-host** (`@fontsource/*` di `web/src/main.jsx`), bukan Google Fonts CDN — wajib agar ekspor screenshot `html-to-image` (Closing Daily) konsisten.
 - **TAC Leasing**: ADIRA/FIF/OTO pakai Matrix TAC di `showroom_leasing_tac_programs`. IMFI pakai **Dana Promosi Scheme** (`showroom_leasing_promo_schemes`, range OTR + DP, tenor dikunci). Lihat `docs/rencana_perbaikan.md` untuk aturan field kosong matrix.
 - **Master BBN**: area wajib pilih dari `web/src/data/indonesiaAreaCodes.js` (514 kab/kota Indonesia). Field `fee_pusat` = Biaya Tambahan BBN (samakan internal BBN Odoo).
 - **Simulasi DP & Margin** (`/showroom/sales-order-margin`): mode CASH tidak pakai leasing/tenor/TAC/finco, program MD tetap lookup. Kredit: `Sisa Piutang = OTR - (DP Net + TAC + Beban Dealer (tanpa Subsidi Dealer Program) + Program MD)`. Komisi gross-up 2,5% (`input / 0,975`).
 - **Import timeout transaction**: Hotline/Stock 60s, Workshop 120s, Sales 180s.
 - **Import strategy**: Replace All untuk hotline/stock/workshop; Upsert untuk sales (`so_number`), showroom snapshot (unit/STNK/BPKB), master harga, master BBN (`product_code + city_name`), TAC matrix, program MD.
 - **Stock upload cascade**: import stock otomatis hapus `opname_sessions` + `opname_items` terkait.
-- **Backup**: destructive import otomatis pre-import backup di `api/prisma/backups/`. Manual + restore hanya Kepala Bengkel & Kepala Cabang. Cleanup hanya hapus `pre_import_*` lama; `manual` & `pre_restore` tidak dihapus otomatis.
+- **Backup**: destructive import otomatis pre-import backup di `api/prisma/backups/`. Manual + restore **hanya IT Master**. Cleanup hanya hapus `pre_import_*` lama; `manual` & `pre_restore` tidak dihapus otomatis. Backup terjadwal harian via cron (`scripts/backup-db.js`).
 - **Mock API sudah dihapus** - frontend selalu connect backend real.
 - **TZ bug**: hindari `toISOString()` UTC untuk tanggal lokal. Pakai `getFullYear/getMonth/getDate` lokal (lihat helper `getDateRangePreset`, `getTodayStr`, `getYesterdayStr` di `ShowroomSalesUtils.js`).
 - **Format angka**: UI pakai `Intl.NumberFormat('id-ID')`. Excel export pakai `formatForExcel` di `api/src/utils/excelUtils.js`.
@@ -123,9 +128,8 @@ sqlite3 api/prisma/dev.db ".tables"     # ad-hoc query
 
 ## 9. Test
 
-- **Backend**: `cd api && npm test` -> 7 file, 26/26 pass.
-  - File: `auth.test.js`, `auth.integration.test.js`, `importParsers.test.js`, `import.integration.test.js`, `rbac.integration.test.js`, `salesOrderMargin.test.js`, `helpers.js`.
-  - Test DB di `api/tests/helpers.js` pakai `file:./test.db`. Copy manual dari `dev.db` jika butuh data real: `cp api/prisma/dev.db api/prisma/test.db`.
+- **Backend**: `cd api && npm test` -> **61 pass** (node --test). Termasuk `publicCheck.integration.test.js` (incl. cek-unit publik) & `singleSession.integration.test.js`.
+  - Test DB di `api/tests/helpers.js` pakai `file:./test.db` (di-sync `prisma db push` via `pretest`). Single-session enforcement OFF saat test (kecuali `ENFORCE_SINGLE_SESSION=true`).
 - **Frontend**: `cd web && npm run lint && npm run build`. Tidak ada E2E.
 
 ## 10. Kode Opname & Barcode
@@ -149,9 +153,9 @@ sqlite3 api/prisma/dev.db ".tables"     # ad-hoc query
 
 ## 12. P1 Backlog (quick win, lihat `docs/rencana_perbaikan.md`)
 
-- **#18**: Route statis `/opname/search-unit` & `/opname/notifications` harus dideklarasikan **sebelum** route `:id` (Express 5 strict routing).
+- ~~**#18**: Route statis sebelum route `:id` (Express 5 strict routing).~~ ✅ done.
 - **#19**: Daftarkan `pdfjs-dist` ke `api/package.json` dependencies (saat ini dipakai tanpa declared dep).
-- **#20**: Pasang `apiLimiter` di `app.use('/api/', apiLimiter)` setelah middleware lain.
+- ~~**#20**: Pasang `apiLimiter`.~~ ✅ done (`app.use('/api/', apiLimiter)`).
 - **#21**: Ganti `fs.unlinkSync` di backup/import controllers ke `unlink` async (non-blocking).
 - **#22**: Tambah `Math.min(parseInt(limit) || 50, 100)` di endpoint pagination yang menerima `?limit=` (Hotline, Stock, Customers, Showroom list).
 - **#23**: Hapus 9 folder kosong `web/src/services/*.js/` (artefak refactor lama `api.js` -> 10 module files).
@@ -188,7 +192,9 @@ Menu sidebar kini dibagi menjadi **5 grup utama** yang terpisah dan jelas:
 2. **CRM & Layanan** → flat: Data Konsumen, Follow-up KPB/STNK/BPKB, Program AHM
 3. **Showroom** → sub-folder: Penjualan, Marketing, Unit, STNK & BPKB
 4. **Stock Opname** → flat: Opname Sparepart, Unit, STNK, BPKB, PIC Users
-5. **Administrasi** → flat: Manajemen User, Manajemen Akses, Backup & Restore
+5. **Monitoring** → flat: Kesegaran Data Import (`/data-freshness`)
+6. **Administrasi** → flat: Manajemen User, Manajemen Akses, Backup & Restore, **Audit Login & Sesi** (IT Master)
+7. **Layanan Publik** → Self-Check Publik (`/cek`), Cek Ketersediaan Unit (`/cek-unit`), Permintaan Ambil Dokumen
 
 Sidebar memakai mode **Accordion (tutup otomatis)** — hanya sub-folder yang memiliki halaman aktif yang terbuka.
 
@@ -197,3 +203,13 @@ Sidebar memakai mode **Accordion (tutup otomatis)** — hanya sub-folder yang me
 - IT Master tidak dapat dihapus (validasi backend).
 - Tabel yang di-null: `sync_logs.user_id`, `hotlines.state_updated_by`, `showroom_unit_ksu_checks.checked_by/handed_over_by`, `showroom_opname_items.scanned_by`, `showroom_notifications.user_id`, `showroom_opname_sessions.reviewed_by`, `showroom_ksu_standards.updated_by`.
 - Tabel yang di-delete: `opname_items`, `opname_sessions`, `showroom_user_locations`, `audit_logs`, `kpb_followups`, `showroom_document_followups`, `showroom_opname_sessions`, `showroom_sales_order_margins`, `showroom_opname_assignments`.
+
+## 15. Perubahan Terbaru (2026-06-24)
+
+- **FASE 2 (pickup-request) merged ke `main`**; branch `feat/fase2-pickup-request` dihapus. Produksi deploy dari `main`.
+- **Cek Ketersediaan Unit (publik `/cek-unit`)** — `GET /api/public/stock-units?q=&location=`. Untuk sales & kontrol movement PIC POS: per model/warna, status RFS/Reserved/NRFS, **no.mesin/rangka + OTR ditampilkan (sengaja)**, umur **FIFO** (POS/Pameran = `movement_aging_days`) + Tag aging A-L + kode unit (`product_type`). **cost/HPP tidak pernah dibocorkan**. Rate-limit publik.
+- **Kesegaran Data Import** dipisah ke halaman `/data-freshness` + menu (menuKey `DATA_FRESHNESS`; Kacab/Kabeng/Admin). `GET /api/dashboard/freshness` (8 modul).
+- **Keamanan**: single-session anti-sharing (login ke-2 ditolak 409), **idle auto-logout 60 menit** (frontend `components/IdleLogout.jsx`), **audit login** (`login_logs`). Halaman `/security-audit` (IT Master): sesi aktif + riwayat login + reset sesi. Endpoint `/api/security/{login-logs,active-sessions,users/:id/reset-session}`. Kolom baru `users.session_id`, `users.session_last_active`.
+- **Font self-host** (`@fontsource/inter`, `@fontsource/jetbrains-mono`) ganti Google Fonts CDN → ekspor screenshot Closing Daily konsisten.
+- **Backup terjadwal**: cron `02:00 WIB` → `api/scripts/backup-db.js` (keep 14). Backup pre-import lama bisa dibersihkan manual.
+- **Backlog keamanan** S1-S4 di `docs/rencana_perbaikan.md` (sesi/refresh token, backup off-site, perluas audit data, higiene). Prioritas tinggi (VIN publik, kebijakan password/lockout, 2FA) ditunda atas keputusan pemilik.

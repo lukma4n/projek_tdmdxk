@@ -15,7 +15,7 @@ cd api && npx prisma generate
 cd api && npm run db:migrate     # prisma migrate dev
 cd api && npm run db:seed
 
-cd api && npm test               # node --test, runs tests/*.test.js (55 pass)
+cd api && npm test               # node --test, runs tests/*.test.js (61 pass)
 ```
 
 Test DB (`api/prisma/prisma/test.db`) is auto-synced via `pretest` (`prisma db push --accept-data-loss`). Do not commit it.
@@ -49,7 +49,7 @@ curl http://localhost:3001/health
 | Frontend | Vite + React 19 + Tailwind CSS v4 + shadcn/ui + React Router + Zustand |
 | Backend | Node.js + Express 5 + Prisma |
 | Database | SQLite (`api/prisma/dev.db`) |
-| Auth | JWT 24h stored as httpOnly cookie `token`; frontend uses `credentials: 'include'` |
+| Auth | JWT 24h stored as httpOnly cookie `token`; frontend uses `credentials: 'include'`. Single-session (1 akun = 1 sesi aktif, anti-sharing) + idle auto-logout 60 menit + audit login |
 
 ### Backend structure (`api/src/`)
 
@@ -69,7 +69,7 @@ curl http://localhost:3001/health
 - `App.jsx` — React Router tree, auth probe (`me()`), `RoleGuard` per route
 - `pages/` — one file per screen
 - `components/Layout/Sidebar.jsx` — dynamic menu from `role_permissions` API
-- `services/api/` — 10 module files (auth, workshop, hotline, stock, customers, opname, showroom, etc.) + base `api.js`
+- `services/api/` — module files (auth, dashboard, workshop, hotline, stock, customers, opname, showroom, security, etc.) + base `api.js`
 - `config/roles.js` — role constants and frontend label map
 - `stores/` — Zustand stores (auth, theme)
 - `data/indonesiaAreaCodes.js` — 514 kab/kota for BBN area dropdown
@@ -82,20 +82,21 @@ curl http://localhost:3001/health
 
 ### Role system
 
-DB value `IT_Master` bypasses all `authorize()` middleware. All other roles are checked against the `role_permissions` table (dynamic, managed via `/roles` UI page). Backend returns `403` for unauthorized role. Frontend `RoleGuard` gates routes by `menuKey` or explicit `roles` array.
+DB value `IT Master` bypasses all `authorize()` middleware. All other roles are checked against the `role_permissions` table (dynamic, managed via `/roles` UI page). Backend returns `403` for unauthorized role. Frontend `RoleGuard` gates routes by `menuKey` or explicit `roles` array. **DB role values use spaces, not underscores** (single source: `web/src/config/roles.js`).
 
 | DB value | UI label |
 |---|---|
-| `IT_Master` | IT Master (superadmin, cannot be deleted) |
-| `Kepala_Bengkel` | Kepala Bengkel |
-| `Kepala_Cabang` | Kepala Cabang |
+| `IT Master` | IT Master (superadmin, cannot be deleted) |
+| `Kepala Bengkel` | Kepala Bengkel |
+| `Kepala Cabang` | Kepala Cabang |
 | `Frondesk` | Frondesk |
-| `Service_Advisor` | Service Advisor |
+| `Service Advisor` | Service Advisor |
 | `Partman` | Partman |
 | `Admin` | Admin Showroom |
 | `CRM` | Admin CRM |
-| `PIC_StockOpname` | PIC Stock Opname |
+| `PIC Stock opname` | PIC Stock Opname |
 | `ADH` | ADH |
+| `Salesman` | Salesman |
 
 ### Data import strategies
 
@@ -111,16 +112,20 @@ DB value `IT_Master` bypasses all `authorize()` middleware. All other roles are 
 - **`getUserMedia` (in-app camera)** requires HTTPS in production; `localhost` works in dev. Pickup KTP photos served only via auth-protected route, never as static files.
 - **`requestPickup` controller order**: JWT token is verified **before** checking `req.file`. Do not reorder — tests depend on this (token invalid → 401 before file presence matters).
 - **Pickup requests list shape**: `getPickupRequests` returns a **bare array** (not `{data: [...]}`). Frontend reads `res` directly, not `res.data`.
-- **`apiLimiter`** is defined in `app.js` but not yet mounted (P1 backlog #20).
-- **Express 5 strict routing**: static routes like `/opname/search-unit` must be declared **before** `:id` param routes (P1 backlog #18).
+- **`apiLimiter`** is mounted at `app.use('/api/', apiLimiter)` (max 2000/15min). Login `authLimiter` 20/15min, public 60/15min, import 30/15min.
+- **Express 5 strict routing**: static routes like `/opname/search-unit` must be declared **before** `:id` param routes.
+- **Single-session enforcement** (`services/sessionService.js`): login sets `users.session_id` + `sid` in JWT; `authenticate` rejects token if `sid` ≠ current `session_id` (kicked/reset). 2nd login blocked (409) while session active (≤60 min since `session_last_active`). **Enforcement OFF in tests** (DATABASE_URL contains `test.db`); override via env `ENFORCE_SINGLE_SESSION=true|false`.
+- **Self-hosted fonts** (`@fontsource/inter`, `@fontsource/jetbrains-mono` in `main.jsx`) — NOT Google Fonts CDN. Required so `html-to-image` screenshot export (Closing Daily reports) embeds fonts same-origin & renders consistently; `await document.fonts.ready` before `toPng`.
+- **Prisma migrate is broken on this setup** (schema-engine "invalid characters" error). Apply schema changes with `npx prisma db push` (dev & production), not `migrate dev/deploy`. Migration folders kept for history only.
 
-### Active branch context (as of 2026-06-22)
+### Major features (on `main`, current)
 
-Branch `feat/fase2-pickup-request` adds the consumer pickup-request flow on top of `main`:
-- `/cek` page: consumer verifies identity → receives `pickup_token` (15min JWT) → submits pickup request with mandatory KTP photo (camera or file picker)
-- Backend: `showroom_pickup_requests` table, upload middleware, auth-protected KTP serve route
-- Staff page: `ShowroomPickupRequests.jsx` — filter, status update, view KTP
-- 55 tests pass. Branch is **not yet merged to main**.
+FASE 2 (pickup-request flow) is **merged to main**; branch `feat/fase2-pickup-request` deleted. Current notable features:
+- **Public pages (no login):** `/cek` (consumer STNK/BPKB self-check → pickup-request with mandatory KTP photo, `pickup_token` 15min one-time JWT) and `/cek-unit` (stock unit availability for sales: per-model/color, no.mesin/rangka + OTR shown intentionally, FIFO aging + tag + kode unit, location filter; cost/HPP never exposed).
+- **Kesegaran Data Import:** dedicated page `/data-freshness` + menu (menuKey `DATA_FRESHNESS`; roles Kepala Cabang/Kepala Bengkel/Admin). Endpoint `GET /api/dashboard/freshness`.
+- **Security:** single-session anti-sharing, idle auto-logout 60 min, login audit. Page `/security-audit` (IT Master only): active sessions + login history + force-reset session. Endpoints under `/api/security/*`. Table `login_logs`; `users.session_id`/`session_last_active`.
+- **Ops:** daily DB backup via cron 02:00 WIB (`api/scripts/backup-db.js`, keep 14).
+- 61 tests pass. Production: VPS tdmketapang.net, PM2 + Nginx, deploy from `main`.
 
 ## Documentation map
 

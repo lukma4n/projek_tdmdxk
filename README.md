@@ -73,12 +73,15 @@ Backend `api/.env`:
 
 ```env
 DATABASE_URL=file:./dev.db
-JWT_SECRET=change-this-secret
+JWT_SECRET=change-this-secret          # WAJIB kuat (≥32 char); app tolak start bila default/bocor
 JWT_EXPIRES_IN=24h
 NODE_ENV=development
 PORT=3001
 FRONTEND_URL=http://localhost:5173
 REDIS_URL=redis://localhost:6379
+# Single-session (1 akun = 1 sesi, anti-sharing). Default: ON di dev & produksi,
+# OFF saat test. Override eksplisit bila perlu: true | false.
+ENFORCE_SINGLE_SESSION=
 ```
 
 `DATABASE_URL=file:./dev.db` menunjuk ke `api/prisma/dev.db` karena path SQLite Prisma relatif terhadap folder `api/prisma`.
@@ -125,12 +128,15 @@ Seed bawaan `api/prisma/seed.js` membuat user berikut jika dijalankan:
 | Admin Showroom | Dashboard Showroom, Stock Unit/Harga/STNK/BPKB |
 | PIC Stock opname | Opname Unit, Opname STNK, Opname BPKB |
 | ADH | Verifikator 1 Opname |
-| Kepala Cabang | Dashboard Bengkel+Showroom, Master Harga, Manajemen User, Backup & Restore |
-| Kepala Bengkel | Semua menu bengkel, termasuk Performa Mekanik, Manajemen User, dan Backup & Restore |
+| Kepala Cabang | Dashboard Bengkel+Showroom, Master Harga, Kesegaran Data Import |
+| Kepala Bengkel | Semua menu bengkel, termasuk Performa Mekanik, Kesegaran Data Import |
 | Frondesk | Dashboard Bengkel, Workshop, Follow-up KPB |
 | Service Advisor | Dashboard Bengkel, Hotline, Stock, Workshop, Program AHM, Data Konsumen, Follow-up KPB |
 | Partman | Dashboard Bengkel, Stock, Hotline, Opname |
 | Admin CRM | Data Konsumen, Follow-up KPB, Follow-up STNK, Follow-up BPKB |
+| Salesman | Document Handling, Cek Ketersediaan Unit |
+
+> **Manajemen User** dan **Backup & Restore** dipersempit ke **IT Master saja** (keputusan tim). **Audit Login & Sesi** (`/security-audit`) juga khusus IT Master.
 
 Akses menu per role dikontrol secara **dinamis dari database** (`role_permissions`). IT Master bisa mengatur akses melalui halaman `/roles` (Manajemen Akses). IT Master tidak bisa dihapus dari sistem.
 
@@ -154,7 +160,7 @@ Untuk mengurangi risiko Replace All:
 
 - Frontend menyediakan `Preview` sebelum upload final.
 - Backend membuat backup SQLite otomatis sebelum setiap import.
-- Kepala Bengkel dan Kepala Cabang dapat membuat backup manual, melihat daftar backup, dan restore via endpoint backup.
+- IT Master dapat membuat backup manual, melihat daftar backup, dan restore via endpoint backup.
 
 Contoh upload via API:
 
@@ -170,12 +176,26 @@ Jangan kirim header `Content-Type: application/json` untuk upload file. Gunakan 
 
 ### Auth
 
-- `POST /api/auth/login` - login
+- `POST /api/auth/login` - login (set cookie httpOnly `token`; tolak 409 bila akun sedang dipakai sesi lain — single-session)
+- `POST /api/auth/logout` - logout (bebaskan sesi)
 - `GET /api/auth/me` - data user dari token
 
 ### Dashboard Bengkel
 
 - `GET /api/dashboard/summary` - KPI dashboard dan alerts
+- `GET /api/dashboard/freshness` - kesegaran data import per modul (halaman `/data-freshness`, menuKey `DATA_FRESHNESS`)
+
+### Publik (tanpa login)
+
+- `GET /api/public/stnk-bpkb/check` - self-check status STNK/BPKB konsumen (halaman `/cek`)
+- `POST /api/public/stnk-bpkb/request-pickup` - ajukan ambil dokumen + foto KTP (multipart)
+- `GET /api/public/stock-units` - ketersediaan unit untuk sales (halaman `/cek-unit`); param `?q=` & `?location=`. Hanya data agregat + no.mesin/rangka/OTR; cost/HPP tidak pernah dikembalikan
+
+### Keamanan / Audit (IT Master saja)
+
+- `GET /api/security/login-logs` - riwayat login (audit; deteksi sharing)
+- `GET /api/security/active-sessions` - daftar sesi aktif
+- `POST /api/security/users/:id/reset-session` - reset paksa sesi user (halaman `/security-audit`)
 
 ### Hotline
 
@@ -224,11 +244,13 @@ Filter `GET /api/customers` dan export sudah konsisten untuk `search`, `kpb_stat
 
 ### Backup dan Restore
 
-- `GET /api/sync/backups` - list backup SQLite, hanya Kepala Bengkel dan Kepala Cabang
-- `POST /api/sync/backups` - buat backup manual, hanya Kepala Bengkel dan Kepala Cabang
-- `POST /api/sync/backups/cleanup` - hapus backup `pre_import_*` lama, hanya Kepala Bengkel dan Kepala Cabang
-- `POST /api/sync/backups/:filename/restore` - restore backup, hanya Kepala Bengkel dan Kepala Cabang
-- `GET /api/sync/audit-logs` - riwayat operasional import/backup/restore, hanya Kepala Bengkel dan Kepala Cabang
+- `GET /api/sync/backups` - list backup SQLite, **hanya IT Master**
+- `POST /api/sync/backups` - buat backup manual, **hanya IT Master**
+- `POST /api/sync/backups/cleanup` - hapus backup `pre_import_*` lama, **hanya IT Master**
+- `POST /api/sync/backups/:filename/restore` - restore backup, **hanya IT Master**
+- `GET /api/sync/audit-logs` - riwayat operasional import/backup/restore, **hanya IT Master**
+
+> Backup terjadwal otomatis: cron `02:00 WIB` menjalankan `api/scripts/backup-db.js` (simpan 14 terbaru). Lihat `docs/RUNBOOK.md`.
 
 ### Users
 
@@ -239,7 +261,7 @@ Filter `GET /api/customers` dan export sudah konsisten untuk `search`, `kpb_stat
 - `DELETE /api/users/:id` - hapus user (cascade delete relasi, IT Master tidak bisa dihapus)
 - `PATCH /api/users/:id/reset-password` - reset password
 
-Semua endpoint users hanya untuk IT Master, Kepala Bengkel, dan Kepala Cabang.
+Semua endpoint users **hanya untuk IT Master** (keputusan tim — manajemen user & backup dipersempit ke IT Master).
 
 ### Showroom Margin dan Master Data
 

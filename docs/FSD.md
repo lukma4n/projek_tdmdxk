@@ -1127,3 +1127,11 @@ Fitur yang dapat ditambahkan bila dibutuhkan:
 - Import progress bar untuk file besar.
 - Multi-cabang selain DXK.
 - Validasi lanjutan Simulasi DP & Margin dengan 5-10 DSO Odoo tambahan.
+
+---
+
+## Addendum (2026-06-24) — modul/fitur baru
+
+- **Cek Ketersediaan Unit (publik `/cek-unit`)** — sales & PIC POS cek stok unit: per model/warna, status Siap Jual/Dipesan/Belum Siap (`engine_state`), no. mesin/rangka + harga OTR, umur **FIFO** (POS/Pameran = movement aging) + Tag aging A-L + kode unit, filter lokasi. Data agregat non-sensitif; cost/HPP tidak ditampilkan. Endpoint `GET /api/public/stock-units`.
+- **Kesegaran Data Import (`/data-freshness`)** — halaman + menu tersendiri (menuKey `DATA_FRESHNESS`; Kepala Cabang/Kepala Bengkel/Admin) memantau waktu & jumlah import per 8 modul. Endpoint `GET /api/dashboard/freshness`.
+- **Audit Login & Sesi (`/security-audit`, IT Master)** — sesi aktif + riwayat login + reset paksa sesi. Mendukung single-session (anti-sharing) & idle auto-logout 60 menit.

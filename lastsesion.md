@@ -1,10 +1,26 @@
 # Catatan Sesi Terakhir — DXK Operation System
 
-Tanggal: 2026-06-22 (sesi lanjutan: FASE 2 self-check pickup request + revisi KTP + kamera in-app)
-Branch: `feat/fase2-pickup-request` (semua perubahan sesi ini **sudah di-commit**, BELUM di-push / belum di-merge ke `main`).
-Status: **lint 0 error** (1 warning pre-existing), **build sukses**, **API test 55 pass / 0 fail** (39 lama + 16 alur pickup).
+Tanggal: **2026-06-24**
+Branch: **`main`** (FASE 2 sudah di-merge & branch `feat/fase2-pickup-request` dihapus). Semua perubahan **sudah di-commit & di-push** ke `origin/main`.
+Status: **lint 0 error** (1 warning pre-existing), **build sukses**, **API test 61 pass / 0 fail**.
+Produksi: VPS tdmketapang.net (PM2 + Nginx), deploy dari `main` via `git pull → prisma db push → prisma generate → web build → pm2 restart`.
 
-> Untuk melanjutkan: `claude --resume` / `--continue` sudah cukup — tidak butuh file handoff tambahan. File ini hanya catatan konteks.
+> Untuk melanjutkan: `claude --resume` / `--continue` sudah cukup. Konteks ringkas juga ada di memory (MEMORY.md).
+
+---
+
+## 0. Yang dikerjakan sesi 2026-06-24 (terbaru)
+
+1. **Kesegaran Data Import** dipisah ke halaman `/data-freshness` + menu (menuKey `DATA_FRESHNESS`).
+2. **FASE 2 merged ke `main`** (fast-forward), branch fitur dihapus, server kembali deploy dari `main`.
+3. **Cek Ketersediaan Unit publik `/cek-unit`** — `GET /api/public/stock-units`. Browse per model/warna, status RFS/Reserved/NRFS, no.mesin/rangka + OTR (sengaja publik), umur FIFO + Tag aging + kode unit, filter lokasi. cost/HPP tak pernah bocor.
+4. **Fix font** — self-host `@fontsource` (ganti Google Fonts CDN) → ekspor screenshot Closing Daily konsisten live vs lokal.
+5. **Idle auto-logout 60 menit** (`web/src/components/IdleLogout.jsx`) + peringatan 1 menit.
+6. **Single-session anti-sharing + audit login** — login ke-2 ditolak (409), halaman `/security-audit` (IT Master): sesi aktif + riwayat login + reset sesi. Kolom `users.session_id`/`session_last_active`, tabel `login_logs`. Env `ENFORCE_SINGLE_SESSION`.
+7. **Backup terjadwal** cron 02:00 WIB (`api/scripts/backup-db.js`, keep 14) + bersih-bersih backup pre-import lama.
+8. **Backlog keamanan** S1-S4 dicatat di `docs/rencana_perbaikan.md`; prioritas tinggi (VIN publik, password policy/lockout, 2FA) ditunda atas keputusan pemilik.
+
+> ⚠️ **Pending deploy ke server**: perubahan #6 butuh `prisma db push` di VPS (kolom sesi + tabel `login_logs`). Setelah deploy, idealnya semua staf logout→login ulang agar token ber-`sid`.
 
 ---
 

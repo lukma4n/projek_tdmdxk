@@ -820,3 +820,17 @@ Perubahan kode dianggap aman jika:
 - Import preview/final domain terkait tetap berjalan.
 - Backup dibuat untuk perubahan/import destruktif.
 - Tidak ada regression pada login, dashboard, import, export, dan role guard.
+
+---
+
+## Addendum (2026-06-24) — sinkron sistem aktual
+
+Detail teknis lengkap di `CLAUDE.md`, `AGENTS.md §15`, `ERD.md §4`. Ringkas:
+
+- **Auth & sesi:** JWT 24h cookie httpOnly + **single-session** (1 akun = 1 sesi; login ke-2 ditolak `409` selama sesi aktif ≤60 mnt) + **idle auto-logout 60 menit** (frontend). Token bawa `sid`; `authenticate` tolak bila `sid` ≠ `users.session_id`. Enforcement OFF saat test (`ENFORCE_SINGLE_SESSION`).
+- **Audit:** tabel `login_logs` (login_success/login_blocked/logout/session_reset + IP + user-agent). Endpoint IT Master: `GET /api/security/login-logs`, `GET /api/security/active-sessions`, `POST /api/security/users/:id/reset-session`. Halaman `/security-audit`.
+- **Endpoint baru:** `GET /api/dashboard/freshness` (Kesegaran Data Import), `GET /api/public/stock-units` (cek ketersediaan unit publik — agregat + no.mesin/rangka/OTR; cost/HPP tidak dibocorkan).
+- **Akses:** Manajemen User, Backup & Restore, Audit Login & Sesi = **IT Master saja**. Rate limit: login 20/15min, publik 60/15min, import 30/15min, umum 2000/15min (sudah terpasang).
+- **DB & deploy:** `prisma migrate` rusak di setup ini (schema-engine error) → pakai **`prisma db push`** untuk terapkan schema (dev & prod). Backup terjadwal cron 02:00 WIB (`scripts/backup-db.js`, keep 14).
+- **Font:** self-host `@fontsource` (bukan CDN) agar ekspor screenshot `html-to-image` konsisten.
+- **Backlog keamanan** S1-S4 di `docs/rencana_perbaikan.md`.
