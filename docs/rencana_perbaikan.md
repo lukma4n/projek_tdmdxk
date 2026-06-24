@@ -133,6 +133,33 @@ Verifikasi: `npm test` 34/34 pass, `web npm run build` sukses (lint error pre-ex
 
 ---
 
+## Backlog Keamanan (S) — direncanakan (24 Juni 2026)
+
+Konteks: review keamanan 24 Jun 2026. Postur saat ini sudah solid (auth httpOnly+bcrypt,
+RBAC, helmet/CORS/rate-limit, HTTPS, idle-logout 60 mnt, single-session anti-sharing,
+audit login, backup harian). Item di bawah adalah sisa celah.
+
+**Ditunda atas keputusan pemilik (accepted risk — JANGAN diangkat lagi sebagai bug):**
+- Halaman publik `/cek-unit` **sengaja** menampilkan no. mesin/rangka + OTR (bantu sales).
+  Rem: rate-limit publik 60/15mnt. Cost/HPP tetap tidak pernah dibocorkan.
+- Belum ada **kebijakan password / penguncian akun** setelah N gagal login
+  (hanya `authLimiter` 20/15mnt).
+- Belum ada **2FA**.
+
+**Direncanakan (belum dikerjakan):**
+- **S1** Sesi/cookie JWT 24 jam → pertimbangkan perpendek + refresh-token rotation.
+  Risiko: cookie dicuri valid ≤24 jam (sudah dipersempit oleh single-session).
+- **S2** **Backup off-site** — backup harian (cron 02:00) masih satu disk dengan DB;
+  belum aman dari kerusakan disk/server total. Salin ke luar server (object storage /
+  unduh terjadwal). Skrip: `api/scripts/backup-db.js`.
+- **S3** **Perluas audit perubahan data** — saat ini terekam: login (`login_logs`) + aksi
+  IT Master (`audit_logs`). Tambah cakupan perubahan data sensitif (edit harga, hapus,
+  override status).
+- **S4** **Higiene** — `npm audit` rutin (kerentanan dependency), monitoring/alert dasar,
+  pastikan password VPS sudah diganti (pernah ter-paste di chat saat setup awal).
+
+---
+
 ## Backlog Dokumen (D)
 
 - **D1** Sinkronkan README.md + AGENTS.md ke keputusan K1 (Backup & User Management = IT Master saja):
