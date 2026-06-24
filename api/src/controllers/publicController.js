@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import { randomUUID } from 'crypto'
 import { prisma } from '../config/db.js'
 import { isTokenUsed, markTokenUsed } from '../services/usedTokenStore.js'
+import { PRODUCT_CODE_ALIASES } from './showroomUtils.js'
 
 // Umur token permintaan ambil dokumen yang dikeluarkan /check setelah verifikasi.
 // Konsumen sudah terverifikasi identitasnya saat /check — token ini hanya
@@ -51,16 +52,18 @@ function prettyColor(color) {
 }
 
 /**
- * Publik: cek ketersediaan unit (browse per model/warna) untuk sales di lapangan.
- * HANYA data agregat & non-sensitif — TIDAK pernah mengembalikan nomor mesin/rangka,
- * cost/HPP, atau data finansial. Dikelompokkan per series (model).
- * Query: ?q=<kata kunci model> (opsional, filter di sisi server).
+ * Publik: cek ketersediaan unit (browse per model/warna) untuk sales & kontrol
+ * movement unit oleh PIC POS. Dikelompokkan per series (model). Menampilkan
+ * no. mesin, no. rangka, dan harga OTR (keputusan dealer — halaman publik).
+ * Tetap TIDAK mengembalikan cost/HPP/harga beli dealer (data internal).
+ * Query: ?q=<kata kunci model> & ?location=<lokasi> (opsional).
  */
 export async function checkStockUnits(req, res, next) {
   try {
     const q = String(req.query.q || '').trim().toLowerCase()
+    const locationFilter = String(req.query.location || '').trim()
 
-    // Pilih hanya kolom aman. Unit cabang DXK saja (parser memang hanya impor DXK).
+    // Unit cabang DXK saja (parser memang hanya impor DXK).
     const units = await prisma.showroom_stock_units.findMany({
       where: { branch_code: 'DXK' },
       select: {
@@ -73,12 +76,33 @@ export async function checkStockUnits(req, res, next) {
         stock_aging_days: true,
         year: true,
         engine_state: true,
+        engine_number: true,
+        chassis_number: true,
       },
     })
 
-    // Statistik keseluruhan (tidak terpengaruh filter q) untuk ringkasan header.
-    const overall = { total: units.length, ready: 0, reserved: 0, not_ready: 0 }
-    for (const u of units) {
+    // Petakan harga OTR per product_type (konsisten dgn enrichStockUnitsWithPrices).
+    const productCodes = [...new Set(units.map((u) => PRODUCT_CODE_ALIASES[u.product_type] || u.product_type).filter(Boolean))]
+    const otrRows = productCodes.length
+      ? await prisma.showroom_otr_prices.findMany({
+          where: { product_code: { in: productCodes } },
+          select: { product_code: true, otr_price: true },
+        })
+      : []
+    const otrByCode = new Map(otrRows.map((r) => [r.product_code, r.otr_price]))
+    const otrOf = (u) => otrByCode.get(PRODUCT_CODE_ALIASES[u.product_type] || u.product_type) ?? null
+
+    // Daftar lokasi (selalu semua, tidak terpengaruh filter) untuk dropdown.
+    const availableLocations = [...new Set(units.map((u) => u.location || 'Lainnya'))].sort((a, b) => a.localeCompare(b))
+
+    // Terapkan filter lokasi untuk agregasi & statistik.
+    const working = locationFilter
+      ? units.filter((u) => (u.location || 'Lainnya') === locationFilter)
+      : units
+
+    // Statistik keseluruhan (mengikuti filter lokasi) untuk ringkasan header.
+    const overall = { total: working.length, ready: 0, reserved: 0, not_ready: 0 }
+    for (const u of working) {
       const st = mapUnitState(u.engine_state)
       if (st.key === 'ready') overall.ready++
       else if (st.key === 'reserved') overall.reserved++
@@ -87,7 +111,7 @@ export async function checkStockUnits(req, res, next) {
 
     // Kelompokkan per series (model), terapkan filter q bila ada.
     const groups = new Map()
-    for (const u of units) {
+    for (const u of working) {
       const series = (u.series || 'LAINNYA').trim()
       const haystack = `${series} ${u.category_name || ''} ${u.parent_category || ''}`.toLowerCase()
       if (q && !haystack.includes(q)) continue
@@ -100,6 +124,7 @@ export async function checkStockUnits(req, res, next) {
           total: 0, ready: 0, reserved: 0, not_ready: 0,
           _colors: new Map(),
           _locations: new Map(),
+          _otrs: new Set(),
           units: [],
         })
       }
@@ -119,9 +144,15 @@ export async function checkStockUnits(req, res, next) {
       const loc = u.location || 'Lainnya'
       g._locations.set(loc, (g._locations.get(loc) || 0) + 1)
 
+      const otr = otrOf(u)
+      if (otr) g._otrs.add(otr)
+
       g.units.push({
         color,
         location: loc,
+        engine_number: u.engine_number || null,
+        chassis_number: u.chassis_number || null,
+        otr_price: otr,
         aging_days: u.stock_aging_days || 0,
         year: u.year || null,
         status: st.key,
@@ -129,22 +160,27 @@ export async function checkStockUnits(req, res, next) {
       })
     }
 
-    const models = [...groups.values()].map((g) => ({
-      series: g.series,
-      category_name: g.category_name,
-      parent_category: g.parent_category,
-      total: g.total,
-      ready: g.ready,
-      reserved: g.reserved,
-      not_ready: g.not_ready,
-      colors: [...g._colors.values()].sort((a, b) => b.count - a.count),
-      locations: [...g._locations.entries()]
-        .map(([location, count]) => ({ location, count }))
-        .sort((a, b) => b.count - a.count),
-      units: g.units.sort((a, b) => a.aging_days - b.aging_days),
-    })).sort((a, b) => b.ready - a.ready || b.total - a.total || a.series.localeCompare(b.series))
+    const models = [...groups.values()].map((g) => {
+      const otrs = [...g._otrs]
+      return {
+        series: g.series,
+        category_name: g.category_name,
+        parent_category: g.parent_category,
+        total: g.total,
+        ready: g.ready,
+        reserved: g.reserved,
+        not_ready: g.not_ready,
+        otr_min: otrs.length ? Math.min(...otrs) : null,
+        otr_max: otrs.length ? Math.max(...otrs) : null,
+        colors: [...g._colors.values()].sort((a, b) => b.count - a.count),
+        locations: [...g._locations.entries()]
+          .map(([location, count]) => ({ location, count }))
+          .sort((a, b) => b.count - a.count),
+        units: g.units.sort((a, b) => b.aging_days - a.aging_days),
+      }
+    }).sort((a, b) => b.ready - a.ready || b.total - a.total || a.series.localeCompare(b.series))
 
-    res.json({ overall, model_count: models.length, models })
+    res.json({ overall, available_locations: availableLocations, location: locationFilter || null, model_count: models.length, models })
   } catch (err) {
     next(err)
   }
