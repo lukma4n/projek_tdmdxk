@@ -90,7 +90,9 @@ export default function ShowroomClosingDaily() {
     if (!reportRef.current) return
     try {
       setScreenshotting(true)
-      // Tunggu 500ms agar DOM stabil sebelum capture
+      // Pastikan font sudah termuat penuh + DOM stabil sebelum capture,
+      // agar metrik teks konsisten (cegah teks meluap/patah saat ekspor).
+      if (document.fonts?.ready) await document.fonts.ready
       await new Promise(resolve => setTimeout(resolve, 500))
       const dataUrl = await toPng(reportRef.current, {
         quality: 1,

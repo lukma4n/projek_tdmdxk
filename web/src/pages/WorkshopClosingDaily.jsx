@@ -58,9 +58,11 @@ export default function WorkshopClosingDaily() {
     if (!reportRef.current) return
     try {
       setScreenshotting(true)
-      // Tunggu render DOM agar gaya screenshotting (w-[1024px]) diterapkan
+      // Pastikan font termuat penuh + render DOM (w-[1024px]) sebelum capture,
+      // agar metrik teks konsisten (cegah teks meluap/patah saat ekspor).
+      if (document.fonts?.ready) await document.fonts.ready
       await new Promise((resolve) => setTimeout(resolve, 250))
-      
+
       const dataUrl = await toPng(reportRef.current, {
         quality: 1,
         pixelRatio: 2,
