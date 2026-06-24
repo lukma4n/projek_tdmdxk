@@ -25,6 +25,13 @@ async function fetchWithAuth(endpoint, options = {}) {
 
     if (!response.ok) {
       if (response.status === 401) {
+        // Deteksi sesi ditendang (login di perangkat lain / di-reset) untuk pesan jelas
+        try {
+          const body = await response.clone().json()
+          if (body?.error === 'SESSION_SUPERSEDED') {
+            sessionStorage.setItem('logoutReason', 'superseded')
+          }
+        } catch { /* abaikan */ }
         // Only redirect if not already on /login to avoid infinite reload loop
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login'

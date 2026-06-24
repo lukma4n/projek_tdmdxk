@@ -20,6 +20,7 @@ import {
   Inbox,
   Activity,
   Search,
+  ScanFace,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { displayRole as displayRoleImpl, ROLES } from '../../config/roles'
@@ -153,6 +154,7 @@ const navStructure = [
       { path: '/users', label: 'Manajemen User', icon: Users, menuKey: 'MANAGEMENT' },
       { path: '/roles', label: 'Manajemen Akses', icon: ShieldCheck, menuKey: 'MANAGEMENT' },
       { path: '/backups', label: 'Backup & Restore', icon: DatabaseBackup, menuKey: 'MANAGEMENT' },
+      { path: '/security-audit', label: 'Audit Login & Sesi', icon: ScanFace, roles: [ROLES.MASTER_IT] },
     ],
   },
 

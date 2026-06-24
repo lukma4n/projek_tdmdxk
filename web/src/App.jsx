@@ -49,6 +49,7 @@ const ShowroomDocumentHandover = lazy(() => import('./pages/ShowroomDocumentHand
 const StnkBpkbCheck = lazy(() => import('./pages/StnkBpkbCheck'))
 const StockUnitCheck = lazy(() => import('./pages/StockUnitCheck'))
 const DataFreshness = lazy(() => import('./pages/DataFreshness'))
+const SecurityAudit = lazy(() => import('./pages/SecurityAudit'))
 
 import { ROLES } from './config/roles'
 
@@ -525,6 +526,14 @@ function App() {
           element={
             <RoleGuard menuKey="DATA_FRESHNESS">
               <LazyPage><DataFreshness /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="security-audit"
+          element={
+            <RoleGuard roles={[ROLES.MASTER_IT]}>
+              <LazyPage><SecurityAudit /></LazyPage>
             </RoleGuard>
           }
         />

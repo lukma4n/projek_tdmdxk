@@ -1,8 +1,11 @@
 import jwt from 'jsonwebtoken'
 import { prisma } from '../config/db.js'
 import { logItMasterAction } from '../services/auditService.js'
+import { singleSessionEnabled } from '../services/sessionService.js'
 
 const JWT_COOKIE_NAME = 'token'
+// Hemat write: hanya perbarui session_last_active bila sudah lewat interval ini.
+const ACTIVITY_UPDATE_THROTTLE_MS = 60 * 1000
 
 export async function authenticate(req, res, next) {
   // Prefer cookie (httpOnly), fallback to Authorization header for compatibility
@@ -16,11 +19,27 @@ export async function authenticate(req, res, next) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     const user = await prisma.users.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, username: true, name: true, role: true },
+      select: { id: true, username: true, name: true, role: true, session_id: true, session_last_active: true },
     })
 
     if (!user) {
       return res.status(401).json({ error: 'User tidak ditemukan atau sudah nonaktif' })
+    }
+
+    // Single-session: token (yg punya sid) hanya valid bila cocok dgn session_id
+    // terbaru. Bila berbeda/null berarti sesi sudah digantikan (login di tempat
+    // lain), logout, atau di-reset IT → tolak. Token lama tanpa sid dilewati
+    // (kompat mundur saat transisi; akan ber-sid setelah login berikutnya).
+    if (singleSessionEnabled() && decoded.sid && decoded.sid !== user.session_id) {
+      return res.status(401).json({ error: 'SESSION_SUPERSEDED', message: 'Sesi berakhir: akun digunakan di perangkat lain atau sesi telah direset.' })
+    }
+
+    // Perbarui jejak aktivitas (throttled, fire-and-forget) agar window sesi akurat.
+    if (decoded.sid && user.session_id === decoded.sid) {
+      const last = user.session_last_active ? new Date(user.session_last_active).getTime() : 0
+      if (Date.now() - last > ACTIVITY_UPDATE_THROTTLE_MS) {
+        prisma.users.update({ where: { id: user.id }, data: { session_last_active: new Date() } }).catch(() => {})
+      }
     }
 
     const locations = await prisma.showroom_user_locations.findMany({

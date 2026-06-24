@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { randomUUID } from 'crypto'
 import { prisma } from '../config/db.js'
+import { singleSessionEnabled, isSessionActive, logLogin } from '../services/sessionService.js'
 
 const JWT_COOKIE_NAME = 'token'
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h'
@@ -20,7 +22,7 @@ export async function login(req, res, next) {
 
     // Case-insensitive username lookup for SQLite using raw query
     const users = await prisma.$queryRaw`
-      SELECT id, username, password_hash, name, role, created_at
+      SELECT id, username, password_hash, name, role, created_at, session_id, session_last_active
       FROM users
       WHERE LOWER(username) = LOWER(${username})
       LIMIT 1
@@ -37,16 +39,36 @@ export async function login(req, res, next) {
       return res.status(401).json({ error: 'Username atau password salah' })
     }
 
+    // Single-session: tolak login bila akun ini SEDANG dipakai di sesi lain
+    // (anti-sharing). Sesi yang sudah idle > window dianggap bebas (lihat
+    // isSessionActive) sehingga tidak mengunci akun secara permanen.
+    if (singleSessionEnabled() && isSessionActive(user)) {
+      await logLogin({ userId: user.id, username: user.username, event: 'login_blocked', req })
+      return res.status(409).json({
+        error: 'Akun ini sedang digunakan di perangkat/sesi lain. Tutup sesi tersebut terlebih dahulu, tunggu 60 menit tanpa aktivitas, atau hubungi IT untuk mereset sesi.',
+      })
+    }
+
+    // Buat session id baru, simpan + tandai waktu aktivitas, sematkan di token (sid).
+    const sessionId = randomUUID()
+    await prisma.users.update({
+      where: { id: user.id },
+      data: { session_id: sessionId, session_last_active: new Date() },
+    })
+
     const token = jwt.sign(
       {
         userId: user.id,
         username: user.username,
         name: user.name,
         role: user.role,
+        sid: sessionId,
       },
       process.env.JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     )
+
+    await logLogin({ userId: user.id, username: user.username, event: 'login_success', req })
 
     // Set httpOnly cookie for security (XSS protection)
     const maxAgeMs = JWT_EXPIRES_IN.includes('h')
@@ -81,6 +103,14 @@ export async function login(req, res, next) {
 
 export async function logout(req, res, next) {
   try {
+    // Bebaskan sesi: kosongkan session_id agar akun bisa login lagi segera.
+    if (req.user?.userId) {
+      await prisma.users.update({
+        where: { id: req.user.userId },
+        data: { session_id: null, session_last_active: null },
+      }).catch(() => {})
+      await logLogin({ userId: req.user.userId, username: req.user.username, event: 'logout', req })
+    }
     res.clearCookie(JWT_COOKIE_NAME, {
       httpOnly: true,
       secure: isSecureCookie(req),

@@ -27,6 +27,7 @@ import showroomRoutes from './routes/showroomRoutes.js'
 import notificationRoutes from './routes/notificationRoutes.js'
 import rolePermissionRoutes from './routes/rolePermissionRoutes.js'
 import publicRoutes from './routes/publicRoutes.js'
+import securityRoutes from './routes/securityRoutes.js'
 
 
 dotenv.config()
@@ -147,6 +148,7 @@ app.use('/api/showroom', showroomRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/permissions', rolePermissionRoutes)
 app.use('/api/public', publicRoutes)
+app.use('/api/security', securityRoutes)
 
 
 // Serve static files from frontend build in production

@@ -24,6 +24,8 @@ export default function Login() {
       try { reason = sessionStorage.getItem('logoutReason') } catch { /* ignore */ }
       if (reason === 'idle') {
         setNotice('Sesi berakhir otomatis karena tidak ada aktivitas selama 60 menit. Silakan masuk kembali.')
+      } else if (reason === 'superseded') {
+        setNotice('Sesi Anda berakhir karena akun login di perangkat lain atau direset oleh IT. Bila ini bukan Anda, segera ganti password.')
       }
       try { sessionStorage.removeItem('logoutReason') } catch { /* ignore */ }
     })

@@ -9,6 +9,7 @@ import * as customers from './api/customers.js'
 import * as opname from './api/opname.js'
 import * as sync from './api/sync.js'
 import * as showroom from './api/showroom.js'
+import * as security from './api/security.js'
 
 export const api = {
   ...auth,
@@ -21,6 +22,7 @@ export const api = {
   ...opname,
   ...sync,
   ...showroom,
+  ...security,
 }
 
 export { API_BASE, fetchWithAuth }

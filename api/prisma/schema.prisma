@@ -16,6 +16,10 @@ model users {
   phone         String?
   created_at    DateTime @default(now())
 
+  // Single-session: id sesi aktif + waktu aktivitas terakhir (untuk anti-sharing)
+  session_id          String?
+  session_last_active DateTime?
+
   showroom_user_locations showroom_user_locations[]
   sync_logs        sync_logs[]
   hotlines_updated hotlines[]   @relation("HotlineStateUpdater")
@@ -35,6 +39,23 @@ model users {
   showroom_notifications showroom_notifications[]
   document_handovers document_handovers[]
   document_handover_steps document_handover_steps[]
+  login_logs login_logs[]
+}
+
+// Audit login & deteksi penyalahgunaan akun (sharing, login ditolak, dsb).
+model login_logs {
+  id         Int      @id @default(autoincrement())
+  user_id    Int?
+  username   String
+  event      String   // login_success | login_blocked | logout | session_reset
+  ip         String?
+  user_agent String?
+  created_at DateTime @default(now())
+
+  user users? @relation(fields: [user_id], references: [id])
+
+  @@index([created_at])
+  @@index([user_id])
 }
 
 model sync_logs {
