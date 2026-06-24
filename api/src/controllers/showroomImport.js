@@ -1,11 +1,15 @@
+import { Prisma } from '@prisma/client'
 import { prisma } from '../config/db.js'
 import { createDatabaseBackup } from '../services/backupService.js'
 import { createAuditLog } from '../services/auditService.js'
 import { ensureNoActiveShowroomOpname } from './showroomOpnameController.js'
 import { ensureKsuStandards, ensureKsuChecksForStockUnits } from './showroomKsu.js'
 
-// Ambil set nilai unik yang SUDAH ada dalam 1 query (hindari findUnique per baris
-// yang menggandakan jumlah query). Dipakai untuk menghitung created vs updated.
+// Batas aman jumlah parameter (?) per statement SQLite.
+const SQL_VAR_CAP = 4000
+
+// Ambil set nilai unik yang SUDAH ada dalam 1 query (hindari findUnique per baris).
+// Dipakai untuk menghitung created vs updated.
 async function fetchExistingKeys(client, { records, model, uniqueField }) {
   const keys = [...new Set(records.map((r) => r[uniqueField]).filter((v) => v != null))]
   if (keys.length === 0) return new Set()
@@ -16,36 +20,63 @@ async function fetchExistingKeys(client, { records, model, uniqueField }) {
   return new Set(existing.map((e) => e[uniqueField]))
 }
 
-export async function upsertRecords({ records, model, uniqueField }) {
+// Dedup by uniqueField (baris terakhir menang) — cegah error SQLite "ON CONFLICT
+// cannot affect row a second time" bila ada engine_number ganda dalam 1 statement.
+function dedupeByKey(records, uniqueField) {
+  return [...new Map(records.map((r) => [r[uniqueField], r])).values()]
+}
+
+// Bulk upsert: banyak baris per statement via INSERT ... ON CONFLICT DO UPDATE.
+// Jauh lebih cepat dari upsert per-baris (puluhan ribu statement → ratusan),
+// terutama di disk lambat (VPS). Pakai Prisma.sql agar binding tipe (tanggal!) konsisten.
+async function bulkUpsert(client, { records, model, uniqueField }) {
+  if (records.length === 0) return
+  const colSet = new Set()
+  for (const r of records) for (const k of Object.keys(r)) colSet.add(k)
+  const columns = [...colSet]
+
+  const tableRaw = Prisma.raw(`"${model}"`)
+  const colListRaw = Prisma.raw(columns.map((c) => `"${c}"`).join(', '))
+  const conflictRaw = Prisma.raw(`"${uniqueField}"`)
+  const updateSetRaw = Prisma.raw(
+    columns.filter((c) => c !== uniqueField).map((c) => `"${c}" = excluded."${c}"`).join(', ')
+  )
+  const batchSize = Math.max(1, Math.floor(SQL_VAR_CAP / columns.length))
+
+  for (let i = 0; i < records.length; i += batchSize) {
+    const chunk = records.slice(i, i + batchSize)
+    const rowsSql = chunk.map((rec) => Prisma.sql`(${Prisma.join(columns.map((c) => rec[c] ?? null))})`)
+    const query = Prisma.sql`INSERT INTO ${tableRaw} (${colListRaw}) VALUES ${Prisma.join(rowsSql)} ON CONFLICT(${conflictRaw}) DO UPDATE SET ${updateSetRaw}`
+    await client.$executeRaw(query)
+  }
+}
+
+function tally(records, existingKeys, uniqueField) {
   let created = 0
   let updated = 0
-
-  await prisma.$transaction(async (tx) => {
-    const existingKeys = await fetchExistingKeys(tx, { records, model, uniqueField })
-    for (const record of records) {
-      const where = { [uniqueField]: record[uniqueField] }
-      await tx[model].upsert({ where, update: record, create: record })
-      if (existingKeys.has(record[uniqueField])) updated++
-      else created++
-    }
-  }, { maxWait: 20000, timeout: 120000 })
-
+  for (const r of records) {
+    if (existingKeys.has(r[uniqueField])) updated++
+    else created++
+  }
   return { created, updated }
 }
 
+export async function upsertRecords({ records, model, uniqueField }) {
+  const deduped = dedupeByKey(records, uniqueField)
+  let result = { created: 0, updated: 0 }
+  await prisma.$transaction(async (tx) => {
+    const existingKeys = await fetchExistingKeys(tx, { records: deduped, model, uniqueField })
+    await bulkUpsert(tx, { records: deduped, model, uniqueField })
+    result = tally(deduped, existingKeys, uniqueField)
+  }, { maxWait: 20000, timeout: 120000 })
+  return result
+}
+
 export async function upsertRecordsInTx(tx, { records, model, uniqueField }) {
-  let created = 0
-  let updated = 0
-
-  const existingKeys = await fetchExistingKeys(tx, { records, model, uniqueField })
-  for (const record of records) {
-    const where = { [uniqueField]: record[uniqueField] }
-    await tx[model].upsert({ where, update: record, create: record })
-    if (existingKeys.has(record[uniqueField])) updated++
-    else created++
-  }
-
-  return { created, updated }
+  const deduped = dedupeByKey(records, uniqueField)
+  const existingKeys = await fetchExistingKeys(tx, { records: deduped, model, uniqueField })
+  await bulkUpsert(tx, { records: deduped, model, uniqueField })
+  return tally(deduped, existingKeys, uniqueField)
 }
 
 export async function runShowroomSnapshotImport({
