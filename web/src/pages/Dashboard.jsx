@@ -4,7 +4,7 @@ import { api } from '../services/api'
 import { useAppStore } from '../stores/appStore'
 import {
   Wrench, Phone, Package, AlertTriangle, CheckCircle, Clock,
-  DollarSign, ArrowRight, Loader2, Database,
+  DollarSign, ArrowRight, Loader2,
   RefreshCw, Bell
 } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
@@ -12,14 +12,6 @@ import KpiCard from '../components/ui/KpiCard'
 import Card from '../components/ui/Card'
 import Table from '../components/ui/Table'
 import Badge from '../components/ui/Badge'
-
-function formatDateTime(value) {
-  if (!value) return 'Belum pernah import'
-  return new Date(value).toLocaleString('id-ID', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
-}
 
 const formatTrendPct = (trend) => {
   if (!trend || trend.previous === 0) {
@@ -149,29 +141,12 @@ export default function Dashboard() {
     },
   ]
 
-  const freshnessColumns = [
-    { key: 'label', label: 'Modul', bold: true },
-    { key: 'last_import_at', label: 'Sync Terakhir', render: (v) => formatDateTime(v) },
-    { key: 'total_rows', label: 'Baris', align: 'right', mono: true },
-    { key: 'rows_success', label: 'OK', render: (v) => (
-      <span className="text-success font-semibold">{v || 0}</span>
-    )},
-    { key: 'rows_error', label: 'Error', render: (v) => v > 0 ? (
-      <span className="text-danger font-semibold">{v}</span>
-    ) : (
-      <span className="text-faint">0</span>
-    )},
-  ]
-
   return (
     <div className="space-y-5">
       {/* Page Header */}
       <PageHeader
         title="Dashboard Bengkel"
         description="Ringkasan operasional bengkel dan sparepart DXK"
-        timestamp={summary?.freshness?.[0]?.last_import_at
-          ? `Data per ${formatDateTime(summary.freshness[0].last_import_at)}`
-          : undefined}
         action={
           <button
             onClick={loadDashboard}
@@ -272,20 +247,6 @@ export default function Dashboard() {
         />
       </Card>
 
-      {/* Freshness Data Import */}
-      <Card
-        title="Kesegaran Data Import"
-        icon={Database}
-        action={
-          <span className="text-[11px] text-faint">snapshot harian dari sistem induk AHM</span>
-        }
-      >
-        <Table
-          columns={freshnessColumns}
-          rows={summary?.freshness || []}
-          emptyMessage="Belum ada data import"
-        />
-      </Card>
     </div>
   )
 }

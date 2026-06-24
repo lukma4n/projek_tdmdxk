@@ -1,6 +1,67 @@
 import { prisma } from '../config/db.js'
 import { getCache, setCache } from '../config/redis.js'
 
+// Modul import yang dipantau kesegaran datanya (urutan = urutan tampil).
+// Tanggal diambil dari sync_logs (ditulis tiap import). Tambah entri di sini
+// bila modul lain mulai mencatat ke sync_logs.
+const FRESHNESS_MODULES = [
+  ['hotline', 'Hotline'],
+  ['stock', 'Stock Sparepart'],
+  ['workshop', 'Workshop'],
+  ['sales', 'Data Konsumen'],
+  ['showroom_stock_unit', 'Stok Unit Showroom'],
+  ['showroom_otr_price', 'Harga OTR'],
+  ['showroom_off_purchase_price', 'Harga Beli (Off-road)'],
+  ['showroom_stnk_bpkb_track', 'STNK/BPKB Track'],
+]
+
+// Bangun ringkasan kesegaran data import per modul (last import + jumlah baris).
+async function buildFreshness() {
+  const [counts, logs] = await Promise.all([
+    Promise.all([
+      prisma.hotlines.count(),
+      prisma.stock_parts.count(),
+      prisma.work_orders.count(),
+      prisma.customers.count({ where: { branch_code: 'DXK' } }),
+      prisma.showroom_stock_units.count(),
+      prisma.showroom_otr_prices.count(),
+      prisma.showroom_stnk_bpkb_tracks.count(),
+    ]),
+    prisma.sync_logs.findMany({ orderBy: { synced_at: 'desc' }, take: 500 }),
+  ])
+  const countMap = {
+    hotline: counts[0], stock: counts[1], workshop: counts[2], sales: counts[3],
+    showroom_stock_unit: counts[4], showroom_otr_price: counts[5],
+    showroom_off_purchase_price: counts[5], // off-road tersimpan di tabel OTR
+    showroom_stnk_bpkb_track: counts[6],
+  }
+  const latestByModule = new Map()
+  for (const log of logs) {
+    if (!latestByModule.has(log.module)) latestByModule.set(log.module, log)
+  }
+  return FRESHNESS_MODULES.map(([module, label]) => {
+    const log = latestByModule.get(module)
+    return {
+      module,
+      label,
+      last_import_at: log?.synced_at || null,
+      filename: log?.filename || null,
+      rows_success: log?.rows_success || 0,
+      rows_error: log?.rows_error || 0,
+      total_rows: countMap[module] ?? 0,
+    }
+  })
+}
+
+// Endpoint khusus halaman "Kesegaran Data" (lebih ringan dari summary penuh).
+export async function getFreshness(req, res, next) {
+  try {
+    res.json({ freshness: await buildFreshness() })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export async function getSummary(req, res, next) {
   try {
     const cacheKey = 'dashboard:summary'
@@ -17,7 +78,7 @@ export async function getSummary(req, res, next) {
     const twoDaysAgo = new Date(today)
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
 
-    const [totalWO, totalHotline, criticalStock, openWO, attentionStock, syncLogs, moduleCounts] = await Promise.all([
+    const [totalWO, totalHotline, criticalStock, openWO, attentionStock] = await Promise.all([
       prisma.work_orders.count({
         where: {
           date_confirm: { gte: today },
@@ -40,19 +101,6 @@ export async function getSummary(req, res, next) {
           aging_days: { gte: 180, lte: 365 },
         },
       }),
-      prisma.sync_logs.findMany({
-        orderBy: { synced_at: 'desc' },
-        take: 500,
-      }),
-      Promise.all([
-        prisma.hotlines.count(),
-        prisma.stock_parts.count(),
-        prisma.work_orders.count(),
-        prisma.customers.count({ where: { branch_code: 'DXK' } }),
-        prisma.showroom_stock_units.count(),
-        prisma.showroom_otr_prices.count(),
-        prisma.showroom_stnk_bpkb_tracks.count(),
-      ]),
     ])
 
     const [revenue, yesterdayRevenueAgg, yesterdayWO] = await Promise.all([
@@ -78,30 +126,7 @@ export async function getSummary(req, res, next) {
       }),
     ])
 
-    const moduleLabels = {
-      hotline: 'Hotline',
-      stock: 'Stock Sparepart',
-      workshop: 'Workshop',
-      sales: 'Data Konsumen',
-      showroom_stock_unit: 'Stok Unit Showroom',
-      showroom_otr_price: 'Harga OTR',
-      showroom_off_purchase_price: 'Harga Beli (Off-road)',
-      showroom_stnk_bpkb_track: 'STNK/BPKB Track',
-    }
-    const countMap = {
-      hotline: moduleCounts[0],
-      stock: moduleCounts[1],
-      workshop: moduleCounts[2],
-      sales: moduleCounts[3],
-      showroom_stock_unit: moduleCounts[4],
-      showroom_otr_price: moduleCounts[5],
-      showroom_off_purchase_price: moduleCounts[5], // off-road tersimpan di tabel OTR
-      showroom_stnk_bpkb_track: moduleCounts[6],
-    }
-    const latestByModule = new Map()
-    for (const log of syncLogs) {
-      if (!latestByModule.has(log.module)) latestByModule.set(log.module, log)
-    }
+    const freshness = await buildFreshness()
 
     const result = {
       totalWO,
@@ -131,18 +156,7 @@ export async function getSummary(req, res, next) {
           ...(openWO > 0 ? [{ type: 'workshop', message: `${openWO} WO masih open`, path: '/workshop' }] : []),
         ],
       },
-      freshness: Object.keys(moduleLabels).map((module) => {
-        const log = latestByModule.get(module)
-        return {
-          module,
-          label: moduleLabels[module],
-          last_import_at: log?.synced_at || null,
-          filename: log?.filename || null,
-          rows_success: log?.rows_success || 0,
-          rows_error: log?.rows_error || 0,
-          total_rows: countMap[module] || 0,
-        }
-      }),
+      freshness,
     }
 
     await setCache(cacheKey, JSON.stringify(result), 300)

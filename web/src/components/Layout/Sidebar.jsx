@@ -18,6 +18,7 @@ import {
   Contact,
   QrCode,
   Inbox,
+  Activity,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { displayRole as displayRoleImpl, ROLES } from '../../config/roles'
@@ -133,6 +134,14 @@ const navStructure = [
       { path: '/showroom/opname-stnk', label: 'Opname STNK', icon: FileText, menuKey: 'SHOWROOM_OPNAME' },
       { path: '/showroom/opname-bpkb', label: 'Opname BPKB', icon: FileBadge, menuKey: 'SHOWROOM_OPNAME' },
       { path: '/showroom/pic-users', label: 'PIC Opname Users', icon: Users, menuKey: 'SHOWROOM_PIC_USERS' },
+    ],
+  },
+
+  // Monitoring — akses Kepala Cabang, Kepala Bengkel, Admin
+  {
+    type: 'group', id: 'monitoring', label: 'Monitoring',
+    items: [
+      { path: '/data-freshness', label: 'Kesegaran Data Import', icon: Activity, menuKey: 'DATA_FRESHNESS' },
     ],
   },
 

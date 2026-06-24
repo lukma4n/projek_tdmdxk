@@ -43,6 +43,7 @@ const PERMISSION_SEED = [
   { menu_key: 'IMPORT_SHOWROOM_BBN', roles: ['Kepala Cabang', 'Admin'] },
   { menu_key: 'IMPORT_SHOWROOM_PROGRAM', roles: ['Kepala Cabang', 'Admin'] },
   { menu_key: 'IMPORT_SHOWROOM_STNK_BPKB_TRACK', roles: ['Admin'] },
+  { menu_key: 'DATA_FRESHNESS', roles: ['Kepala Cabang', 'Kepala Bengkel', 'Admin'] },
 ]
 
 async function main() {

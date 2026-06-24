@@ -47,6 +47,7 @@ const ShowroomLabelBukuService = lazy(() => import('./pages/ShowroomLabelBukuSer
 const ShowroomDocumentFollowup = lazy(() => import('./pages/ShowroomDocumentFollowup'))
 const ShowroomDocumentHandover = lazy(() => import('./pages/ShowroomDocumentHandover'))
 const StnkBpkbCheck = lazy(() => import('./pages/StnkBpkbCheck'))
+const DataFreshness = lazy(() => import('./pages/DataFreshness'))
 
 import { ROLES } from './config/roles'
 
@@ -513,6 +514,14 @@ function App() {
           element={
             <RoleGuard menuKey="DOCUMENT_HANDOVER">
               <LazyPage><ShowroomDocumentHandover /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="data-freshness"
+          element={
+            <RoleGuard menuKey="DATA_FRESHNESS">
+              <LazyPage><DataFreshness /></LazyPage>
             </RoleGuard>
           }
         />
