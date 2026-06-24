@@ -4,16 +4,28 @@ import { createAuditLog } from '../services/auditService.js'
 import { ensureNoActiveShowroomOpname } from './showroomOpnameController.js'
 import { ensureKsuStandards, ensureKsuChecksForStockUnits } from './showroomKsu.js'
 
+// Ambil set nilai unik yang SUDAH ada dalam 1 query (hindari findUnique per baris
+// yang menggandakan jumlah query). Dipakai untuk menghitung created vs updated.
+async function fetchExistingKeys(client, { records, model, uniqueField }) {
+  const keys = [...new Set(records.map((r) => r[uniqueField]).filter((v) => v != null))]
+  if (keys.length === 0) return new Set()
+  const existing = await client[model].findMany({
+    where: { [uniqueField]: { in: keys } },
+    select: { [uniqueField]: true },
+  })
+  return new Set(existing.map((e) => e[uniqueField]))
+}
+
 export async function upsertRecords({ records, model, uniqueField }) {
   let created = 0
   let updated = 0
 
   await prisma.$transaction(async (tx) => {
+    const existingKeys = await fetchExistingKeys(tx, { records, model, uniqueField })
     for (const record of records) {
       const where = { [uniqueField]: record[uniqueField] }
-      const existing = await tx[model].findUnique({ where })
       await tx[model].upsert({ where, update: record, create: record })
-      if (existing) updated++
+      if (existingKeys.has(record[uniqueField])) updated++
       else created++
     }
   }, { maxWait: 20000, timeout: 120000 })
@@ -25,11 +37,11 @@ export async function upsertRecordsInTx(tx, { records, model, uniqueField }) {
   let created = 0
   let updated = 0
 
+  const existingKeys = await fetchExistingKeys(tx, { records, model, uniqueField })
   for (const record of records) {
     const where = { [uniqueField]: record[uniqueField] }
-    const existing = await tx[model].findUnique({ where })
     await tx[model].upsert({ where, update: record, create: record })
-    if (existing) updated++
+    if (existingKeys.has(record[uniqueField])) updated++
     else created++
   }
 
