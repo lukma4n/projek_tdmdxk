@@ -10,11 +10,24 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const { login, isAuthenticated } = useAuthStore()
   const { theme, toggleTheme } = useThemeStore()
   const isDark = theme === 'dark'
+
+  // Pesan info bila sebelumnya ter-logout otomatis karena tidak ada aktivitas.
+  useEffect(() => {
+    void Promise.resolve().then(() => {
+      let reason = null
+      try { reason = sessionStorage.getItem('logoutReason') } catch { /* ignore */ }
+      if (reason === 'idle') {
+        setNotice('Sesi berakhir otomatis karena tidak ada aktivitas selama 60 menit. Silakan masuk kembali.')
+      }
+      try { sessionStorage.removeItem('logoutReason') } catch { /* ignore */ }
+    })
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -95,6 +108,12 @@ export default function Login() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5 px-6 py-6">
+          {notice && (
+            <div className="flex items-center gap-2 rounded-xl bg-warning-soft border border-warning/20 px-4 py-3 text-sm text-warning">
+              <Shield size={16} />
+              <span className="font-semibold">{notice}</span>
+            </div>
+          )}
           <div>
             <label className="mb-2 block text-sm font-semibold text-text">
               Username

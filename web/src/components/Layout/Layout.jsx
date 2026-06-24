@@ -2,12 +2,16 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import IdleLogout from '../IdleLogout'
 
 export default function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-bg">
+      {/* Auto-logout saat idle (komputer bersama) */}
+      <IdleLogout />
+
       {/* Desktop Sidebar */}
       <div className="hidden lg:block shrink-0 h-full">
         <Sidebar onNavigate={() => setMobileMenuOpen(false)} />
