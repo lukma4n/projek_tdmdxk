@@ -95,7 +95,7 @@ export default function ShowroomLabelBukuService() {
             <span class="meta-label">NAMA</span>
             <span class="name-value">${escapeHtml(item.customer_name)}</span>
             <span class="meta-label">ALAMAT</span>
-            <span class="meta-value">${escapeHtml(item.alamat)}</span>
+            <span class="address-value">${escapeHtml(item.alamat)}</span>
             <span class="meta-label">TGL PEMBELIAN</span>
             <span class="meta-value">${escapeHtml(item.so_date)}</span>
           </div>
@@ -106,7 +106,7 @@ export default function ShowroomLabelBukuService() {
 
     const barcodeScripts = allLabels.map((item, idx) => {
       if (!item.no_engine || item.no_engine === '-') return ''
-      return `JsBarcode("#barcode-${idx}", "${item.no_engine}", { format: "CODE128", width: 2, height: 42, displayValue: false, margin: 3 });`
+      return `JsBarcode("#barcode-${idx}", "${item.no_engine}", { format: "CODE128", width: 2, height: 34, displayValue: false, margin: 3 });`
     }).filter(Boolean).join('\n')
 
     const html = `
@@ -120,13 +120,15 @@ export default function ShowroomLabelBukuService() {
           body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
           .page { display: grid; grid-template-columns: repeat(3, 64mm); grid-auto-rows: 32mm; width: 192mm; margin-left: 9mm; margin-top: 2mm; page-break-after: always; }
           .page:last-child { page-break-after: auto; }
-          .label { width: 64mm; height: 32mm; padding: 4.5mm 4.5mm 2mm; box-sizing: border-box; overflow: hidden; }
-          .header { font-size: 8px; font-weight: bold; color: #1e40af; margin-bottom: 0.8mm; }
-          .meta { font-size: 7px; color: #111827; display: grid; grid-template-columns: 20mm 1fr; gap: 0.3mm 0.8mm; }
+          .label { width: 64mm; height: 32mm; padding: 3mm 4.5mm 2mm; box-sizing: border-box; overflow: hidden; }
+          .header { font-size: 8px; font-weight: bold; color: #1e40af; margin-bottom: 0.6mm; }
+          .meta { font-size: 7px; color: #111827; display: grid; grid-template-columns: 19mm 1fr; gap: 0.2mm 0.8mm; line-height: 1.1; align-items: start; }
           .meta-label { color: #111827; }
           .meta-value { font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           .name-value { font-weight: bold; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-          .barcode { width: 100%; height: 12mm; margin-top: 0.8mm; }
+          /* ALAMAT boleh wrap maksimal 2 baris agar tidak terpotong */
+          .address-value { font-weight: 600; color: #111827; white-space: normal; line-height: 1.05; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+          .barcode { width: 100%; height: 10mm; margin-top: 0.6mm; }
           @media print { body { -webkit-print-color-adjust: exact; } }
         </style>
       </head>
