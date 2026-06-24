@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { FileSearch, ShieldCheck, ArrowRight, Bike } from 'lucide-react'
+import { FileSearch, ShieldCheck, ArrowRight, Bike, Search } from 'lucide-react'
 
 export default function PublicLanding() {
   return (
@@ -25,11 +25,11 @@ export default function PublicLanding() {
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-sm text-muted sm:text-base">
             Silakan pilih layanan. Konsumen dapat memeriksa status pengurusan dokumen STNK &amp; BPKB,
-            staf dapat masuk ke area kerja.
+            cek ketersediaan unit motor, atau staf masuk ke area kerja.
           </p>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {/* Pintu 1 — Konsumen */}
           <Link
             to="/cek"
@@ -49,7 +49,26 @@ export default function PublicLanding() {
             </span>
           </Link>
 
-          {/* Pintu 2 — Karyawan */}
+          {/* Pintu 2 — Ketersediaan Unit */}
+          <Link
+            to="/cek-unit"
+            className="group flex flex-col rounded-3xl border border-border bg-panel p-7 shadow-sm transition hover:border-accent hover:shadow-lg"
+          >
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+              <Search size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-text-strong">Cek Ketersediaan Unit</h3>
+            <p className="mt-1.5 flex-1 text-sm leading-relaxed text-muted">
+              Lihat ketersediaan unit motor Honda yang siap jual — per model, warna, lokasi, dan umur
+              stok. Praktis untuk sales di lapangan.
+            </p>
+            <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
+              Lihat Stok
+              <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </Link>
+
+          {/* Pintu 3 — Karyawan */}
           <Link
             to="/login"
             className="group flex flex-col rounded-3xl border border-border bg-panel p-7 shadow-sm transition hover:border-accent hover:shadow-lg"

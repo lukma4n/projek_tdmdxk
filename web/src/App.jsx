@@ -47,6 +47,7 @@ const ShowroomLabelBukuService = lazy(() => import('./pages/ShowroomLabelBukuSer
 const ShowroomDocumentFollowup = lazy(() => import('./pages/ShowroomDocumentFollowup'))
 const ShowroomDocumentHandover = lazy(() => import('./pages/ShowroomDocumentHandover'))
 const StnkBpkbCheck = lazy(() => import('./pages/StnkBpkbCheck'))
+const StockUnitCheck = lazy(() => import('./pages/StockUnitCheck'))
 const DataFreshness = lazy(() => import('./pages/DataFreshness'))
 
 import { ROLES } from './config/roles'
@@ -173,6 +174,8 @@ function App() {
       {/* Self-check publik: alias pendek /cek + path lama (backward compat) */}
       <Route path="/cek" element={<LazyPage><StnkBpkbCheck /></LazyPage>} />
       <Route path="/public/stnk-bpkb-check" element={<LazyPage><StnkBpkbCheck /></LazyPage>} />
+      {/* Cek ketersediaan unit (publik) — untuk sales di lapangan */}
+      <Route path="/cek-unit" element={<LazyPage><StockUnitCheck /></LazyPage>} />
       {/* Root: tunggu cek sesi → user login: app shell; guest: landing 2 pintu */}
       <Route path="/" element={!authChecked ? <PageLoader /> : isAuthenticated ? <Layout /> : <PublicLanding />}>
 

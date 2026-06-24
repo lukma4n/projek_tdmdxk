@@ -19,6 +19,7 @@ import {
   QrCode,
   Inbox,
   Activity,
+  Search,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { displayRole as displayRoleImpl, ROLES } from '../../config/roles'
@@ -167,6 +168,14 @@ const navStructure = [
         external: true,
         href: `${PUBLIC_URL}/cek`,
         roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM, ROLES.ADMIN_CRM],
+      },
+      {
+        id: 'cek-unit-publik',
+        label: 'Cek Ketersediaan Unit',
+        icon: Search,
+        external: true,
+        href: `${PUBLIC_URL}/cek-unit`,
+        roles: [ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM, ROLES.ADMIN_CRM, ROLES.SALESMAN],
       },
       {
         id: 'pickup-requests',

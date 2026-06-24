@@ -31,6 +31,125 @@ function normalizePhone(phone) {
   return String(phone).replace(/\D/g, '')
 }
 
+// Status unit (engine_state dari import) → label ramah untuk sales/publik.
+const UNIT_STATE_MAP = {
+  'Stock RFS': { key: 'ready', label: 'Siap Jual' },
+  'Stock Reserved': { key: 'reserved', label: 'Dipesan' },
+  'Stock NRFS': { key: 'not_ready', label: 'Belum Siap' },
+}
+function mapUnitState(state) {
+  return UNIT_STATE_MAP[state] || { key: 'other', label: state || 'Lainnya' }
+}
+
+// Warna tersimpan format "HM-HITAM MERAH" (kode-nama). Ambil bagian nama agar
+// enak dibaca; bila tak ada pemisah, pakai apa adanya.
+function prettyColor(color) {
+  if (!color) return 'Lainnya'
+  const s = String(color).trim()
+  const dash = s.indexOf('-')
+  return dash > 0 && dash <= 4 ? s.slice(dash + 1).trim() : s
+}
+
+/**
+ * Publik: cek ketersediaan unit (browse per model/warna) untuk sales di lapangan.
+ * HANYA data agregat & non-sensitif — TIDAK pernah mengembalikan nomor mesin/rangka,
+ * cost/HPP, atau data finansial. Dikelompokkan per series (model).
+ * Query: ?q=<kata kunci model> (opsional, filter di sisi server).
+ */
+export async function checkStockUnits(req, res, next) {
+  try {
+    const q = String(req.query.q || '').trim().toLowerCase()
+
+    // Pilih hanya kolom aman. Unit cabang DXK saja (parser memang hanya impor DXK).
+    const units = await prisma.showroom_stock_units.findMany({
+      where: { branch_code: 'DXK' },
+      select: {
+        series: true,
+        product_type: true,
+        category_name: true,
+        parent_category: true,
+        color: true,
+        location: true,
+        stock_aging_days: true,
+        year: true,
+        engine_state: true,
+      },
+    })
+
+    // Statistik keseluruhan (tidak terpengaruh filter q) untuk ringkasan header.
+    const overall = { total: units.length, ready: 0, reserved: 0, not_ready: 0 }
+    for (const u of units) {
+      const st = mapUnitState(u.engine_state)
+      if (st.key === 'ready') overall.ready++
+      else if (st.key === 'reserved') overall.reserved++
+      else if (st.key === 'not_ready') overall.not_ready++
+    }
+
+    // Kelompokkan per series (model), terapkan filter q bila ada.
+    const groups = new Map()
+    for (const u of units) {
+      const series = (u.series || 'LAINNYA').trim()
+      const haystack = `${series} ${u.category_name || ''} ${u.parent_category || ''}`.toLowerCase()
+      if (q && !haystack.includes(q)) continue
+
+      if (!groups.has(series)) {
+        groups.set(series, {
+          series,
+          category_name: u.category_name || null,
+          parent_category: u.parent_category || null,
+          total: 0, ready: 0, reserved: 0, not_ready: 0,
+          _colors: new Map(),
+          _locations: new Map(),
+          units: [],
+        })
+      }
+      const g = groups.get(series)
+      const st = mapUnitState(u.engine_state)
+      g.total++
+      if (st.key === 'ready') g.ready++
+      else if (st.key === 'reserved') g.reserved++
+      else if (st.key === 'not_ready') g.not_ready++
+
+      const color = prettyColor(u.color)
+      const c = g._colors.get(color) || { color, count: 0, ready: 0 }
+      c.count++
+      if (st.key === 'ready') c.ready++
+      g._colors.set(color, c)
+
+      const loc = u.location || 'Lainnya'
+      g._locations.set(loc, (g._locations.get(loc) || 0) + 1)
+
+      g.units.push({
+        color,
+        location: loc,
+        aging_days: u.stock_aging_days || 0,
+        year: u.year || null,
+        status: st.key,
+        status_label: st.label,
+      })
+    }
+
+    const models = [...groups.values()].map((g) => ({
+      series: g.series,
+      category_name: g.category_name,
+      parent_category: g.parent_category,
+      total: g.total,
+      ready: g.ready,
+      reserved: g.reserved,
+      not_ready: g.not_ready,
+      colors: [...g._colors.values()].sort((a, b) => b.count - a.count),
+      locations: [...g._locations.entries()]
+        .map(([location, count]) => ({ location, count }))
+        .sort((a, b) => b.count - a.count),
+      units: g.units.sort((a, b) => a.aging_days - b.aging_days),
+    })).sort((a, b) => b.ready - a.ready || b.total - a.total || a.series.localeCompare(b.series))
+
+    res.json({ overall, model_count: models.length, models })
+  } catch (err) {
+    next(err)
+  }
+}
+
 /**
  * public check for STNK / BPKB status
  * Query params: engine_number + (phone OR chassis = 4 digit terakhir No. Rangka)

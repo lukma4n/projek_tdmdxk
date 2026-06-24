@@ -252,6 +252,47 @@ test('Public Check: 404 untuk HP terlalu pendek tanpa rangka (tidak terverifikas
   assert.ok(res.body.error.includes('Data tidak ditemukan'))
 })
 
+test('Public Stock Units: agregat per model + tidak membocorkan data sensitif', async () => {
+  // Seed beberapa unit stok untuk diuji.
+  await prismaTest.showroom_stock_units.deleteMany({
+    where: { engine_number: { in: ['STKUNIT-A1', 'STKUNIT-A2', 'STKUNIT-B1'] } },
+  })
+  await prismaTest.showroom_stock_units.createMany({
+    data: [
+      { branch_code: 'DXK', branch_name: 'TDM KETAPANG', engine_number: 'STKUNIT-A1', series: 'SCOOPY TEST', color: 'WH-WHITE', location: 'Gudang', engine_state: 'Stock RFS', stock_aging_days: 10, cost: 18000000 },
+      { branch_code: 'DXK', branch_name: 'TDM KETAPANG', engine_number: 'STKUNIT-A2', series: 'SCOOPY TEST', color: 'BK-BLACK', location: 'Showroom', engine_state: 'Stock Reserved', stock_aging_days: 5, cost: 18000000 },
+      { branch_code: 'DXK', branch_name: 'TDM KETAPANG', engine_number: 'STKUNIT-B1', series: 'VARIO TEST', color: 'RD-RED', location: 'Gudang', engine_state: 'Stock RFS', stock_aging_days: 3, cost: 22000000 },
+    ],
+  })
+
+  const res = await request(app).get('/api/public/stock-units')
+  assert.equal(res.status, 200)
+
+  const scoopy = res.body.models.find((m) => m.series === 'SCOOPY TEST')
+  assert.ok(scoopy, 'model SCOOPY TEST ada')
+  assert.equal(scoopy.total, 2)
+  assert.equal(scoopy.ready, 1)
+  assert.equal(scoopy.reserved, 1)
+  // Warna ter-prettify (buang prefix kode), unit anonim (tanpa nomor mesin/rangka/cost).
+  assert.ok(scoopy.units.every((u) => !('engine_number' in u) && !('chassis_number' in u) && !('cost' in u)))
+
+  // Pastikan TIDAK ada field sensitif di seluruh payload.
+  const raw = JSON.stringify(res.body)
+  assert.ok(!raw.includes('engine_number'), 'tidak ada engine_number')
+  assert.ok(!raw.includes('chassis'), 'tidak ada chassis')
+  assert.ok(!raw.includes('cost'), 'tidak ada cost')
+  assert.ok(!raw.includes('STKUNIT-A1'), 'nomor mesin tidak bocor')
+
+  // Filter q.
+  const filtered = await request(app).get('/api/public/stock-units').query({ q: 'vario test' })
+  assert.equal(filtered.status, 200)
+  assert.ok(filtered.body.models.every((m) => m.series.toLowerCase().includes('vario')))
+
+  await prismaTest.showroom_stock_units.deleteMany({
+    where: { engine_number: { in: ['STKUNIT-A1', 'STKUNIT-A2', 'STKUNIT-B1'] } },
+  })
+})
+
 test('Auto-Enrichment: enrichTracksWithMobile correctly populates mobile numbers from database', async () => {
   const records = [
     { engine_number: 'ENRICH1111', mobile: null, branch_code: 'DXK', branch_name: 'Cabang Ketapang' },
