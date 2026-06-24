@@ -121,21 +121,24 @@ function ModelCard({ model }) {
             </div>
           </div>
 
-          {/* Daftar unit — diurut umur stok terlama dulu (untuk kontrol movement) */}
+          {/* Daftar unit — umur FIFO (POS/Pameran = sejak pergerakan terakhir),
+              diurut terlama dulu untuk kontrol movement. */}
           <div>
             <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-faint">
-              <Clock size={12} /> Detail Unit (umur terlama di atas)
+              <Clock size={12} /> Detail Unit · umur FIFO, terlama di atas
             </p>
             <div className="-mx-1 overflow-x-auto px-1">
-              <table className="w-full min-w-[640px] text-left text-[12.5px]">
+              <table className="w-full min-w-[760px] text-left text-[12.5px]">
                 <thead>
                   <tr className="bg-hover text-[10px] uppercase tracking-wide text-faint">
+                    <th className="px-3 py-2 font-bold">Kode</th>
                     <th className="px-3 py-2 font-bold">Warna</th>
                     <th className="px-3 py-2 font-bold">No. Mesin</th>
                     <th className="px-3 py-2 font-bold">No. Rangka</th>
                     <th className="px-3 py-2 font-bold">Lokasi</th>
                     <th className="px-3 py-2 font-bold">Status</th>
                     <th className="px-3 py-2 text-right font-bold">OTR</th>
+                    <th className="px-3 py-2 text-center font-bold">Tag</th>
                     <th className="px-3 py-2 text-right font-bold">Umur</th>
                   </tr>
                 </thead>
@@ -144,12 +147,20 @@ function ModelCard({ model }) {
                     const old = u.aging_days >= 90
                     return (
                       <tr key={i} className="border-t border-border">
+                        <td className="px-3 py-2 font-mono text-[11.5px] font-semibold text-text">{u.product_code || '—'}</td>
                         <td className="px-3 py-2 font-semibold text-text">{u.color}</td>
                         <td className="px-3 py-2 font-mono text-[11.5px] text-muted">{u.engine_number || '—'}</td>
                         <td className="px-3 py-2 font-mono text-[11.5px] text-muted">{u.chassis_number || '—'}</td>
                         <td className="px-3 py-2 text-muted">{u.location}</td>
                         <td className="px-3 py-2"><StatusBadge status={u.status} label={u.status_label} /></td>
                         <td className="px-3 py-2 text-right font-mono text-muted">{formatRp(u.otr_price)}</td>
+                        <td className="px-3 py-2 text-center">
+                          {u.aging_tag && u.aging_tag !== '-' ? (
+                            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-accent-soft px-1.5 text-[11px] font-black text-accent">
+                              {u.aging_tag}
+                            </span>
+                          ) : <span className="text-faint">—</span>}
+                        </td>
                         <td className={`px-3 py-2 text-right font-mono font-semibold ${old ? 'text-danger' : 'text-muted'}`}>
                           {u.aging_days} hari
                         </td>

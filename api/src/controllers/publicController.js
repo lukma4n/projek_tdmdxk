@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken'
 import { randomUUID } from 'crypto'
 import { prisma } from '../config/db.js'
 import { isTokenUsed, markTokenUsed } from '../services/usedTokenStore.js'
-import { PRODUCT_CODE_ALIASES } from './showroomUtils.js'
+import { PRODUCT_CODE_ALIASES, getAgingFifoDays, getAgingTagByIncomingDate } from './showroomUtils.js'
 
 // Umur token permintaan ambil dokumen yang dikeluarkan /check setelah verifikasi.
 // Konsumen sudah terverifikasi identitasnya saat /check — token ini hanya
@@ -73,7 +73,9 @@ export async function checkStockUnits(req, res, next) {
         parent_category: true,
         color: true,
         location: true,
+        incoming_date: true,
         stock_aging_days: true,
+        movement_aging_days: true,
         year: true,
         engine_state: true,
         engine_number: true,
@@ -149,11 +151,15 @@ export async function checkStockUnits(req, res, next) {
 
       g.units.push({
         color,
+        product_code: u.product_type || null,
         location: loc,
         engine_number: u.engine_number || null,
         chassis_number: u.chassis_number || null,
         otr_price: otr,
-        aging_days: u.stock_aging_days || 0,
+        // Aging FIFO (POS/Pameran pakai movement_aging_days; lain sejak incoming_date)
+        // + Tag aging huruf A–L — konsisten dgn halaman Stock Unit Showroom.
+        aging_days: getAgingFifoDays(u),
+        aging_tag: getAgingTagByIncomingDate(u.incoming_date),
         year: u.year || null,
         status: st.key,
         status_label: st.label,
