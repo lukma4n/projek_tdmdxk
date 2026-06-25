@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -190,7 +191,7 @@ async function start() {
 
 export { app }
 
-const isMainModule = import.meta.url === new URL(process.argv[1], import.meta.url).href
+const isMainModule = import.meta.url === pathToFileURL(process.argv[1]).href
 const isPm2 = 'pm_id' in process.env
 if (isMainModule || isPm2) {
   start().catch(console.error)
