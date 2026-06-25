@@ -3,11 +3,15 @@ api/node_modules/
 web/node_modules/
 mobile/node_modules/
 
-# Environment files — ignore ALL real env files (any level), keep only *.example templates
+# Environment files — repo private, env files di-track
+# Jangan ubah repo jadi public selama file ini ada
 .env
-.env.*
 !.env.example
 !.env.*.example
+!api/.env
+!api/.env.development
+!api/.env.production
+!web/.env
 
 *.log
 npm-debug.log*
