@@ -99,8 +99,11 @@ export const LEASING_COLORS = {
   IMFI: '#8b5cf6',
 }
 
+// Urutan kolom leasing pada tabel detail wilayah (single source untuk frontend).
+export const LEASING_TYPES = ['FIF', 'OTO', 'ADIRA', 'IMFI']
+
 // Stat card definitions for Analysis tab (period-based, dengan Target)
-export const dashboardStatCards = (summary, period, analysis) => [
+export const dashboardStatCards = (summary, period, analysis, comparison) => [
   {
     label: 'Closing DO',
     value: summary.closingDo || 0,
@@ -109,6 +112,8 @@ export const dashboardStatCards = (summary, period, analysis) => [
     colorClass: 'text-accent-text',
     borderClass: 'border-accent-soft',
     iconBgClass: 'bg-accent-soft text-accent',
+    growth: comparison?.growthPercent,
+    prevValue: comparison?.prevTotal,
   },
   {
     label: 'Cash',
@@ -118,6 +123,8 @@ export const dashboardStatCards = (summary, period, analysis) => [
     colorClass: 'text-emerald-700',
     borderClass: 'border-emerald-200',
     iconBgClass: 'bg-emerald-100 text-emerald-600',
+    growth: comparison?.cashGrowthPercent,
+    prevValue: comparison?.prevCash,
   },
   {
     label: 'Kredit',
@@ -127,6 +134,8 @@ export const dashboardStatCards = (summary, period, analysis) => [
     colorClass: 'text-amber-700',
     borderClass: 'border-amber-200',
     iconBgClass: 'bg-amber-100 text-amber-600',
+    growth: comparison?.creditGrowthPercent,
+    prevValue: comparison?.prevCredit,
   },
   {
     label: 'Rata-Rata Harian',

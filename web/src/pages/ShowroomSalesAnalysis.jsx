@@ -29,6 +29,7 @@ import {
   StatCard,
   SectionCard,
   TeamCard,
+  AreaBreakdownTable,
 } from '../components/showroom/ShowroomSalesPrimitives'
 
 export default function ShowroomSalesAnalysis() {
@@ -126,7 +127,7 @@ export default function ShowroomSalesAnalysis() {
   }
 
   const summary = data?.summary || {}
-  const stats = dashboardStatCards(summary, data?.period, data?.analysis)
+  const stats = dashboardStatCards(summary, data?.period, data?.analysis, data?.comparison)
   
   // Transform flat areaModelCorrelation into simple horizontal layout
   const simpleChartData = (data?.areaModelCorrelation || []).slice(0, 8).map((row) => ({
@@ -241,50 +242,6 @@ export default function ShowroomSalesAnalysis() {
           ))}
         </div>
 
-        {/* Period Comparison */}
-        {data?.comparison && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              {
-                label: 'Closing DO vs Bulan Lalu',
-                current: summary.closingDo || 0,
-                prev: data.comparison.prevTotal || 0,
-                growth: data.comparison.growthPercent || 0,
-              },
-              {
-                label: 'Cash vs Bulan Lalu',
-                current: summary.cashCount || 0,
-                prev: data.comparison.prevCash || 0,
-                growth: data.comparison.cashGrowthPercent || 0,
-              },
-              {
-                label: 'Kredit vs Bulan Lalu',
-                current: summary.creditCount || 0,
-                prev: data.comparison.prevCredit || 0,
-                growth: data.comparison.creditGrowthPercent || 0,
-              },
-            ].map((item) => (
-              <div key={item.label} className="rounded-xl border border-border bg-panel p-5 shadow-sm hover:shadow-md transition-all duration-300">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted">{item.label}</p>
-                <div className="flex items-end justify-between mt-2.5">
-                  <div className="space-y-1">
-                    <p className="text-2xl font-black text-text tabular-nums">{item.current.toLocaleString('id-ID')}</p>
-                    <p className="text-xs text-faint">Bulan lalu: {item.prev.toLocaleString('id-ID')} unit</p>
-                  </div>
-                  <div className={`flex items-center gap-0.5 text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${
-                    item.growth >= 0 
-                      ? 'bg-success-soft text-emerald-800' 
-                      : 'bg-rose-100 text-rose-800'
-                  }`}>
-                    {item.growth >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
-                    {Math.abs(item.growth)}%
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Productivity & Gap Analysis */}
         {data?.analysis && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -305,7 +262,7 @@ export default function ShowroomSalesAnalysis() {
               </div>
               <p className="text-2xl font-black text-accent-text tabular-nums">{(data.analysis.projectedMonthEnd || 0).toLocaleString('id-ID')}</p>
               <p className="text-xs text-muted mt-1">Estimasi jika pace tetap</p>
-              <p className="text-xs text-faint mt-1">{data.analysis.daysRemaining || 0} hari tersisa</p>
+              <p className="text-xs text-faint mt-1">{data.analysis.daysRemaining || 0} hari kerja tersisa</p>
             </div>
 
             {data.analysis.target > 0 && (
@@ -321,7 +278,7 @@ export default function ShowroomSalesAnalysis() {
                     </span>
                   </p>
                   <p className="text-xs text-muted leading-normal">
-                    {data.analysis.gap <= 0 ? 'Target tercapai! 🎉' : `Butuh ${data.analysis.dailyRequired} unit/hari untuk target ${data.analysis.target}`}
+                    {data.analysis.gap <= 0 ? 'Target tercapai! 🎉' : `Butuh ${data.analysis.dailyRequired} unit/hari kerja untuk target ${data.analysis.target}`}
                   </p>
                 </div>
                 <div className="relative flex items-center justify-center shrink-0 w-20 h-20">
@@ -503,7 +460,10 @@ export default function ShowroomSalesAnalysis() {
               icon={Users}
               action={
                 <span className="text-xs font-semibold text-muted">
-                  {data?.byTeamPeriod?.length || 0} Tim • {summary.totalActiveSales || 0} Sales Aktif
+                  {data?.byTeamPeriod?.length || 0} Tim • {summary.salesWithClosing || 0}/{summary.totalActiveSales || 0} sales closing
+                  <span className={`ml-2 px-2 py-0.5 rounded-full font-bold ${(summary.productiveRate || 0) >= 60 ? 'bg-success-soft text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                    {summary.productiveRate || 0}% produktif
+                  </span>
                 </span>
               }
             >
@@ -542,7 +502,7 @@ export default function ShowroomSalesAnalysis() {
                           <div className="w-16 h-1.5 rounded-full bg-hover overflow-hidden hidden sm:block">
                             <div className="h-full bg-accent rounded-full" style={{ width: `${percentage}%` }} />
                           </div>
-                          <span className="text-sm font-bold text-text tabular-nums">
+                          <span className="text-sm font-bold text-text tabular-nums w-14 text-right">
                             {sales.count} unit
                           </span>
                         </div>
@@ -553,9 +513,40 @@ export default function ShowroomSalesAnalysis() {
               ) : (
                 <p className="text-sm text-faint py-4 text-center">Belum ada data sales untuk periode ini.</p>
               )}
+              {(summary.paretoShare || 0) > 0 && (
+                <p className="text-[11px] text-faint mt-3 pt-3 border-t border-border leading-relaxed">
+                  📊 Konsentrasi: <span className="font-bold text-text">{summary.paretoTopPct || 0}% sales teratas</span> menyumbang <span className="font-bold text-text">{summary.paretoShare || 0}%</span> total penjualan.
+                </p>
+              )}
             </SectionCard>
           </div>
         </div>
+
+        {/* Komparasi Performa Tim vs Bulan Lalu */}
+        <SectionCard title="Komparasi Performa Tim (vs Bulan Lalu)" icon={Activity}>
+          {(data?.teamComparison || []).length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {(data.teamComparison).map((item) => (
+                <div key={item.team} className="p-3 bg-hover border border-border rounded-xl space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-accent" />
+                    <span className="font-bold text-text text-xs uppercase truncate" title={item.team}>{item.team}</span>
+                  </div>
+                  <div className="flex items-baseline gap-2 pt-1">
+                    <p className="text-xl font-black text-text tabular-nums">{item.current}</p>
+                    <div className={`flex items-center text-[10px] font-bold ${item.growth >= 0 ? 'text-success' : 'text-rose-600'}`}>
+                      {item.growth >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                      {Math.abs(item.growth)}%
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-faint">Bulan lalu: {item.prev} unit</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-faint py-4 text-center">Belum ada data perbandingan tim.</p>
+          )}
+        </SectionCard>
 
         {/* Cash & Credit + Leasing + Top Model */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -691,41 +682,6 @@ export default function ShowroomSalesAnalysis() {
               )}
             </SectionCard>
 
-            <SectionCard title="Penjualan per Kabupaten" icon={MapPin}>
-              {(data?.byKabupatenPeriod || []).length > 0 ? (
-                <div className="divide-y divide-slate-100">
-                  {(data?.byKabupatenPeriod || []).map((item, idx) => {
-                    const maxCount = Math.max(...(data?.byKabupatenPeriod || []).map((d) => d.count), 1)
-                    const percentage = Math.round((item.count / maxCount) * 100)
-                    
-                    return (
-                      <div key={item.name} className="py-2.5 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {/* Minimalist number */}
-                          <span className="text-xs font-bold text-faint w-5">
-                            {String(idx + 1).padStart(2, '0')}
-                          </span>
-                          <span className="font-semibold text-text text-sm truncate uppercase tracking-tight">
-                            {String(item.name || 'Lainnya').replace('KAB. ', '')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          {/* Minimal thin bar indicating ratio */}
-                          <div className="w-16 h-1.5 rounded-full bg-hover overflow-hidden hidden sm:block">
-                            <div className="h-full bg-purple-600 rounded-full" style={{ width: `${percentage}%` }} />
-                          </div>
-                          <span className="text-sm font-bold text-text tabular-nums">
-                            {item.count} unit
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-faint py-4 text-center">Belum ada data area untuk periode ini.</p>
-              )}
-            </SectionCard>
           </div>
 
           <div className="space-y-6">
@@ -765,43 +721,21 @@ export default function ShowroomSalesAnalysis() {
               )}
             </SectionCard>
 
-            <SectionCard title="Penjualan per Kecamatan" icon={MapPin}>
-              {(data?.byKecamatanPeriod || []).length > 0 ? (
-                <div className="divide-y divide-slate-100">
-                  {(data?.byKecamatanPeriod || []).map((item, idx) => {
-                    const maxCount = Math.max(...(data?.byKecamatanPeriod || []).map((d) => d.count), 1)
-                    const percentage = Math.round((item.count / maxCount) * 100)
-                    
-                    return (
-                      <div key={item.name} className="py-2.5 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {/* Minimalist number */}
-                          <span className="text-xs font-bold text-faint w-5">
-                            {String(idx + 1).padStart(2, '0')}
-                          </span>
-                          <span className="font-semibold text-text text-sm truncate uppercase tracking-tight">
-                            {item.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          {/* Minimal thin bar indicating ratio */}
-                          <div className="w-16 h-1.5 rounded-full bg-hover overflow-hidden hidden sm:block">
-                            <div className="h-full bg-teal-600 rounded-full" style={{ width: `${percentage}%` }} />
-                          </div>
-                          <span className="text-sm font-bold text-text tabular-nums">
-                            {item.count} unit
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-faint py-4 text-center">Belum ada data kecamatan untuk periode ini.</p>
-              )}
-            </SectionCard>
           </div>
         </div>
+
+        {/* Detail wilayah — tabel full-width (cash + breakdown leasing + vs bulan lalu) */}
+        <SectionCard title="Penjualan per Kabupaten" icon={MapPin} collapsible defaultOpen={false} action={
+          <span className="text-xs font-semibold text-muted">{data?.byKabupatenPeriod?.length || 0} kabupaten • {(data?.areaTotals?.count || 0).toLocaleString('id-ID')} unit</span>
+        }>
+          <AreaBreakdownTable items={data?.byKabupatenPeriod || []} totals={data?.areaTotals} stripPrefix accentColor="text-purple-700" />
+        </SectionCard>
+
+        <SectionCard title="Penjualan per Kecamatan" icon={MapPin} collapsible defaultOpen={false} action={
+          <span className="text-xs font-semibold text-muted">{data?.byKecamatanPeriod?.length || 0} kecamatan • {(data?.areaTotals?.count || 0).toLocaleString('id-ID')} unit</span>
+        }>
+          <AreaBreakdownTable items={data?.byKecamatanPeriod || []} totals={data?.areaTotals} accentColor="text-teal-700" />
+        </SectionCard>
       </div>
     </div>
   )

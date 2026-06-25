@@ -3,7 +3,7 @@
  * Dipakai oleh sales dashboard & modul Target Marketing agar konsisten.
  */
 
-function normalizeKey(value = '') {
+export function normalizeKey(value = '') {
   return String(value || '').trim().toUpperCase()
 }
 

@@ -1,7 +1,8 @@
 import { prisma } from '../config/db.js'
 import xlsx from 'xlsx'
 import { formatForExcel } from '../utils/excelUtils.js'
-import { buildTeamPerformanceFromMaster } from '../utils/salesPerformance.js'
+import { buildTeamPerformanceFromMaster, normalizeKey } from '../utils/salesPerformance.js'
+import { countWorkingDays } from '../utils/workingDays.js'
 
 function startOfMonth(date) {
   const d = new Date(date)
@@ -133,6 +134,63 @@ export async function getShowroomSalesDashboard(req, res, next) {
       })
     }
 
+    // ─── Detail per Wilayah (dipakai untuk kabupaten & kecamatan) ───
+    // Per wilayah: total, cash, breakdown leasing — masing-masing dengan count bln ini
+    // & bln lalu (untuk komposisi% + pembanding MoM per tipe di frontend).
+    // `field` = 'kabupaten' | 'kecamatan'.
+    // limit <= 0 berarti tampilkan semua wilayah (tanpa batas).
+    async function buildAreaDetail(field, curWhere, priorWhere, limit = 15) {
+      const [curRows, prevRows] = await Promise.all([
+        prisma.customers.groupBy({
+          by: [field, 'sales_type'],
+          where: { ...curWhere, [field]: { not: null } },
+          _count: true,
+        }),
+        prisma.customers.groupBy({
+          by: [field, 'sales_type'],
+          where: { ...priorWhere, [field]: { not: null } },
+          _count: true,
+        }),
+      ])
+
+      // Rakit per wilayah: { count, cash, leasing:{type:count} }
+      function assemble(rows) {
+        const m = new Map()
+        for (const r of rows) {
+          const name = r[field] || 'Tidak diketahui'
+          if (!m.has(name)) m.set(name, { count: 0, cash: 0, leasing: {} })
+          const e = m.get(name)
+          const c = r._count
+          e.count += c
+          if (r.sales_type === 'Cash') e.cash += c
+          else if (LEASING_TYPES.includes(r.sales_type)) e.leasing[r.sales_type] = (e.leasing[r.sales_type] || 0) + c
+        }
+        return m
+      }
+      const curMap = assemble(curRows)
+      const prevMap = assemble(prevRows)
+      const empty = { count: 0, cash: 0, leasing: {} }
+
+      const mapped = [...curMap.entries()]
+        .map(([name, e]) => {
+          const p = prevMap.get(name) || empty
+          return {
+            name,
+            count: e.count,
+            cash: e.cash,
+            prev: p.count,
+            prevCash: p.cash,
+            growth: p.count > 0 ? Math.round(((e.count - p.count) / p.count) * 100) : 0,
+            // tiap leasing: { name, count (bln ini), prev (bln lalu) }
+            leasingArr: LEASING_TYPES
+              .map((n) => ({ name: n, count: e.leasing[n] || 0, prev: p.leasing[n] || 0 }))
+              .filter((l) => l.count > 0 || l.prev > 0),
+          }
+        })
+        .sort((a, b) => b.count - a.count)
+      return limit > 0 ? mapped.slice(0, limit) : mapped
+    }
+
     const byLeasing = await buildLeasingBreakdown(monthBaseWhere, creditMonthCount)
 
     // ─── Top Model ──────────────────────────────────────────
@@ -193,29 +251,8 @@ export async function getShowroomSalesDashboard(req, res, next) {
       count: d._count,
     }))
 
-    // Top Kabupaten periode terpilih
-    const byKabupatenPeriodRaw = await prisma.customers.groupBy({
-      by: ['kabupaten'],
-      where: { ...baseWhere, kabupaten: { not: null } },
-      _count: true,
-    })
-    byKabupatenPeriodRaw.sort((a, b) => b._count - a._count)
-    const byKabupatenPeriod = byKabupatenPeriodRaw.slice(0, 15).map((d) => ({
-      name: d.kabupaten || 'Tidak diketahui',
-      count: d._count,
-    }))
-
-    // Top Kecamatan periode terpilih
-    const byKecamatanPeriodRaw = await prisma.customers.groupBy({
-      by: ['kecamatan'],
-      where: { ...baseWhere, kecamatan: { not: null } },
-      _count: true,
-    })
-    byKecamatanPeriodRaw.sort((a, b) => b._count - a._count)
-    const byKecamatanPeriod = byKecamatanPeriodRaw.slice(0, 15).map((d) => ({
-      name: d.kecamatan || 'Tidak diketahui',
-      count: d._count,
-    }))
+    // Kabupaten & Kecamatan dengan detail (cash/kredit/leasing + MoM) dihitung
+    // di bawah, setelah prevWhere tersedia — lihat buildAreaDetail().
 
     // ─── Period Comparison (vs Previous Month Same Date Range) ───
     const { prevFrom, prevTo } = prevMonthRange(from, to)
@@ -241,17 +278,71 @@ export async function getShowroomSalesDashboard(req, res, next) {
       return { name, current, prev, growth }
     })
 
-    // ─── Top Salespeople Leaderboard (Top 5) ───
-    const topSalespeopleRaw = await prisma.customers.groupBy({
-      by: ['salesman'],
-      where: { ...baseWhere, AND: [{ salesman: { not: null } }, { salesman: { not: '' } }] },
-      _count: true,
+    // Total periode sebenarnya untuk baris TOTAL tabel wilayah.
+    // Mewakili SEMUA wilayah (termasuk di luar top-15 & record tanpa kecamatan/kabupaten),
+    // sehingga TOTAL rekonsiliasi dengan Closing DO — bukan sekadar jumlah baris yang tampil.
+    const areaTotals = {
+      count: closingDo,
+      prev: prevTotal,
+      cash: cashCount,
+      prevCash,
+      leasing: Object.fromEntries(LEASING_TYPES.map((t) => [t, {
+        count: byLeasingPeriod.find((l) => l.name === t)?.count || 0,
+        prev: prevLeasingMap[t] || 0,
+      }])),
+    }
+
+    // ─── Team Comparison (vs Previous Month) ───
+    const teamPeriodResultPrev = await buildTeamPerformanceFromMaster(prisma, { dateWhere: prevWhere, preFetchedMaster: masterSalespeople })
+    const prevTeamMap = Object.fromEntries(teamPeriodResultPrev.byTeam.map((t) => [t.team, t.total]))
+    const teamComparison = teamPeriodResult.byTeam.map((t) => {
+      const prev = prevTeamMap[t.team] || 0
+      const growth = prev > 0 ? Math.round(((t.total - prev) / prev) * 100) : 0
+      return { team: t.team, current: t.total, prev, growth }
     })
-    topSalespeopleRaw.sort((a, b) => b._count - a._count)
-    const topSalespeople = topSalespeopleRaw.slice(0, 5).map((d) => ({
-      name: d.salesman,
-      count: d._count,
+
+    // Enrich byTeamPeriod: tambah prev count per salesman (untuk MoM per-sales di TeamCard).
+    // Komparasi tingkat-tim sudah ditampilkan di section "Komparasi Performa Tim".
+    const prevSalesCountMap = new Map()
+    for (const t of teamPeriodResultPrev.byTeam) {
+      for (const s of t.salesmen) prevSalesCountMap.set(normalizeKey(s.name), s.count)
+    }
+    const byTeamPeriod = teamPeriodResult.byTeam.map((t) => ({
+      ...t,
+      salesmen: t.salesmen.map((s) => ({ ...s, prev: prevSalesCountMap.get(normalizeKey(s.name)) || 0 })),
     }))
+
+    // ─── Top Salespeople Leaderboard ───
+    // Normalisasi nama (trim+uppercase) agar "Gunawan" & "GUNAWAN" tidak dobel.
+    // Pakai nama master sebagai display bila ada; fallback ke nama mentah.
+    const salesmenRecords = await prisma.customers.findMany({
+      where: { ...baseWhere, AND: [{ salesman: { not: null } }, { salesman: { not: '' } }] },
+      select: { salesman: true },
+    })
+    const masterNameByKey = new Map(masterSalespeople.map((s) => [normalizeKey(s.name), s.name]))
+    const salesCountMap = new Map()
+    for (const r of salesmenRecords) {
+      const key = normalizeKey(r.salesman)
+      if (!key) continue
+      const display = masterNameByKey.get(key) || r.salesman.trim()
+      if (!salesCountMap.has(key)) salesCountMap.set(key, { name: display, count: 0 })
+      salesCountMap.get(key).count++
+    }
+    const salesRanked = [...salesCountMap.values()].sort((a, b) => b.count - a.count)
+    const topSalespeople = salesRanked.slice(0, 5).map((s) => ({
+      name: s.name,
+      count: s.count,
+    }))
+    // Konsentrasi Pareto: kontribusi 20% sales teratas (untuk catatan di bawah leaderboard)
+    const totalSalesUnits = salesRanked.reduce((sum, s) => sum + s.count, 0)
+    const top20Count = Math.max(1, Math.ceil(salesRanked.length * 0.2))
+    const top20Units = salesRanked.slice(0, top20Count).reduce((sum, s) => sum + s.count, 0)
+    const paretoTopPct = salesRanked.length > 0 ? Math.round((top20Count / salesRanked.length) * 100) : 0
+    const paretoShare = totalSalesUnits > 0 ? Math.round((top20Units / totalSalesUnits) * 100) : 0
+
+    // ─── Detail Kabupaten & Kecamatan (cash/kredit/leasing + MoM) ───
+    const byKabupatenPeriod = await buildAreaDetail('kabupaten', baseWhere, prevWhere)
+    const byKecamatanPeriod = await buildAreaDetail('kecamatan', baseWhere, prevWhere, 0) // 0 = semua kecamatan
 
     // ─── Daily Trend (for Line Chart) ───
     const periodRecords = await prisma.customers.findMany({
@@ -293,13 +384,25 @@ export async function getShowroomSalesDashboard(req, res, next) {
     const salesCount = teamPeriodResult.totalActiveSales || 1
     const avgUnitsPerSales = closingDo / salesCount
 
-    const target = parseInt(req.query.target || '0', 10)
+    // Proyeksi berbasis HARI KERJA (Senin–Sabtu, exclude tanggal merah).
+    // Showroom tidak operasi Minggu & libur nasional, jadi proyeksi pakai pace
+    // per hari kerja agar tidak meleset.
     const monthEnd = endOfMonth(to)
-    const daysRemaining = Math.max(0, Math.ceil((monthEnd - to) / (1000 * 60 * 60 * 24)))
-    const projectedMonthEnd = isSameMonth ? Math.round(avgUnitsPerDay * (daysInPeriod + daysRemaining)) : closingDo
+    const dayAfterTo = new Date(toStartOfDay)
+    dayAfterTo.setDate(dayAfterTo.getDate() + 1)
+    const workingDaysInPeriod = Math.max(1, countWorkingDays(fromStartOfDay, toStartOfDay))
+    const workingDaysRemaining = countWorkingDays(dayAfterTo, monthEnd)
+    const avgUnitsPerWorkingDay = closingDo / workingDaysInPeriod
+
+    const target = parseInt(req.query.target || '0', 10)
+    const daysRemaining = workingDaysRemaining // makna: sisa HARI KERJA s/d akhir bulan
+    const projectedMonthEnd = isSameMonth
+      ? Math.round(avgUnitsPerWorkingDay * (workingDaysInPeriod + workingDaysRemaining))
+      : closingDo
     const gap = target > 0 ? target - projectedMonthEnd : 0
-    const dailyRequired = target > 0 && daysRemaining > 0 ? Math.ceil(gap / daysRemaining) : 0
+    const dailyRequired = target > 0 && workingDaysRemaining > 0 ? Math.ceil(gap / workingDaysRemaining) : 0
     const attainmentRate = target > 0 ? Math.round((closingDo / target) * 1000) / 10 : 0
+    // targetPace tetap berbasis hari kalender (garis referensi di chart tren harian)
     const totalDaysInMonth = monthEnd.getDate()
     const targetPace = target > 0 ? Math.round((target / totalDaysInMonth) * 100) / 100 : 0
 
@@ -338,6 +441,10 @@ export async function getShowroomSalesDashboard(req, res, next) {
         // Master sales coverage (single source of truth — active salespeople count)
         totalActiveSales: activeSalesCount,
         salesWithClosing: teamPeriodResult.salesWithClosing,
+        productiveRate: activeSalesCount > 0 ? Math.round((teamPeriodResult.salesWithClosing / activeSalesCount) * 100) : 0,
+        // Konsentrasi Pareto sales
+        paretoTopPct,
+        paretoShare,
       },
       byTeam: teamResult.byTeam,
       byLeasing,
@@ -348,13 +455,15 @@ export async function getShowroomSalesDashboard(req, res, next) {
       byKabupaten,
       byKecamatan,
       // Period-only data for Dashboard tab
-      byTeamPeriod: teamPeriodResult.byTeam,
+      byTeamPeriod,
       byLeasingPeriod,
       byModelPeriod,
       byKabupatenPeriod,
       byKecamatanPeriod,
+      areaTotals,
       topSalespeople,
       leasingComparison,
+      teamComparison,
       period: {
         from: from.toISOString().split('T')[0],
         to: to.toISOString().split('T')[0],
