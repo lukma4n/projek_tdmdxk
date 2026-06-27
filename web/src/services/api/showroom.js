@@ -275,6 +275,19 @@ export const uploadShowroomStnkBpkbTrack = (file) => {
   formData.append('file', file)
   return fetchWithAuth('/showroom/stnk-bpkb-tracks/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
 }
+// Import gabungan: 2 file (v1 58-kolom + v2 62-kolom), digabung per engine_number di server
+export const previewShowroomStnkBpkbTrackCombined = (file1, file2) => {
+  const formData = new FormData()
+  formData.append('file1', file1)
+  formData.append('file2', file2)
+  return fetchWithAuth('/showroom/stnk-bpkb-tracks/combined/preview', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
+export const uploadShowroomStnkBpkbTrackCombined = (file1, file2) => {
+  const formData = new FormData()
+  formData.append('file1', file1)
+  formData.append('file2', file2)
+  return fetchWithAuth('/showroom/stnk-bpkb-tracks/combined/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
+}
 
 // Marketing Targets (per Team Leader, bulanan)
 export const getShowroomMarketingTargets = (params = {}) => {

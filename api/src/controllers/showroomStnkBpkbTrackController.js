@@ -4,10 +4,12 @@ import path from 'path'
 import os from 'os'
 import { prisma } from '../config/db.js'
 import { withImportLock } from '../services/importLockService.js'
-import { parseStnkBpkbTrackFile } from '../services/importParsers.js'
+import { unlink } from 'fs/promises'
+import { parseStnkBpkbTrackFile, mergeStnkBpkbTrackByEngine } from '../services/importParsers.js'
 import { applyCustomerTypeFilter, cleanupUpload, getCustomerType, getFinanceCompanyShort } from './showroomUtils.js'
 import { runShowroomSnapshotImport, getSnapshotPreviewMeta } from './showroomImport.js'
 import { formatForExcel } from '../utils/excelUtils.js'
+import { computeSlaAnalysis } from '../services/slaAnalysis.js'
 
 /**
  * Enrich tracks records with mobile numbers from customers and sales orders tables
@@ -136,6 +138,95 @@ export async function uploadStnkBpkbTrack(req, res, next) {
   }
 }
 
+// ===== IMPORT GABUNGAN (v1 + v2) =====
+
+// Ambil 2 file dari multer .fields dan bersihkan keduanya setelah selesai.
+function getCombinedFiles(req) {
+  const f1 = req.files?.file1?.[0]
+  const f2 = req.files?.file2?.[0]
+  return [f1, f2]
+}
+
+async function cleanupCombined(files) {
+  for (const f of files) {
+    if (f?.path) await unlink(f.path).catch(() => {})
+  }
+}
+
+// Parse kedua file lalu gabungkan per engine_number (v1 base + overlay v2).
+function parseAndMergeCombined(files) {
+  const [f1, f2] = files
+  if (!f1?.path || !f2?.path) {
+    const error = new Error('Import gabungan butuh 2 file: laporan v1 (58 kolom) dan v2 (62 kolom)')
+    error.status = 400
+    throw error
+  }
+  const resultA = parseStnkBpkbTrackFile(f1.path)
+  const resultB = parseStnkBpkbTrackFile(f2.path)
+  return mergeStnkBpkbTrackByEngine(resultA, resultB)
+}
+
+export async function previewStnkBpkbTrackCombined(req, res, next) {
+  const files = getCombinedFiles(req)
+  try {
+    const { records, errors } = parseAndMergeCombined(files)
+    await enrichTracksWithMobile(records)
+    const snapshot = await getSnapshotPreviewMeta('showroom_stnk_bpkb_tracks', records)
+    await cleanupCombined(files)
+    res.json({
+      message: 'Preview Track STNK & BPKB (gabungan) berhasil',
+      module: 'showroom_stnk_bpkb_track_combined',
+      ...snapshot,
+      validRows: records.length,
+      errorRows: errors.length,
+      sample: records.slice(0, 5),
+      errorDetails: errors.slice(0, 10),
+    })
+  } catch (error) {
+    await cleanupCombined(files)
+    next(error)
+  }
+}
+
+export async function uploadStnkBpkbTrackCombined(req, res, next) {
+  const files = getCombinedFiles(req)
+  try {
+    await withImportLock('showroom:stnk-bpkb-track', async () => {
+      const { records, errors } = parseAndMergeCombined(files)
+      await enrichTracksWithMobile(records)
+      if (records.length === 0) {
+        await cleanupCombined(files)
+        return res.status(400).json({ error: 'File Track STNK/BPKB tidak berisi data DXK yang valid' })
+      }
+
+      const result = await runShowroomSnapshotImport({
+        req,
+        records,
+        errors,
+        model: 'showroom_stnk_bpkb_tracks',
+        module: 'showroom_stnk_bpkb_track',
+        recordId: 'showroom_stnk_bpkb_track',
+        backupReason: 'pre_import_stnk_bpkb_track',
+      })
+
+      await cleanupCombined(files)
+      res.json({
+        message: 'Import Track STNK & BPKB (gabungan) selesai',
+        success: records.length,
+        created: result.created,
+        updated: result.updated,
+        deleted: result.deleted,
+        errors: errors.length,
+        errorDetails: errors.slice(0, 10),
+        backup: result.backup,
+      })
+    }, { module: 'showroom_stnk_bpkb_track', reason: 'active_snapshot' })
+  } catch (error) {
+    await cleanupCombined(files)
+    next(error)
+  }
+}
+
 // ===== MONITORING =====
 
 const BPKB_OVERDUE_DAYS = 180
@@ -146,6 +237,8 @@ function buildTrackWhere(query) {
   if (query.finance_company) where.finance_company = String(query.finance_company)
   if (query.birojasa) where.birojasa = String(query.birojasa)
   if (query.tahun) where.tahun = parseInt(query.tahun)
+  if (query.bulan) where.bulan = parseInt(query.bulan)
+  if (query.area) where.area = String(query.area)
   if (query.status_stnk) where.stnk_status = String(query.status_stnk)
   if (query.status_bpkb) where.bpkb_status = String(query.status_bpkb)
   applyCustomerTypeFilter(where, query.customer_type)
@@ -373,17 +466,27 @@ export async function getStnkBpkbTrackMonitoring(req, res, next) {
         no_so: t.no_so,
       }))
 
-    // Filter facets (for UI dropdowns)
+    // Filter facets dari seluruh data DXK (bukan hasil filter) agar dropdown tidak
+    // menyaring dirinya sendiri. Query ringan: hanya kolom facet.
+    const facetRows = await prisma.showroom_stnk_bpkb_tracks.findMany({
+      where: { branch_code: 'DXK' },
+      select: { series: true, finance_company: true, birojasa: true, tahun: true, area: true },
+    })
     const facets = {
-      series: Array.from(new Set(allTracks.map((t) => t.series).filter(Boolean))).sort(),
-      financeCompanies: Array.from(new Set(allTracks.map((t) => t.finance_company).filter(Boolean))).sort(),
-      birojasas: Array.from(new Set(allTracks.map((t) => t.birojasa).filter(Boolean))).sort(),
-      tahun: Array.from(new Set(allTracks.map((t) => t.tahun).filter(Boolean))).sort((a, b) => b - a),
+      series: Array.from(new Set(facetRows.map((t) => t.series).filter(Boolean))).sort(),
+      financeCompanies: Array.from(new Set(facetRows.map((t) => t.finance_company).filter(Boolean))).sort(),
+      birojasas: Array.from(new Set(facetRows.map((t) => t.birojasa).filter(Boolean))).sort(),
+      tahun: Array.from(new Set(facetRows.map((t) => t.tahun).filter(Boolean))).sort((a, b) => b - a),
+      areas: Array.from(new Set(facetRows.map((t) => t.area).filter(Boolean))).sort(),
     }
+
+    // Analisa SLA (dihitung dari data yang sudah dimuat, hindari query ulang)
+    const sla = computeSlaAnalysis(filtered, today)
 
     res.json({
       filters: req.query,
       totalRows: filtered.length,
+      sla,
       summary: {
         stnk: stnkCount,
         bpkb: bpkbCount,
@@ -420,6 +523,8 @@ function buildExportWhere(query) {
   if (query.finance_company) where.finance_company = String(query.finance_company)
   if (query.birojasa) where.birojasa = String(query.birojasa)
   if (query.tahun) where.tahun = parseInt(query.tahun)
+  if (query.bulan) where.bulan = parseInt(query.bulan)
+  if (query.area) where.area = String(query.area)
   if (query.status_stnk) where.stnk_status = String(query.status_stnk)
   if (query.status_bpkb) where.bpkb_status = String(query.status_bpkb)
   applyCustomerTypeFilter(where, query.customer_type)

@@ -4,6 +4,18 @@ import {
   exportShowroomStnkBpkbTrack,
 } from '../services/api/showroom'
 import { financeShortName } from '../data/financeCompanyMap'
+import { useAuthStore } from '../stores/authStore'
+import { ROLES } from '../config/roles'
+import StnkBpkbCombinedImportModal from '../components/showroom/StnkBpkbCombinedImportModal'
+import SlaHeadlineCards from '../components/showroom/sla/SlaHeadlineCards'
+import SlaPipeline from '../components/showroom/sla/SlaPipeline'
+import SlaTrendChart from '../components/showroom/sla/SlaTrendChart'
+import SlaComparisonTables from '../components/showroom/sla/SlaComparisonTables'
+import SlaWatchlist from '../components/showroom/sla/SlaWatchlist'
+import DocumentLocationPanel from '../components/showroom/sla/DocumentLocationPanel'
+
+const MONTH_OPTS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+const areaLabel = (a) => String(a || '').replace(/^\[\d+\]\s*/, '').trim() || a
 import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts'
@@ -12,6 +24,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Download,
+  Upload,
   Filter,
   FileText,
   FileBadge,
@@ -171,6 +184,10 @@ const PIE_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b
 
 export default function ShowroomStnkBpkbMonitoring() {
   const [data, setData] = useState(null)
+  const { user, permissions } = useAuthStore()
+  const canImport = user?.role === ROLES.MASTER_IT
+    || (permissions?.IMPORT_SHOWROOM_STNK_BPKB_TRACK || []).includes(user?.role)
+  const [showImport, setShowImport] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [exporting, setExporting] = useState(false)
@@ -181,6 +198,8 @@ export default function ShowroomStnkBpkbMonitoring() {
     finance_company: '',
     birojasa: '',
     tahun: '',
+    bulan: '',
+    area: '',
     status_stnk: '',
     status_bpkb: '',
     customer_type: '',
@@ -220,7 +239,7 @@ export default function ShowroomStnkBpkbMonitoring() {
   }
 
   const handleResetFilters = () => {
-    setFilters({ series: '', finance_company: '', birojasa: '', tahun: '', status_stnk: '', status_bpkb: '', customer_type: '', aging_min: '', aging_max: '' })
+    setFilters({ series: '', finance_company: '', birojasa: '', tahun: '', bulan: '', area: '', status_stnk: '', status_bpkb: '', customer_type: '', aging_min: '', aging_max: '' })
     setTimeout(() => void loadData(), 0)
   }
 
@@ -242,7 +261,8 @@ export default function ShowroomStnkBpkbMonitoring() {
   }
 
   const summary = data?.summary || { stnk: {}, bpkb: {}, total: 0, platPending: 0, fakturPending: 0, bpkbOverdue: 0, cashCount: 0, kreditCount: 0 }
-  const facets = data?.facets || { series: [], financeCompanies: [], birojasas: [], tahun: [] }
+  const facets = data?.facets || { series: [], financeCompanies: [], birojasas: [], tahun: [], areas: [] }
+  const sla = data?.sla || null
 
   const statCards = [
     {
@@ -367,6 +387,14 @@ export default function ShowroomStnkBpkbMonitoring() {
           >
             <RefreshCw size={16} /> Refresh
           </button>
+          {canImport && (
+            <button
+              onClick={() => setShowImport(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 transition-all shadow-sm"
+            >
+              <Upload size={16} /> Import
+            </button>
+          )}
           <button
             onClick={handleExport}
             disabled={exporting}
@@ -379,44 +407,13 @@ export default function ShowroomStnkBpkbMonitoring() {
       </div>
 
       {/* Filter Section */}
-      <div className="bg-panel rounded-xl border border-border shadow-sm p-5 animate-fadeIn">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="flex items-center gap-2 shrink-0">
-              <Filter size={18} className="text-accent" />
-              <h3 className="font-bold text-text">Filter</h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
-              <select
-                value={filters.birojasa}
-                onChange={(e) => setFilters({ ...filters, birojasa: e.target.value })}
-                className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
-              >
-                <option value="">Semua Biro Jasa</option>
-                {facets.birojasas.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
-              <select
-                value={filters.customer_type}
-                onChange={(e) => setFilters({ ...filters, customer_type: e.target.value })}
-                className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
-              >
-                <option value="">Cash & Kredit</option>
-                <option value="CASH">Cash</option>
-                <option value="KREDIT">Kredit</option>
-              </select>
-              <select
-                value={filters.status_stnk}
-                onChange={(e) => setFilters({ ...filters, status_stnk: e.target.value })}
-                className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
-              >
-                <option value="">Status STNK: Semua</option>
-                <option value="BELUM_JADI">Belum Jadi</option>
-                <option value="BELUM_DIAMBIL">Belum Diambil</option>
-                <option value="SUDAH_DIAMBIL">Sudah Diambil</option>
-              </select>
-            </div>
+      <div className="bg-panel rounded-xl border border-border shadow-sm p-5 animate-fadeIn space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Filter size={18} className="text-accent" />
+            <h3 className="font-bold text-text">Filter</h3>
           </div>
-          <div className="flex items-center gap-2 ml-4 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleApplyFilters}
               className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-semibold hover:brightness-110 transition-colors shadow-sm"
@@ -431,6 +428,87 @@ export default function ShowroomStnkBpkbMonitoring() {
             </button>
           </div>
         </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          <select
+            value={filters.tahun}
+            onChange={(e) => setFilters({ ...filters, tahun: e.target.value })}
+            className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
+          >
+            <option value="">Semua Tahun</option>
+            {facets.tahun.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <select
+            value={filters.bulan}
+            onChange={(e) => setFilters({ ...filters, bulan: e.target.value })}
+            className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
+          >
+            <option value="">Semua Bulan</option>
+            {MONTH_OPTS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+          </select>
+          <select
+            value={filters.area}
+            onChange={(e) => setFilters({ ...filters, area: e.target.value })}
+            className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
+          >
+            <option value="">Semua Area</option>
+            {facets.areas.map((a) => <option key={a} value={a}>{areaLabel(a)}</option>)}
+          </select>
+          <select
+            value={filters.birojasa}
+            onChange={(e) => setFilters({ ...filters, birojasa: e.target.value })}
+            className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
+          >
+            <option value="">Semua Biro Jasa</option>
+            {facets.birojasas.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select>
+          <select
+            value={filters.customer_type}
+            onChange={(e) => setFilters({ ...filters, customer_type: e.target.value })}
+            className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
+          >
+            <option value="">Cash & Kredit</option>
+            <option value="CASH">Cash</option>
+            <option value="KREDIT">Kredit</option>
+          </select>
+          <select
+            value={filters.status_stnk}
+            onChange={(e) => setFilters({ ...filters, status_stnk: e.target.value })}
+            className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
+          >
+            <option value="">Status STNK: Semua</option>
+            <option value="BELUM_JADI">STNK Belum Jadi</option>
+            <option value="BELUM_DIAMBIL">STNK Belum Diambil</option>
+            <option value="SUDAH_DIAMBIL">STNK Sudah Diambil</option>
+          </select>
+          <select
+            value={filters.status_bpkb}
+            onChange={(e) => setFilters({ ...filters, status_bpkb: e.target.value })}
+            className="px-3 py-2 text-sm border border-border rounded-lg bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft"
+          >
+            <option value="">Status BPKB: Semua</option>
+            <option value="BELUM_JADI">BPKB Belum Jadi</option>
+            <option value="BELUM_DIAMBIL">BPKB Belum Diambil</option>
+            <option value="SUDAH_DIAMBIL">BPKB Sudah Diambil</option>
+          </select>
+        </div>
+      </div>
+
+      {/* ===== ANALISA SLA ===== */}
+      {sla && (
+        <div className="space-y-6">
+          <SlaHeadlineCards headline={sla.headline} />
+          <SlaPipeline pipeline={sla.pipeline} />
+          <SlaTrendChart trend={sla.trend} />
+          <SlaComparisonTables byBirojasa={sla.byBirojasa} byArea={sla.byArea} />
+          <SlaWatchlist watchlist={sla.watchlist} />
+          <DocumentLocationPanel lokasi={sla.lokasi} />
+        </div>
+      )}
+
+      {/* ===== OPERASIONAL ===== */}
+      <div className="flex items-center gap-3 pt-2">
+        <h2 className="text-lg font-black text-text-strong uppercase tracking-wide">Operasional</h2>
+        <div className="h-px flex-1 bg-border" />
       </div>
 
       {/* Stat Cards */}
@@ -749,6 +827,13 @@ export default function ShowroomStnkBpkbMonitoring() {
           emptyMessage="Tidak ada BPKB pending."
         />
       </SectionCard>
+
+      {showImport && (
+        <StnkBpkbCombinedImportModal
+          onClose={() => setShowImport(false)}
+          onImported={() => loadData()}
+        />
+      )}
     </div>
   )
 }

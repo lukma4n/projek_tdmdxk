@@ -49,6 +49,7 @@ import {
 } from '../controllers/showroomTeamLeaderController.js'
 import {
   getStnkBpkbTrackMonitoring, previewStnkBpkbTrack, uploadStnkBpkbTrack, exportStnkBpkbTrackExcel,
+  previewStnkBpkbTrackCombined, uploadStnkBpkbTrackCombined,
   updateStnkBpkbTrackMobile, getPickupRequests, updatePickupRequest, getPickupRequestKtp,
 } from '../controllers/showroomStnkBpkbTrackController.js'
 import {
@@ -227,6 +228,10 @@ router.get('/stnk-bpkb-tracks/export', authenticate, stnkBpkbTrackReadAccess, ex
 router.patch('/stnk-bpkb-tracks/:engineNumber/mobile', authenticate, stnkBpkbTrackReadAccess, updateStnkBpkbTrackMobile)
 router.post('/stnk-bpkb-tracks/preview', authenticate, authorizeMenu('IMPORT_SHOWROOM_STNK_BPKB_TRACK'), upload.single('file'), previewStnkBpkbTrack)
 router.post('/stnk-bpkb-tracks/import', authenticate, authorizeMenu('IMPORT_SHOWROOM_STNK_BPKB_TRACK'), upload.single('file'), uploadStnkBpkbTrack)
+// Import gabungan: 2 file (v1 58-kolom + v2 62-kolom) digabung per engine_number
+const stnkBpkbCombinedUpload = upload.fields([{ name: 'file1', maxCount: 1 }, { name: 'file2', maxCount: 1 }])
+router.post('/stnk-bpkb-tracks/combined/preview', authenticate, authorizeMenu('IMPORT_SHOWROOM_STNK_BPKB_TRACK'), stnkBpkbCombinedUpload, previewStnkBpkbTrackCombined)
+router.post('/stnk-bpkb-tracks/combined/import', authenticate, authorizeMenu('IMPORT_SHOWROOM_STNK_BPKB_TRACK'), stnkBpkbCombinedUpload, uploadStnkBpkbTrackCombined)
 
 // FASE 2 Self-Check: manajemen permintaan ambil dokumen (pickup requests)
 router.get('/pickup-requests', authenticate, stnkBpkbTrackReadAccess, getPickupRequests)

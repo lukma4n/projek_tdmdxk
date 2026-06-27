@@ -706,3 +706,58 @@ export function parseStnkBpkbTrackFile(filePath, options = {}) {
 
   return { records, errors, version }
 }
+
+// Kolom yang HANYA ada di laporan v2 (62 kolom) — di-overlay ke base v1.
+const V2_ONLY_FIELDS = ['no_polisi', 'lokasi_stnk', 'lokasi_bpkb', 'lokasi_stock']
+
+function isEmptyValue(v) {
+  return v === null || v === undefined || v === ''
+}
+
+// Gabungkan dua hasil parse (1 file v1 + 1 file v2) per engine_number.
+// v1 jadi dasar (punya Series/Area/Mobile/Tahun/Lead-time yang dipakai dashboard),
+// lalu kolom unik v2 (Lokasi STNK/BPKB/Stock, No Polisi) di-overlay. Field v1 yang
+// kosong diisi dari v2 sebagai pengaman. Engine yang hanya ada di salah satu file
+// tetap dimasukkan apa adanya agar snapshot tetap lengkap.
+export function mergeStnkBpkbTrackByEngine(resultA, resultB) {
+  const byVersion = { v1: null, v2: null }
+  for (const res of [resultA, resultB]) {
+    if (!res || (res.version !== 'v1' && res.version !== 'v2')) continue
+    byVersion[res.version] = res
+  }
+  if (!byVersion.v1 || !byVersion.v2) {
+    throw new Error('Import gabungan perlu tepat 1 file v1 (58 kolom: Area/Series/HP) + 1 file v2 (62 kolom: Lokasi/No Polisi)')
+  }
+
+  const v2ByEngine = new Map()
+  for (const rec of byVersion.v2.records) v2ByEngine.set(rec.engine_number, rec)
+
+  const merged = []
+  const usedV2 = new Set()
+
+  // Base = v1, overlay kolom unik v2 + isi field v1 yang kosong dari v2.
+  for (const base of byVersion.v1.records) {
+    const v2 = v2ByEngine.get(base.engine_number)
+    const rec = { ...base }
+    if (v2) {
+      usedV2.add(base.engine_number)
+      for (const field of V2_ONLY_FIELDS) {
+        if (!isEmptyValue(v2[field])) rec[field] = v2[field]
+      }
+      for (const [key, val] of Object.entries(v2)) {
+        if (key === 'synced_at') continue
+        if (isEmptyValue(rec[key]) && !isEmptyValue(val)) rec[key] = val
+      }
+    }
+    rec.synced_at = new Date()
+    merged.push(rec)
+  }
+
+  // Engine yang hanya ada di v2 (tidak ada di v1) — masukkan apa adanya.
+  for (const rec of byVersion.v2.records) {
+    if (usedV2.has(rec.engine_number)) continue
+    merged.push({ ...rec, synced_at: new Date() })
+  }
+
+  return { records: merged, errors: [...byVersion.v1.errors, ...byVersion.v2.errors] }
+}

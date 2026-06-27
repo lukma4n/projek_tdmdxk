@@ -135,7 +135,10 @@ export async function runShowroomSnapshotImport({
       data: {
         user_id: req.user?.userId,
         module,
-        filename: req.file.originalname,
+        // single import: req.file; combined import (.fields): req.files.file1/file2
+        filename: req.file?.originalname
+          || [req.files?.file1?.[0]?.originalname, req.files?.file2?.[0]?.originalname].filter(Boolean).join(' + ')
+          || null,
         rows_success: records.length,
         rows_error: errors.length,
         error_detail: errors.length > 0 ? JSON.stringify(errors.slice(0, 10)) : null,
