@@ -2,14 +2,13 @@ import { prisma } from '../config/db.js'
 import { createDatabaseBackup } from '../services/backupService.js'
 import { clampLimit } from '../utils/pagination.js'
 import { createAuditLog } from '../services/auditService.js'
-import { cleanupUpload, parseOtrPriceFile, parseOffPurchasePriceFile } from './showroomUtils.js'
-import { parsePrice } from '../utils/excelUtils.js'
+import { cleanupUpload, parseOtrPriceFile, parseOffPurchasePriceFile, parseSkPrice } from './showroomUtils.js'
 import { upsertRecords } from './showroomImport.js'
 import { withImportLock } from '../services/importLockService.js'
 
 export async function previewOtrPrices(req, res, next) {
   try {
-    const { records, errors } = parseOtrPriceFile(req.file.path, req.file.originalname, parsePrice)
+    const { records, errors } = await parseOtrPriceFile(req.file.path, req.file.originalname, parseSkPrice)
     await cleanupUpload(req)
     res.json({
       message: 'Preview Harga OTR berhasil',
@@ -28,7 +27,7 @@ export async function previewOtrPrices(req, res, next) {
 export async function uploadOtrPrices(req, res, next) {
   try {
     await withImportLock('showroom:otr', async () => {
-    const { records, errors } = parseOtrPriceFile(req.file.path, req.file.originalname, parsePrice)
+    const { records, errors } = await parseOtrPriceFile(req.file.path, req.file.originalname, parseSkPrice)
     const backup = await createDatabaseBackup('pre_import_showroom_otr_price')
     const { created, updated } = await upsertRecords({ records, model: 'showroom_otr_prices', uniqueField: 'product_code' })
 
@@ -51,7 +50,7 @@ export async function uploadOtrPrices(req, res, next) {
 
 export async function previewOffPurchasePrices(req, res, next) {
   try {
-    const { records, purchaseRows, offRoadRows, errors } = parseOffPurchasePriceFile(req.file.path, req.file.originalname, parsePrice)
+    const { records, purchaseRows, offRoadRows, errors } = await parseOffPurchasePriceFile(req.file.path, req.file.originalname, parseSkPrice)
     await cleanupUpload(req)
     res.json({
       message: 'Preview Harga Off & Beli berhasil',
@@ -72,7 +71,7 @@ export async function previewOffPurchasePrices(req, res, next) {
 export async function uploadOffPurchasePrices(req, res, next) {
   try {
     await withImportLock('showroom:off_purchase', async () => {
-    const { records, purchaseRows, offRoadRows, errors } = parseOffPurchasePriceFile(req.file.path, req.file.originalname, parsePrice)
+    const { records, purchaseRows, offRoadRows, errors } = await parseOffPurchasePriceFile(req.file.path, req.file.originalname, parseSkPrice)
     const backup = await createDatabaseBackup('pre_import_showroom_off_purchase_price')
     const { created, updated } = await upsertRecords({ records, model: 'showroom_otr_prices', uniqueField: 'product_code' })
 

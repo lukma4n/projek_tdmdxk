@@ -3,7 +3,7 @@
  */
 
 import fs from 'fs/promises'
-import { execFileSync } from 'child_process'
+import mammoth from 'mammoth'
 
 export const PRODUCT_CODE_ALIASES = {
   MV0: 'MV1',
@@ -120,11 +120,24 @@ export async function cleanupUpload(req) {
   if (req.file?.path) await fs.unlink(req.file.path).catch(() => {})
 }
 
-export function parseOtrPriceFile(filePath, originalName, parsePriceFn) {
+// Harga di SK Main Dealer adalah bilangan bulat dengan pemisah ribuan yang
+// TIDAK konsisten antar dokumen/tabel: SK MARK pakai titik ("19.710.000"),
+// SK KACAB pakai koma ("29,850,000"). Tidak ada desimal sen. Buang kedua
+// pemisah lalu parse integer. parsePrice() global (strip koma saja) merusak
+// format titik (19.710.000 → 19.71), jadi pakai ini khusus dokumen SK.
+export function parseSkPrice(value) {
+  if (!value) return 0
+  return parseInt(String(value).replace(/[.,]/g, ''), 10) || 0
+}
+
+// Pemisah ribuan bisa titik ATAU koma (lihat parseSkPrice).
+const SK_PRICE_REGEX = /^\d{1,3}([.,]\d{3})+$/
+
+export async function parseOtrPriceFile(filePath, originalName, parsePriceFn) {
   if (!filePath || typeof filePath !== 'string') {
     throw new Error('Invalid file path')
   }
-  const text = execFileSync('textutil', ['-convert', 'txt', '-stdout', '--', filePath], { encoding: 'utf8' })
+  const { value: text } = await mammoth.extractRawText({ path: filePath })
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
   const effectiveDate = parseOtrEffectiveDate(text)
   const records = []
@@ -138,7 +151,7 @@ export function parseOtrPriceFile(filePath, originalName, parsePriceFn) {
     const modelName = lines[i + 3]
     const price = lines[i + 4]
 
-    if (!/^[A-Z0-9]{2,8}$/.test(productCode) || !/^\d{1,3}(,\d{3})+$/.test(price)) continue
+    if (!/^[A-Z0-9]{2,8}$/.test(productCode) || !SK_PRICE_REGEX.test(price)) continue
     if (seen.has(productCode)) continue
     seen.add(productCode)
 
@@ -169,7 +182,7 @@ export function parsePriceRows(text, originalName, priceField, parsePriceFn) {
     const modelName = lines[i + 3]
     const price = lines[i + 4]
 
-    if (!/^[A-Z0-9]{2,8}$/.test(productCode) || !/^\d{1,3}(,\d{3})+$/.test(price)) continue
+    if (!/^[A-Z0-9]{2,8}$/.test(productCode) || !SK_PRICE_REGEX.test(price)) continue
     if (seen.has(productCode)) continue
     seen.add(productCode)
 
@@ -187,11 +200,11 @@ export function parsePriceRows(text, originalName, priceField, parsePriceFn) {
   return records
 }
 
-export function parseOffPurchasePriceFile(filePath, originalName, parsePriceFn) {
+export async function parseOffPurchasePriceFile(filePath, originalName, parsePriceFn) {
   if (!filePath || typeof filePath !== 'string') {
     throw new Error('Invalid file path')
   }
-  const text = execFileSync('textutil', ['-convert', 'txt', '-stdout', '--', filePath], { encoding: 'utf8' })
+  const { value: text } = await mammoth.extractRawText({ path: filePath })
   const offRoadMarker = 'Perihal : SK Harga Off The Road'
   const offRoadIndex = text.indexOf(offRoadMarker)
   const errors = []
