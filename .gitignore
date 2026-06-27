@@ -39,3 +39,11 @@ coverage/
 
 # AI Coding Assistant local cache
 .understand-anything/
+
+# Konfigurasi lokal Claude Code (per-mesin)
+.claude/
+
+# Data kerja / sampel (bukan kode, jangan masuk repo)
+sample upload/
+*.xlsx
+*.jpg
