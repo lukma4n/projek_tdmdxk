@@ -4,8 +4,7 @@ import xlsx from 'xlsx'
 import { safeReadExcel } from '../utils/excelValidator.js'
 import { PDFParse } from 'pdf-parse'
 import { clampLimit } from '../utils/pagination.js'
-import pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js'
-const { getDocument } = pdfjsLib
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { prisma } from '../config/db.js'
 import { withImportLock } from '../services/importLockService.js'
 
