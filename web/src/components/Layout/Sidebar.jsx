@@ -121,6 +121,7 @@ const navStructure = [
           { path: '/showroom/bpkb', label: 'Stock BPKB', menuKey: 'SHOWROOM_DOCUMENT_STOCK' },
           { path: '/showroom/stnk-bpkb-monitoring', label: 'Monitoring STNK & BPKB', menuKey: 'SHOWROOM_STNK_BPKB_MONITORING' },
           { path: '/showroom/label-buku-service', label: 'Label Buku Service', menuKey: 'SHOWROOM_LABEL_BUKU_SERVICE' },
+          { path: '/showroom/cetak-stck', label: 'Cetak STCK', menuKey: 'SHOWROOM_LABEL_BUKU_SERVICE' },
           { path: '/showroom/document-handover', label: 'Document Handling', menuKey: 'DOCUMENT_HANDOVER' },
         ],
       },

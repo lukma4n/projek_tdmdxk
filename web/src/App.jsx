@@ -44,6 +44,7 @@ const ShowroomSalesAnalysis = lazy(() => import('./pages/ShowroomSalesAnalysis')
 const ShowroomClosingDaily = lazy(() => import('./pages/ShowroomClosingDaily'))
 const ShowroomMarketingTarget = lazy(() => import('./pages/ShowroomMarketingTarget'))
 const ShowroomLabelBukuService = lazy(() => import('./pages/ShowroomLabelBukuService'))
+const ShowroomCetakStck = lazy(() => import('./pages/ShowroomCetakStck'))
 const ShowroomDocumentFollowup = lazy(() => import('./pages/ShowroomDocumentFollowup'))
 const ShowroomDocumentHandover = lazy(() => import('./pages/ShowroomDocumentHandover'))
 const StnkBpkbCheck = lazy(() => import('./pages/StnkBpkbCheck'))
@@ -462,6 +463,14 @@ function App() {
           element={
               <RoleGuard menuKey="SHOWROOM_LABEL_BUKU_SERVICE">
               <LazyPage><ShowroomLabelBukuService /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="showroom/cetak-stck"
+          element={
+            <RoleGuard menuKey="SHOWROOM_LABEL_BUKU_SERVICE">
+              <LazyPage><ShowroomCetakStck /></LazyPage>
             </RoleGuard>
           }
         />

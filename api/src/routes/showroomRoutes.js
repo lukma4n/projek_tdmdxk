@@ -11,6 +11,9 @@ import {
   getServiceBookLabels,
 } from '../controllers/showroomLabelServiceController.js'
 import {
+  getStckSalesLookup,
+} from '../controllers/showroomStckController.js'
+import {
   getStockUnits,
   exportStockUnitsExcel,
   getStockUnitSummary,
@@ -101,6 +104,8 @@ router.get('/penjualan/dashboard', authenticate, showroomAccess, getShowroomSale
 router.get('/penjualan/export', authenticate, showroomAccess, exportShowroomSalesDashboard)
 
 router.get('/label-buku-service', authenticate, showroomAccess, getServiceBookLabels)
+
+router.get('/stck/sales-lookup', authenticate, showroomAccess, getStckSalesLookup)
 
 router.get('/sales-order-margins', authenticate, showroomSalesOrderAccess, getSalesOrderMargins)
 router.post('/sales-order-margins/preview', authenticate, showroomSalesOrderAccess, previewSalesOrderMargin)

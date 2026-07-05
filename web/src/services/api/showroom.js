@@ -19,6 +19,12 @@ export const getServiceBookLabels = (params = {}) => {
   return fetchWithAuth(`/showroom/label-buku-service${query ? '?' + query : ''}`)
 }
 
+// Lookup data penjualan untuk Cetak STCK (cari per no mesin, filter hari ini/kemarin/semua)
+export const getStckSalesLookup = (params = {}) => {
+  const query = new URLSearchParams(params).toString()
+  return fetchWithAuth(`/showroom/stck/sales-lookup${query ? '?' + query : ''}`)
+}
+
 // Sales Order Margins
 export const getSalesOrderMargins = (params = {}) => {
   const query = new URLSearchParams(params).toString()
