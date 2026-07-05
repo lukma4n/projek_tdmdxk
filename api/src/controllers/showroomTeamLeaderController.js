@@ -107,6 +107,16 @@ export async function deleteTeamLeader(req, res, next) {
     await prisma.showroom_team_leaders.delete({ where: { id } })
     res.json({ message: 'Data Team Leader berhasil dihapus' })
   } catch (error) {
+    // P2003 = foreign key constraint (masih dipakai di target marketing).
+    // P2025 = record tidak ada. Beri pesan ramah, jangan lempar 500 mentah.
+    if (error?.code === 'P2003') {
+      return res.status(409).json({
+        error: 'Team Leader ini masih dipakai di Target Marketing sehingga tidak bisa dihapus. Nonaktifkan saja, atau hapus dulu target marketing terkait.',
+      })
+    }
+    if (error?.code === 'P2025') {
+      return res.status(404).json({ error: 'Data Team Leader tidak ditemukan' })
+    }
     next(error)
   }
 }

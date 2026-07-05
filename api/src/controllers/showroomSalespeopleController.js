@@ -105,6 +105,15 @@ export async function deleteSalesperson(req, res, next) {
     await prisma.showroom_salespeople.delete({ where: { id } })
     res.json({ message: 'Data Sales berhasil dihapus' })
   } catch (error) {
+    // P2003 = foreign key constraint; P2025 = record tidak ada. Pesan ramah.
+    if (error?.code === 'P2003') {
+      return res.status(409).json({
+        error: 'Sales ini masih terkait data lain sehingga tidak bisa dihapus. Nonaktifkan saja untuk menyimpan riwayat.',
+      })
+    }
+    if (error?.code === 'P2025') {
+      return res.status(404).json({ error: 'Data Sales tidak ditemukan' })
+    }
     next(error)
   }
 }

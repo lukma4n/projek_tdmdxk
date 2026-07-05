@@ -27,20 +27,33 @@ export async function createAuditLog({ userId, tableName, recordId, fieldName, o
  * sehingga jejaknya perlu terekam. Fire-and-forget: tidak boleh memblokir atau
  * menggagalkan request. Body request TIDAK dicatat (bisa berisi data sensitif).
  */
-export function logItMasterAction(req) {
+export function logItMasterAction(req, res) {
   if (!req?.user || req.user.role !== 'IT Master') return
   const method = req.method
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return
   if (req._itMasterLogged) return // hindari log ganda bila route pakai 2 middleware
   req._itMasterLogged = true
 
-  createAuditLog({
-    userId: req.user.userId,
-    tableName: 'it_master_action',
-    recordId: (req.originalUrl || req.path || '').split('?')[0] || '/',
-    fieldName: method,
-    newValue: { ip: req.ip || null, username: req.user.username || null },
-  }).catch(() => {})
+  const write = () => {
+    createAuditLog({
+      userId: req.user.userId,
+      tableName: 'it_master_action',
+      recordId: (req.originalUrl || req.path || '').split('?')[0] || '/',
+      fieldName: method,
+      newValue: { ip: req.ip || null, username: req.user.username || null, status: res?.statusCode ?? null },
+    }).catch(() => {})
+  }
+
+  // Tunda tulis audit sampai response selesai agar TIDAK berebut write-lock
+  // SQLite dengan transaksi milik controller. Penulisan audit yang menembak
+  // bersamaan sebelumnya jadi salah satu sumber kontensi yang membuat interactive
+  // transaction timeout (mis. simpan Hak Akses). Fallback: tulis langsung bila
+  // res tak tersedia (mempertahankan perilaku lama).
+  if (res && typeof res.on === 'function') {
+    res.on('finish', write)
+  } else {
+    write()
+  }
 }
 
 export async function getOperationalAuditLogs(limit = 50) {

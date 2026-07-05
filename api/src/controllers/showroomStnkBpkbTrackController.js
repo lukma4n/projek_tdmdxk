@@ -728,7 +728,17 @@ export async function getPickupRequestKtp(req, res, next) {
     if (filePath !== ktpDir && !filePath.startsWith(ktpDir + path.sep)) {
       return res.status(404).json({ error: 'Foto KTP tidak ditemukan' })
     }
-    res.sendFile(filePath)
+    // Pakai callback: bila file sudah tak ada di disk (mis. tak ikut ter-backup),
+    // balas 404 bersih alih-alih melempar ENOENT jadi error 500.
+    res.sendFile(filePath, (err) => {
+      if (err) {
+        if (res.headersSent) return // stream sudah mulai, jangan tulis ulang
+        if (err.code === 'ENOENT') {
+          return res.status(404).json({ error: 'File foto KTP tidak ada di server' })
+        }
+        return next(err)
+      }
+    })
   } catch (error) {
     next(error)
   }

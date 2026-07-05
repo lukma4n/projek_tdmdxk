@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle, CheckCircle, Download, ExternalLink, FileUp, Loader2, Pencil, Plus, RefreshCw, ScanBarcode, Send, ShieldCheck, Trash2, XCircle, Bell, MapPin } from 'lucide-react'
 import { API_BASE, api } from '../services/api'
 import { useAuthStore } from '../stores/authStore'
+import { ROLES } from '../config/roles'
 
 const TYPE_CONFIG = {
   unit: { title: 'Opname Unit', subtitle: 'Stock opname fisik unit showroom dengan input No Mesin, No Rangka, atau Series', inputLabel: 'Scan / Input No Mesin, No Rangka, atau Series', itemHeader: 'Unit', secondaryHeader: 'No Rangka', locationHeader: 'Lokasi Unit' },
@@ -91,9 +92,11 @@ function isHundredPercent(summary) {
 export default function ShowroomOpname({ type = 'unit' }) {
   const config = TYPE_CONFIG[type] || TYPE_CONFIG.unit
   const { user } = useAuthStore()
-  const canOperate = ['PIC Stock opname'].includes(user?.role)
-  const canApproveAdh = user?.role === 'ADH'
-  const canApproveKacab = user?.role === 'Kepala Cabang'
+  // IT Master (superadmin) boleh semua langkah — konsisten dgn backend (authorize bypass).
+  const isMaster = user?.role === ROLES.MASTER_IT
+  const canOperate = ['PIC Stock opname'].includes(user?.role) || isMaster
+  const canApproveAdh = user?.role === 'ADH' || isMaster
+  const canApproveKacab = user?.role === 'Kepala Cabang' || isMaster
   const [sessions, setSessions] = useState([])
   const [activeSession, setActiveSession] = useState(null)
   const [items, setItems] = useState([])

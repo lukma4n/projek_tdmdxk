@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { api } from '../services/api'
 import { ScanBarcode, Package, Plus, CheckCircle, AlertTriangle, XCircle, Trash2, Loader2, Pencil, Volume2, VolumeX, Printer, X, Eye, Send, FileUp, ExternalLink } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
+import { ROLES } from '../config/roles'
 import { API_BASE } from '../services/api'
 
 function getSelisihColor(selisih) {
@@ -33,9 +34,12 @@ function playBeep(success = true) {
 
 export default function Opname() {
   const { user } = useAuthStore()
-  const canOperate = user?.role === 'Partman'
-  const canApproveKabeng = user?.role === 'Kepala Bengkel'
-  const canApproveKacab = user?.role === 'Kepala Cabang'
+  // IT Master (superadmin) boleh melakukan semua langkah — konsisten dgn backend
+  // yang authorize()-nya sudah bypass IT Master.
+  const isMaster = user?.role === ROLES.MASTER_IT
+  const canOperate = user?.role === 'Partman' || isMaster
+  const canApproveKabeng = user?.role === 'Kepala Bengkel' || isMaster
+  const canApproveKacab = user?.role === 'Kepala Cabang' || isMaster
   const [sessions, setSessions] = useState([])
   const [activeSession, setActiveSession] = useState(null)
   const [scannedItems, setScannedItems] = useState([])

@@ -67,7 +67,7 @@ export function authorize(...roles) {
     }
     // Bypass untuk IT Master agar bisa akses semuanya (sebagai superadmin)
     if (req.user.role === 'IT Master') {
-      logItMasterAction(req)
+      logItMasterAction(req, res)
       return next()
     }
     if (!roles.includes(req.user.role)) {
@@ -85,7 +85,7 @@ export function authorizeMenu(menuKey) {
     }
     // IT Master otomatis lolos
     if (req.user.role === 'IT Master') {
-      logItMasterAction(req)
+      logItMasterAction(req, res)
       return next()
     }
 
