@@ -86,8 +86,11 @@ export default function RoleManagement() {
       })
       // Refresh global store so changes take effect immediately
       await fetchPermissions()
-    } catch {
-      setError('Gagal menyimpan perubahan. Pastikan Anda memiliki akses IT Master.')
+      setError('')
+    } catch (err) {
+      // Tampilkan pesan asli dari server (mis. timeout DB) alih-alih selalu
+      // menyalahkan hak akses — pesan lama menyesatkan saat penyebabnya lain.
+      setError(err?.message ? `Gagal menyimpan: ${err.message}` : 'Gagal menyimpan perubahan. Coba lagi.')
     } finally {
       setSavingKey(null)
     }

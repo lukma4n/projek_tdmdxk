@@ -22,20 +22,24 @@ export const updatePermissions = async (req, res) => {
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      // Hapus semua roles untuk menu ini
-      await tx.role_permissions.deleteMany({
-        where: { menu_key }
-      })
-      
-      // Insert roles yang baru
-      if (roles.length > 0) {
-        await tx.role_permissions.createMany({
-          data: roles.map(role => ({ role_name: role, menu_key }))
-        })
-      }
-    })
-    
+    // Pakai batch transaction (bentuk array), BUKAN interactive transaction
+    // (async callback). Di SQLite, interactive transaction membuka sesi yang
+    // dibatasi timeout 5 dtk; bila DB sedang di-lock penulis lain (mis. audit
+    // log IT Master yang menembak bersamaan), penantian lock ≈ busy_timeout 5 dtk
+    // sehingga transaksi keburu abort ("Transaction already closed"). Bentuk
+    // array tetap atomik namun tidak terkena batas waktu sesi interaktif itu.
+    const ops = [
+      prisma.role_permissions.deleteMany({ where: { menu_key } }),
+    ]
+    if (roles.length > 0) {
+      ops.push(
+        prisma.role_permissions.createMany({
+          data: roles.map((role) => ({ role_name: role, menu_key })),
+        }),
+      )
+    }
+    await prisma.$transaction(ops)
+
     res.json({ message: 'Hak akses berhasil diupdate' })
   } catch (error) {
     res.status(500).json({ error: 'Gagal mengupdate hak akses' })
