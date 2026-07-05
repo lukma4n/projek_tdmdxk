@@ -25,7 +25,7 @@ export default function ShowroomTeamLeader() {
     setError('')
     try {
       const [listRes, sumRes] = await Promise.all([
-        api.getShowroomTeamLeaders({ ...(search && { search }) }),
+        api.getShowroomTeamLeaders({ all: true, ...(search && { search }) }),
         api.getShowroomTeamLeaderSummary(),
       ])
       setItems(listRes.data || [])
@@ -72,6 +72,20 @@ export default function ShowroomTeamLeader() {
       await loadData()
     } catch (err) {
       setError(err.message || 'Gagal hapus data Team Leader')
+    }
+  }
+
+  const handleToggleActive = async (item) => {
+    const nextActive = !item.is_active
+    if (!confirm(`Yakin ${nextActive ? 'aktifkan' : 'nonaktifkan'} "${item.name}"?`)) return
+    setError('')
+    setMessage('')
+    try {
+      const res = await api.updateShowroomTeamLeaderStatus(item.id, nextActive)
+      setMessage(res.message)
+      await loadData()
+    } catch (err) {
+      setError(err.message || 'Gagal ubah status Team Leader')
     }
   }
 
@@ -215,17 +229,25 @@ export default function ShowroomTeamLeader() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-hover">
-                  {['No', 'Nama', 'Aksi'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted">{h}</th>)}
+                  {['No', 'Nama', 'Status', 'Aksi'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted">{h}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-hover/50">
+                  <tr key={item.id} className={`hover:bg-hover/50 ${item.is_active ? '' : 'opacity-60'}`}>
                     <td className="px-4 py-3 text-sm text-muted">{item.no || '-'}</td>
                     <td className="px-4 py-3 text-sm font-semibold text-text">{item.name}</td>
                     <td className="px-4 py-3">
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.is_active ? 'bg-success-50 text-success-700' : 'bg-hover text-muted'}`}>
+                        {item.is_active ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button onClick={() => setForm({ name: item.name })} className="rounded-lg border border-border bg-panel px-3 py-1.5 text-xs text-muted hover:bg-hover">Edit</button>
+                        <button onClick={() => handleToggleActive(item)} className="rounded-lg border border-border bg-panel px-3 py-1.5 text-xs text-muted hover:bg-hover">
+                          {item.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                        </button>
                         <button onClick={() => handleDelete(item.id)} className="rounded-lg border border-danger-200 bg-danger-50 px-3 py-1.5 text-xs text-danger-600 hover:bg-danger-100"><Trash2 size={14} /></button>
                       </div>
                     </td>

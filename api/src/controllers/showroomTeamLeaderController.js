@@ -72,12 +72,29 @@ export async function upsertTeamLeader(req, res, next) {
       },
       update: {
         ...(no ? { no } : {}),
-        is_active: req.body.is_active ?? true,
+        // is_active hanya ditimpa jika dikirim eksplisit, agar edit nama tidak
+        // diam-diam meng-aktifkan-lagi team leader yang sudah dinonaktifkan.
+        ...(req.body.is_active !== undefined ? { is_active: Boolean(req.body.is_active) } : {}),
         source_file: clean(req.body.source_file) || 'MANUAL',
         synced_at: new Date(),
       },
     })
     res.json({ message: 'Data Team Leader tersimpan', data: row })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function updateTeamLeaderStatus(req, res, next) {
+  try {
+    const id = parseInt(req.params.id)
+    if (!id) return res.status(400).json({ error: 'ID tidak valid' })
+    const is_active = Boolean(req.body.is_active)
+    const row = await prisma.showroom_team_leaders.update({
+      where: { id },
+      data: { is_active },
+    })
+    res.json({ message: is_active ? 'Team Leader diaktifkan' : 'Team Leader dinonaktifkan', data: row })
   } catch (error) {
     next(error)
   }

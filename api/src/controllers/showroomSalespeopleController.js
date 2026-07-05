@@ -70,12 +70,29 @@ export async function upsertSalesperson(req, res, next) {
         // hanya update no jika dikirim eksplisit (agar tidak menimpa no existing)
         ...(no ? { no } : {}),
         team_leader: teamLeader,
-        is_active: req.body.is_active ?? true,
+        // is_active hanya ditimpa jika dikirim eksplisit, agar edit nama tidak
+        // diam-diam meng-aktifkan-lagi sales yang sudah dinonaktifkan.
+        ...(req.body.is_active !== undefined ? { is_active: Boolean(req.body.is_active) } : {}),
         source_file: clean(req.body.source_file) || 'MANUAL',
         synced_at: new Date(),
       },
     })
     res.json({ message: 'Data Sales tersimpan', data: row })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function updateSalespersonStatus(req, res, next) {
+  try {
+    const id = parseInt(req.params.id)
+    if (!id) return res.status(400).json({ error: 'ID tidak valid' })
+    const is_active = Boolean(req.body.is_active)
+    const row = await prisma.showroom_salespeople.update({
+      where: { id },
+      data: { is_active },
+    })
+    res.json({ message: is_active ? 'Sales diaktifkan' : 'Sales dinonaktifkan', data: row })
   } catch (error) {
     next(error)
   }

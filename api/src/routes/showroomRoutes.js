@@ -46,9 +46,11 @@ import {
 } from '../controllers/showroomMarketingTargetController.js'
 import {
   getSalespeople, upsertSalesperson, getSalespersonSummary, previewSalespeopleImport, uploadSalespeopleImport, deleteSalesperson,
+  updateSalespersonStatus,
 } from '../controllers/showroomSalespeopleController.js'
 import {
   getTeamLeaders, upsertTeamLeader, getTeamLeaderSummary, previewTeamLeadersImport, uploadTeamLeadersImport, deleteTeamLeader,
+  updateTeamLeaderStatus,
 } from '../controllers/showroomTeamLeaderController.js'
 import {
   getStnkBpkbTrackMonitoring, previewStnkBpkbTrack, uploadStnkBpkbTrack, exportStnkBpkbTrackExcel,
@@ -216,6 +218,7 @@ router.post('/salespeople', authenticate, showroomAccess, upsertSalesperson)
 router.post('/salespeople/preview', authenticate, showroomAccess, upload.single('file'), previewSalespeopleImport)
 router.post('/salespeople/import', authenticate, showroomAccess, upload.single('file'), uploadSalespeopleImport)
 router.delete('/salespeople/:id', authenticate, showroomAccess, deleteSalesperson)
+router.patch('/salespeople/:id/status', authenticate, showroomAccess, updateSalespersonStatus)
 
 // Team Leaders
 router.get('/team-leaders', authenticate, showroomAccess, getTeamLeaders)
@@ -224,6 +227,7 @@ router.post('/team-leaders', authenticate, showroomAccess, upsertTeamLeader)
 router.post('/team-leaders/preview', authenticate, showroomAccess, upload.single('file'), previewTeamLeadersImport)
 router.post('/team-leaders/import', authenticate, showroomAccess, upload.single('file'), uploadTeamLeadersImport)
 router.delete('/team-leaders/:id', authenticate, showroomAccess, deleteTeamLeader)
+router.patch('/team-leaders/:id/status', authenticate, showroomAccess, updateTeamLeaderStatus)
 
 // STNK & BPKB Track Monitoring
 const stnkBpkbTrackAdminAccess = authorize('Admin')

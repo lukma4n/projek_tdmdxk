@@ -195,6 +195,8 @@ export const getShowroomSalespeople = (params = {}) => {
 export const getShowroomSalespersonSummary = () => fetchWithAuth('/showroom/salespeople/summary')
 export const upsertShowroomSalesperson = (data) => fetchWithAuth('/showroom/salespeople', { method: 'POST', body: data })
 export const deleteShowroomSalesperson = (id) => fetchWithAuth(`/showroom/salespeople/${id}`, { method: 'DELETE' })
+export const updateShowroomSalespersonStatus = (id, is_active) =>
+  fetchWithAuth(`/showroom/salespeople/${id}/status`, { method: 'PATCH', body: { is_active } })
 export const previewShowroomSalespeople = (file) => {
   const formData = new FormData()
   formData.append('file', file)
@@ -214,6 +216,8 @@ export const getShowroomTeamLeaders = (params = {}) => {
 export const getShowroomTeamLeaderSummary = () => fetchWithAuth('/showroom/team-leaders/summary')
 export const upsertShowroomTeamLeader = (data) => fetchWithAuth('/showroom/team-leaders', { method: 'POST', body: data })
 export const deleteShowroomTeamLeader = (id) => fetchWithAuth(`/showroom/team-leaders/${id}`, { method: 'DELETE' })
+export const updateShowroomTeamLeaderStatus = (id, is_active) =>
+  fetchWithAuth(`/showroom/team-leaders/${id}/status`, { method: 'PATCH', body: { is_active } })
 export const previewShowroomTeamLeaders = (file) => {
   const formData = new FormData()
   formData.append('file', file)
