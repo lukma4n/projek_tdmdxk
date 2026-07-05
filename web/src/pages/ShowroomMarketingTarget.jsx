@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '../services/api'
 import { useAuthStore } from '../stores/authStore'
+import { ROLES } from '../config/roles'
 import {
   Loader2,
   RefreshCw,
@@ -58,7 +59,8 @@ function upper(value = '') {
 
 export default function ShowroomMarketingTarget() {
   const { user } = useAuthStore()
-  const isEditable = user?.role === 'Kepala Cabang'
+  // IT Master (superadmin) selalu boleh edit, sama seperti Kepala Cabang.
+  const isEditable = user?.role === ROLES.KEPALA_CABANG || user?.role === ROLES.MASTER_IT
 
   const [year, setYear] = useState(currentYear())
   const [month, setMonth] = useState(new Date().getMonth() + 1)
