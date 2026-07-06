@@ -95,8 +95,13 @@ export function validateExcelFile(filePath) {
 /**
  * Baca file Excel dengan validasi keamanan terlebih dulu.
  * Gunakan ini sebagai pengganti xlsx.readFile() langsung di semua controller.
+ *
+ * Opsi parsing dipilih untuk menghemat memori (VPS produksi RAM terbatas):
+ * dense pakai array bukan object per-sheet, cellHTML/cellFormula dimatikan
+ * karena semua parser hanya baca .v/.w lewat sheet_to_json — tidak butuh
+ * string HTML atau formula ter-parse.
  */
 export function safeReadExcel(filePath) {
   validateExcelFile(filePath)
-  return xlsx.readFile(filePath)
+  return xlsx.readFile(filePath, { dense: true, cellHTML: false, cellFormula: false })
 }
