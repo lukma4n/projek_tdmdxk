@@ -70,10 +70,10 @@ export default function ShowroomLabelBukuService() {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    // Duplicate each item 3 times (3 labels per customer)
+    // Duplicate each item 6 times (6 labels per customer)
     const allLabels = []
     filteredItems.forEach((item) => {
-      allLabels.push(item, item, item)
+      allLabels.push(item, item, item, item, item, item)
     })
 
     const labelsPerPage = 12 // 3 columns x 4 rows
@@ -82,8 +82,7 @@ export default function ShowroomLabelBukuService() {
       pages.push(allLabels.slice(i, i + labelsPerPage))
     }
 
-    const renderLabel = (item, idx) => {
-      const svgId = `barcode-${idx}`
+    const renderLabel = (item) => {
       return `
         <div class="label">
           <div class="header">BUKU SERVICE - TDM KETAPANG</div>
@@ -99,22 +98,15 @@ export default function ShowroomLabelBukuService() {
             <span class="meta-label">TGL PEMBELIAN</span>
             <span class="meta-value">${escapeHtml(item.so_date)}</span>
           </div>
-          <svg id="${svgId}" class="barcode"></svg>
         </div>
       `
     }
-
-    const barcodeScripts = allLabels.map((item, idx) => {
-      if (!item.no_engine || item.no_engine === '-') return ''
-      return `JsBarcode("#barcode-${idx}", "${item.no_engine}", { format: "CODE128", width: 2, height: 34, displayValue: false, margin: 3 });`
-    }).filter(Boolean).join('\n')
 
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <title>Label Buku Service - ${date}</title>
-        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
         <style>
           @page { size: A4 portrait; margin: 0; }
           body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
@@ -128,15 +120,13 @@ export default function ShowroomLabelBukuService() {
           .name-value { font-weight: bold; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           /* ALAMAT boleh wrap maksimal 2 baris agar tidak terpotong */
           .address-value { font-weight: 600; color: #111827; white-space: normal; line-height: 1.05; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-          .barcode { width: 100%; height: 10mm; margin-top: 0.6mm; }
           @media print { body { -webkit-print-color-adjust: exact; } }
         </style>
       </head>
       <body>
-        ${pages.map((page, pIdx) => `<div class="page">${page.map((item, iIdx) => renderLabel(item, pIdx * labelsPerPage + iIdx)).join('')}</div>`).join('')}
+        ${pages.map((page) => `<div class="page">${page.map((item) => renderLabel(item)).join('')}</div>`).join('')}
         <script>
           window.onload = () => {
-            ${barcodeScripts}
             setTimeout(() => { window.print(); }, 300);
           };
         </script>
@@ -226,7 +216,7 @@ export default function ShowroomLabelBukuService() {
             disabled={!filteredItems.length}
             className="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Printer size={16} /> Print Semua ({filteredItems.length * 3} label)
+            <Printer size={16} /> Print Semua ({filteredItems.length * 6} label)
           </button>
         </div>
       </div>

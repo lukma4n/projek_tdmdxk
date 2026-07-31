@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import { Printer, X } from 'lucide-react'
 
 function escapeHtml(value) {
@@ -11,22 +10,6 @@ function escapeHtml(value) {
 }
 
 export default function ServiceBookLabel({ item, onClose }) {
-  const svgRef = useRef(null)
-
-  useEffect(() => {
-    if (svgRef.current && item?.no_engine && item.no_engine !== '-') {
-      import('jsbarcode').then(({ default: JsBarcode }) => {
-        JsBarcode(svgRef.current, item.no_engine, {
-          format: 'CODE128',
-          width: 2,
-          height: 30,
-          displayValue: false,
-          margin: 2,
-        })
-      })
-    }
-  }, [item])
-
   const renderLabelContent = () => {
     return `
       <div class="header">BUKU SERVICE - TDM KETAPANG</div>
@@ -42,7 +25,6 @@ export default function ServiceBookLabel({ item, onClose }) {
         <span class="meta-label">TGL PEMBELIAN</span>
         <span class="meta-value">${escapeHtml(item.so_date)}</span>
       </div>
-      ${svgRef.current?.outerHTML || ''}
     `
   }
 
@@ -65,12 +47,14 @@ export default function ServiceBookLabel({ item, onClose }) {
           .meta-label { color: #111827; }
           .meta-value { font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           .name-value { font-weight: bold; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-          svg { width: 100%; height: 12mm; margin-top: 0.8mm; }
           @media print { body { -webkit-print-color-adjust: exact; } }
         </style>
       </head>
       <body>
         <div class="page">
+          <div class="label">${renderLabelContent()}</div>
+          <div class="label">${renderLabelContent()}</div>
+          <div class="label">${renderLabelContent()}</div>
           <div class="label">${renderLabelContent()}</div>
           <div class="label">${renderLabelContent()}</div>
           <div class="label">${renderLabelContent()}</div>
@@ -97,9 +81,9 @@ export default function ServiceBookLabel({ item, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {/* Label Preview - 3 Labels */}
+          {/* Label Preview - 6 Labels */}
           <div className="space-y-3">
-            {[1, 2, 3].map((num) => (
+            {[1, 2, 3, 4, 5, 6].map((num) => (
               <div key={num} className="mx-auto max-w-[280px] rounded-lg border border-slate-300 bg-white p-4">
                 <div className="mb-1 text-xs font-bold text-blue-600">BUKU SERVICE - TDM KETAPANG</div>
                 <div className="mt-1 space-y-0.5 text-[9px] text-slate-900 leading-tight">
@@ -124,13 +108,12 @@ export default function ServiceBookLabel({ item, onClose }) {
                     <span className="font-semibold whitespace-nowrap">{item.so_date}</span>
                   </div>
                 </div>
-                <svg ref={num === 1 ? svgRef : undefined} className="mt-2 w-full" />
               </div>
             ))}
           </div>
 
           <div className="text-center text-xs text-slate-400">
-            3 label per customer (64mm × 32mm)
+            6 label per customer (64mm × 32mm)
           </div>
         </div>
 
