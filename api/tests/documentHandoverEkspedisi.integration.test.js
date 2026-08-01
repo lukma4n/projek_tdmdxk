@@ -64,7 +64,9 @@ before(async () => {
 
 after(cleanup)
 
-test('transisi admin_ke_ekspedisi mengisi tracking_number, ekspedisi_ke_konsumen menyelesaikan', async () => {
+test('transisi admin_ke_ekspedisi TIDAK butuh nomor resi, ekspedisi_ke_konsumen menyelesaikan', async () => {
+  // Resi umumnya belum ada saat admin baru menyerahkan paket secara fisik --
+  // diisi belakangan oleh pihak ekspedisi lewat endpoint tracking-number.
   const courierA = await prismaTest.users.findUnique({ where: { username: 'test_courier_a' } })
   const handover = await prismaTest.document_handovers.create({
     data: {
@@ -81,13 +83,12 @@ test('transisi admin_ke_ekspedisi mengisi tracking_number, ekspedisi_ke_konsumen
   const step1 = await callAuthenticated('post', `/api/showroom/document-handovers/${handover.id}/steps`, adminCookie, {
     step_type: 'admin_ke_ekspedisi',
     received_by_name: 'test_courier_a',
-    tracking_number: 'RESI-001',
   })
-  assert.equal(step1.status, 201)
+  assert.equal(step1.status, 201, 'admin_ke_ekspedisi harus berhasil tanpa tracking_number')
 
   let updated = await prismaTest.document_handovers.findUnique({ where: { id: handover.id } })
   assert.equal(updated.status, 'dikirim_ekspedisi')
-  assert.equal(updated.tracking_number, 'RESI-001')
+  assert.equal(updated.tracking_number, null, 'resi belum terisi sampai ekspedisi mengisinya sendiri')
   assert.equal(updated.handover_mode, 'ekspedisi')
 
   const step2 = await callAuthenticated('post', `/api/showroom/document-handovers/${handover.id}/steps`, courierACookie, {
@@ -100,28 +101,108 @@ test('transisi admin_ke_ekspedisi mengisi tracking_number, ekspedisi_ke_konsumen
   assert.equal(updated.status, 'selesai')
 })
 
-test('admin_ke_ekspedisi ditolak (400) tanpa nomor resi', async () => {
+test('PATCH tracking-number: akun Ekspedisi mengisi resi kiriman miliknya sendiri', async () => {
   const courierA = await prismaTest.users.findUnique({ where: { username: 'test_courier_a' } })
   const handover = await prismaTest.document_handovers.create({
     data: {
       engine_number: ENG_A,
       document_type: 'BPKB',
       handover_mode: 'ekspedisi',
-      status: 'tersedia',
+      status: 'dikirim_ekspedisi',
       assigned_courier_id: courierA.id,
       created_by: (await prismaTest.users.findUnique({ where: { username: 'test_admin' } })).id,
     },
   })
 
-  const res = await callAuthenticated('post', `/api/showroom/document-handovers/${handover.id}/steps`, adminCookie, {
-    step_type: 'admin_ke_ekspedisi',
-    received_by_name: 'test_courier_a',
+  const res = await callAuthenticated('patch', `/api/showroom/document-handovers/${handover.id}/tracking-number`, courierACookie, {
+    tracking_number: 'RESI-SELF-001',
+  })
+  assert.equal(res.status, 200)
+
+  const updated = await prismaTest.document_handovers.findUnique({ where: { id: handover.id } })
+  assert.equal(updated.tracking_number, 'RESI-SELF-001')
+})
+
+test('PATCH tracking-number: Admin boleh isi/ubah resi kiriman siapa pun', async () => {
+  const courierA = await prismaTest.users.findUnique({ where: { username: 'test_courier_a' } })
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_A,
+      document_type: 'PLAT',
+      handover_mode: 'ekspedisi',
+      status: 'dikirim_ekspedisi',
+      assigned_courier_id: courierA.id,
+      created_by: (await prismaTest.users.findUnique({ where: { username: 'test_admin' } })).id,
+    },
+  })
+
+  const res = await callAuthenticated('patch', `/api/showroom/document-handovers/${handover.id}/tracking-number`, adminCookie, {
+    tracking_number: 'RESI-ADMIN-001',
+  })
+  assert.equal(res.status, 200)
+})
+
+test('PATCH tracking-number ditolak (403) untuk akun Ekspedisi lain', async () => {
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_A,
+      document_type: 'BUKU_SERVICE',
+      handover_mode: 'ekspedisi',
+      status: 'dikirim_ekspedisi',
+      assigned_courier_id: courierBId, // ditugaskan ke courier B
+      created_by: (await prismaTest.users.findUnique({ where: { username: 'test_admin' } })).id,
+    },
+  })
+
+  const res = await callAuthenticated('patch', `/api/showroom/document-handovers/${handover.id}/tracking-number`, courierACookie, {
+    tracking_number: 'RESI-TIDAK-BOLEH',
+  })
+  assert.equal(res.status, 403)
+})
+
+test('PATCH tracking-number ditolak (400) kalau status bukan dikirim_ekspedisi', async () => {
+  const courierA = await prismaTest.users.findUnique({ where: { username: 'test_courier_a' } })
+  await prismaTest.document_handovers.deleteMany({ where: { engine_number: ENG_A, document_type: 'STNK' } })
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_A,
+      document_type: 'STNK',
+      handover_mode: 'ekspedisi',
+      status: 'tersedia', // belum diserahkan ke ekspedisi
+      assigned_courier_id: courierA.id,
+      created_by: (await prismaTest.users.findUnique({ where: { username: 'test_admin' } })).id,
+    },
+  })
+
+  const res = await callAuthenticated('patch', `/api/showroom/document-handovers/${handover.id}/tracking-number`, adminCookie, {
+    tracking_number: 'RESI-TERLALU-DINI',
+  })
+  assert.equal(res.status, 400)
+})
+
+test('PATCH tracking-number ditolak (400) kalau kosong', async () => {
+  const courierA = await prismaTest.users.findUnique({ where: { username: 'test_courier_a' } })
+  await prismaTest.document_handovers.deleteMany({ where: { engine_number: ENG_A, document_type: 'STNK' } })
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_A,
+      document_type: 'STNK',
+      handover_mode: 'ekspedisi',
+      status: 'dikirim_ekspedisi',
+      assigned_courier_id: courierA.id,
+      created_by: (await prismaTest.users.findUnique({ where: { username: 'test_admin' } })).id,
+    },
+  })
+
+  const res = await callAuthenticated('patch', `/api/showroom/document-handovers/${handover.id}/tracking-number`, adminCookie, {
+    tracking_number: '   ',
   })
   assert.equal(res.status, 400)
 })
 
 test('akun Ekspedisi ditolak (403) mencoba step selain ekspedisi_ke_konsumen', async () => {
   const courierA = await prismaTest.users.findUnique({ where: { username: 'test_courier_a' } })
+  await prismaTest.document_handovers.deleteMany({ where: { engine_number: ENG_A, document_type: 'PLAT' } })
   const handover = await prismaTest.document_handovers.create({
     data: {
       engine_number: ENG_A,
@@ -136,12 +217,12 @@ test('akun Ekspedisi ditolak (403) mencoba step selain ekspedisi_ke_konsumen', a
   const res = await callAuthenticated('post', `/api/showroom/document-handovers/${handover.id}/steps`, courierACookie, {
     step_type: 'admin_ke_ekspedisi',
     received_by_name: 'siapa saja',
-    tracking_number: 'RESI-XXX',
   })
   assert.equal(res.status, 403)
 })
 
 test('akun Ekspedisi ditolak (403) untuk handover yang bukan miliknya', async () => {
+  await prismaTest.document_handovers.deleteMany({ where: { engine_number: ENG_A, document_type: 'BUKU_SERVICE' } })
   const handover = await prismaTest.document_handovers.create({
     data: {
       engine_number: ENG_A,

@@ -89,7 +89,7 @@ import { uploadImage } from '../middleware/upload.js'
 import {
   getDocumentHandovers, getDocumentHandoverSummary, getHandoverSalespeople, getCourierUsers,
   getAvailableDocuments, createDocumentHandover, updateDocumentHandover, deleteDocumentHandover, addHandoverStep, getHandoverSteps, getHandoverPhoto,
-  processShipmentFromPickupRequest,
+  processShipmentFromPickupRequest, updateTrackingNumber,
 } from '../controllers/documentHandoverController.js'
 import { uploadHandoverPhoto } from '../middleware/upload.js'
 
@@ -273,6 +273,7 @@ router.delete('/marketing-targets/:id', authenticate, marketingTargetWriteAccess
 const handoverReadAccess  = authorize('Admin', 'CRM', 'Service Advisor', 'Kepala Cabang', 'Kepala Bengkel', 'Salesman', 'Ekspedisi')
 const handoverWriteAccess = authorize('Admin', 'Salesman')
 const handoverStepAccess = authorize('Admin', 'Salesman', 'Ekspedisi')
+const handoverTrackingAccess = authorize('Admin', 'Ekspedisi')
 const handoverDeleteAccess = authorize('Admin', 'Kepala Cabang')
 router.get('/document-handovers', authenticate, handoverReadAccess, getDocumentHandovers)
 router.get('/document-handovers/summary', authenticate, handoverReadAccess, getDocumentHandoverSummary)
@@ -288,6 +289,7 @@ router.post('/document-handovers/:id/steps', authenticate, handoverStepAccess, u
   { name: 'photo_handover', maxCount: 1 }
 ]), addHandoverStep)
 router.get('/document-handovers/photo/:stepId', authenticate, handoverReadAccess, getHandoverPhoto)
+router.patch('/document-handovers/:id/tracking-number', authenticate, handoverTrackingAccess, updateTrackingNumber)
 
 // Pengiriman via ekspedisi -- ubah pickup request (delivery_method EKSPEDISI)
 // jadi baris document_handovers mode 'ekspedisi'. Gate sama dengan updatePickupRequest.

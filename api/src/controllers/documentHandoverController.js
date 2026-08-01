@@ -333,7 +333,7 @@ export async function createDocumentHandover(req, res, next) {
 export async function addHandoverStep(req, res, next) {
   try {
     const { id } = req.params
-    const { step_type, given_by_name, received_by_name, notes, tracking_number } = req.body
+    const { step_type, given_by_name, received_by_name, notes } = req.body
 
     const handover = await prisma.document_handovers.findUnique({
       where: { id: parseInt(id) },
@@ -380,12 +380,6 @@ export async function addHandoverStep(req, res, next) {
       }
     }
 
-    // Nomor resi wajib saat serah ke ekspedisi -- tanpa itu kiriman tidak
-    // bisa dilacak sama sekali, bertentangan dengan tujuan fitur ini.
-    if (step_type === 'admin_ke_ekspedisi' && !String(tracking_number || '').trim()) {
-      return res.status(400).json({ error: 'Nomor resi wajib diisi saat menyerahkan ke ekspedisi.' })
-    }
-
     let photo_url = null
     let photo_handover_url = null
     if (req.files) {
@@ -423,7 +417,6 @@ export async function addHandoverStep(req, res, next) {
           handover_mode: handoverMode,
           ...(step_type === 'admin_ke_sales' && received_by_name ? { salesman_name: received_by_name } : {}),
           ...(step_type === 'serah_ke_konsumen' && received_by_name ? { consumer_name: received_by_name } : {}),
-          ...(step_type === 'admin_ke_ekspedisi' ? { tracking_number: String(tracking_number).trim() } : {}),
         },
       }),
     ])
@@ -650,6 +643,51 @@ export async function processShipmentFromPickupRequest(req, res, next) {
     }
 
     res.status(201).json({ created, skipped, buku_service_handover: bukuServiceHandover })
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
+ * PATCH /showroom/document-handovers/:id/tracking-number
+ * Body: { tracking_number }
+ *
+ * Diisi/diupdate belakangan oleh akun Ekspedisi sendiri (atau Admin) --
+ * nomor resi umumnya belum ada saat admin baru menyerahkan paket secara
+ * fisik ke kurir, baru muncul setelah pihak ekspedisi memprosesnya di
+ * sistem mereka. Sengaja bukan bagian dari langkah admin_ke_ekspedisi.
+ * Hanya berlaku selama status masih dikirim_ekspedisi (dalam perjalanan).
+ */
+export async function updateTrackingNumber(req, res, next) {
+  try {
+    const id = parseInt(req.params.id)
+    const trackingNumber = String(req.body?.tracking_number || '').trim()
+    if (!trackingNumber) {
+      return res.status(400).json({ error: 'Nomor resi wajib diisi' })
+    }
+
+    const handover = await prisma.document_handovers.findUnique({ where: { id } })
+    if (!handover) {
+      return res.status(404).json({ error: 'Record serah terima tidak ditemukan' })
+    }
+    if (handover.handover_mode !== 'ekspedisi') {
+      return res.status(400).json({ error: 'Nomor resi hanya berlaku untuk pengiriman via ekspedisi' })
+    }
+    if (handover.status !== 'dikirim_ekspedisi') {
+      return res.status(400).json({ error: 'Nomor resi hanya bisa diisi/diubah selama status "Dikirim Ekspedisi"' })
+    }
+
+    if (req.user.role === 'Ekspedisi') {
+      if (!handover.assigned_courier_id || handover.assigned_courier_id !== req.user.userId) {
+        return res.status(403).json({ error: 'Akses ditolak. Kiriman ini tidak ditugaskan kepada Anda.' })
+      }
+    }
+
+    const updated = await prisma.document_handovers.update({
+      where: { id },
+      data: { tracking_number: trackingNumber },
+    })
+    res.json(updated)
   } catch (err) {
     next(err)
   }

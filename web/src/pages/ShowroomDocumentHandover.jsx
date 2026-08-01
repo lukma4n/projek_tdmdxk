@@ -9,6 +9,7 @@ import {
   getAvailableDocuments,
   createDocumentHandover,
   addHandoverStep,
+  updateTrackingNumber,
   getHandoverSteps,
   updateDocumentHandover,
   deleteDocumentHandover,
@@ -109,7 +110,6 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
     if (initialStepType === 'ekspedisi_ke_konsumen') return handover.consumer_name || ''
     return ''
   })
-  const [trackingNumber, setTrackingNumber] = useState('')
   const [notes, setNotes] = useState('')
   
   const [photoDoc, setPhotoDoc] = useState(null)
@@ -153,10 +153,6 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
       alert('Nama penerima wajib diisi')
       return
     }
-    if (stepType === 'admin_ke_ekspedisi' && !trackingNumber.trim()) {
-      alert('Nomor resi wajib diisi saat menyerahkan ke ekspedisi')
-      return
-    }
     setSaving(true)
     // Satu langkah yang sama diterapkan ke semua dokumen dalam grup --
     // berurutan (bukan Promise.all), supaya kalau ada yang gagal di tengah
@@ -170,7 +166,6 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
         formData.append('given_by_name', user?.name || '')
         formData.append('received_by_name', receivedBy)
         formData.append('notes', notes)
-        if (stepType === 'admin_ke_ekspedisi') formData.append('tracking_number', trackingNumber.trim())
         if (photoDoc) formData.append('photo_doc', photoDoc)
         if (photoHandover) formData.append('photo_handover', photoHandover)
         await addHandoverStep(h.id, formData)
@@ -267,19 +262,6 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
               className="w-full px-4 py-2.5 border border-border bg-hover text-muted rounded-xl text-sm focus:outline-none cursor-not-allowed font-medium"
             />
           </div>
-
-          {/* Nomor resi -- cuma saat serah ke ekspedisi */}
-          {stepType === 'admin_ke_ekspedisi' && (
-            <div>
-              <label className="block text-sm font-semibold text-text mb-1.5">Nomor Resi *</label>
-              <input
-                value={trackingNumber}
-                onChange={(e) => setTrackingNumber(e.target.value)}
-                placeholder="Contoh: JX1234567890"
-                className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-              />
-            </div>
-          )}
 
           {/* Received by */}
           <div>
@@ -430,6 +412,65 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
         onCapture={handleCameraCapture}
         onClose={() => setCameraTarget(null)}
       />
+    </div>
+  )
+}
+
+// ─── Tracking Number Modal ───
+// Diisi/diupdate belakangan oleh akun Ekspedisi (atau Admin) setelah resi
+// benar-benar ada -- sengaja terpisah dari langkah Serahkan ke Ekspedisi,
+// karena nomor resi umumnya belum ada saat admin baru menyerahkan paket.
+function TrackingNumberModal({ handover, onClose, onSaved }) {
+  const [value, setValue] = useState(handover.tracking_number || '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!value.trim()) {
+      setError('Nomor resi wajib diisi')
+      return
+    }
+    setSaving(true)
+    setError('')
+    try {
+      await updateTrackingNumber(handover.id, value.trim())
+      onSaved()
+      onClose()
+    } catch (err) {
+      setError(err.message || 'Gagal menyimpan')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-2xl bg-panel p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-base font-bold text-text-strong">{handover.tracking_number ? 'Ubah' : 'Isi'} Nomor Resi</h3>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-faint hover:bg-hover"><X size={18} /></button>
+        </div>
+        <p className="mb-3 text-xs text-muted">{handover.engine_number} · {DOC_TYPE_LABELS[handover.document_type]?.label || handover.document_type}</p>
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Contoh: JX1234567890"
+          autoFocus
+          className="w-full rounded-xl border border-border bg-hover px-3.5 py-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+        />
+        {error && <p className="mt-2 rounded-lg bg-danger-soft px-3 py-2 text-xs font-semibold text-danger">{error}</p>}
+        <div className="mt-4 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-xl px-4 py-2 text-sm font-semibold text-muted hover:bg-hover">Batal</button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white hover:brightness-110 disabled:opacity-50"
+          >
+            {saving && <Loader2 size={14} className="animate-spin" />} Simpan
+          </button>
+        </div>
+      </form>
     </div>
   )
 }
@@ -779,6 +820,10 @@ function EditHandoverModal({ handover, salespeople, onClose, onSaved }) {
 export default function ShowroomDocumentHandover() {
   const { user } = useAuthStore()
   const isSalesman = user?.role === 'Salesman'
+  // Server sudah membatasi getDocumentHandovers utk role Ekspedisi ke kiriman
+  // miliknya sendiri, jadi cukup cek role di sini (tidak perlu cek kepemilikan
+  // per-baris lagi) untuk menampilkan aksi isi/ubah resi.
+  const canEditTracking = user?.role === 'Admin' || user?.role === 'Ekspedisi'
 
   const [items, setItems] = useState([])
   const [summary, setSummary] = useState(null)
@@ -797,6 +842,7 @@ export default function ShowroomDocumentHandover() {
   const [handoverModal, setHandoverModal] = useState(null) // { handover, type }
   const [editHandoverModal, setEditHandoverModal] = useState(null)
   const [timelineId, setTimelineId] = useState(null)
+  const [trackingModal, setTrackingModal] = useState(null)
 
   // Expand detail
   const [expandedId, setExpandedId] = useState(null)
@@ -1017,6 +1063,14 @@ export default function ShowroomDocumentHandover() {
                             (>1 dokumen), kontrol ini dipindah ke bagian expand di bawah. */}
                         {!isMulti && (
                           <>
+                            {canEditTracking && item.handover_mode === 'ekspedisi' && item.status === 'dikirim_ekspedisi' && (
+                              <button
+                                onClick={() => setTrackingModal(item)}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-warning-soft text-warning rounded-lg text-xs font-semibold hover:brightness-95 transition-colors"
+                              >
+                                <Truck size={14} /> {item.tracking_number ? 'Ubah Resi' : 'Isi Resi'}
+                              </button>
+                            )}
                             <button
                               onClick={() => setTimelineId(item.id)}
                               className="flex items-center gap-1.5 px-3 py-2 bg-hover text-muted rounded-lg text-xs font-medium hover:bg-hover transition-colors"
@@ -1075,6 +1129,11 @@ export default function ShowroomDocumentHandover() {
                                   ) : <span className="text-xs text-faint">Belum ada langkah</span>}
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
+                                  {canEditTracking && docItem.handover_mode === 'ekspedisi' && docItem.status === 'dikirim_ekspedisi' && (
+                                    <button onClick={() => setTrackingModal(docItem)} className="p-1.5 text-warning hover:bg-warning-soft rounded-md transition-colors" title={docItem.tracking_number ? 'Ubah Resi' : 'Isi Resi'}>
+                                      <Truck size={14} />
+                                    </button>
+                                  )}
                                   <button onClick={() => setTimelineId(docItem.id)} className="p-1.5 text-faint hover:text-muted hover:bg-hover rounded-md transition-colors" title="Riwayat">
                                     <Clock size={14} />
                                   </button>
@@ -1175,6 +1234,7 @@ export default function ShowroomDocumentHandover() {
       {handoverModal && <HandoverStepModal handovers={handoverModal.handovers} type={handoverModal.type} salespeople={salespeople} onClose={() => setHandoverModal(null)} onSaved={loadData} />}
       {timelineId && <TimelineModal handoverId={timelineId} onClose={() => setTimelineId(null)} />}
       {editHandoverModal && <EditHandoverModal handover={editHandoverModal} salespeople={salespeople} onClose={() => setEditHandoverModal(null)} onSaved={loadData} />}
+      {trackingModal && <TrackingNumberModal handover={trackingModal} onClose={() => setTrackingModal(null)} onSaved={loadData} />}
     </div>
   )
 }

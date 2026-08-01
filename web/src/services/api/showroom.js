@@ -337,6 +337,7 @@ export const getAvailableDocuments = (params = {}) => {
 export const createDocumentHandover = (data) => fetchWithAuth('/showroom/document-handovers', { method: 'POST', body: data })
 export const getHandoverSteps = (id) => fetchWithAuth(`/showroom/document-handovers/${id}/steps`)
 export const addHandoverStep = (id, formData) => fetchWithAuth(`/showroom/document-handovers/${id}/steps`, { method: 'POST', body: formData, headers: {} })
+export const updateTrackingNumber = (id, trackingNumber) => fetchWithAuth(`/showroom/document-handovers/${id}/tracking-number`, { method: 'PATCH', body: { tracking_number: trackingNumber } })
 export const updateDocumentHandover = (id, data) => fetchWithAuth(`/showroom/document-handovers/${id}`, { method: 'PUT', body: data })
 export const deleteDocumentHandover = (id) => fetchWithAuth(`/showroom/document-handovers/${id}`, { method: 'DELETE' })
 
