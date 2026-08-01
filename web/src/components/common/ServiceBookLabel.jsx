@@ -21,7 +21,7 @@ export default function ServiceBookLabel({ item, onClose }) {
         <span class="meta-label">NAMA</span>
         <span class="name-value">${escapeHtml(item.customer_name)}</span>
         <span class="meta-label">ALAMAT</span>
-        <span class="meta-value">${escapeHtml(item.alamat)}</span>
+        <span class="address-value">${escapeHtml(item.alamat)}</span>
         <span class="meta-label">TGL PEMBELIAN</span>
         <span class="meta-value">${escapeHtml(item.so_date)}</span>
       </div>
@@ -41,12 +41,14 @@ export default function ServiceBookLabel({ item, onClose }) {
           @page { size: A4 portrait; margin: 0; }
           body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
           .page { display: grid; grid-template-columns: repeat(3, 64mm); grid-auto-rows: 32mm; width: 192mm; margin-left: 9mm; margin-top: 2mm; }
-          .label { width: 64mm; height: 32mm; padding: 4.5mm 4.5mm 2mm; box-sizing: border-box; overflow: hidden; }
-          .header { font-size: 8px; font-weight: bold; color: #1e40af; margin-bottom: 0.8mm; }
-          .meta { font-size: 7px; color: #111827; display: grid; grid-template-columns: 20mm 1fr; gap: 0.3mm 0.8mm; }
+          .label { width: 64mm; height: 32mm; padding: 3mm 4.5mm 2mm; box-sizing: border-box; overflow: hidden; }
+          .header { font-size: 8px; font-weight: bold; color: #1e40af; margin-bottom: 0.6mm; }
+          .meta { font-size: 7px; color: #111827; display: grid; grid-template-columns: 19mm 1fr; gap: 0.2mm 0.8mm; line-height: 1.1; align-items: start; }
           .meta-label { color: #111827; }
           .meta-value { font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           .name-value { font-weight: bold; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          /* ALAMAT boleh wrap maksimal 2 baris agar tidak terpotong */
+          .address-value { font-weight: 600; color: #111827; white-space: normal; line-height: 1.05; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
           @media print { body { -webkit-print-color-adjust: exact; } }
         </style>
       </head>
@@ -101,7 +103,7 @@ export default function ServiceBookLabel({ item, onClose }) {
                   </div>
                   <div className="flex">
                     <span className="w-[85px] shrink-0 text-slate-900 whitespace-nowrap">ALAMAT</span>
-                    <span className="font-semibold whitespace-nowrap">{item.alamat}</span>
+                    <span className="font-semibold">{item.alamat}</span>
                   </div>
                   <div className="flex">
                     <span className="w-[85px] shrink-0 text-slate-900 whitespace-nowrap">TGL BELI</span>
