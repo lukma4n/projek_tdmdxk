@@ -912,14 +912,21 @@ export default function ShowroomDocumentHandover() {
     getHandoverSalespeople().then(setSalespeople).catch(() => {})
   }, [])
 
-  // Dokumen dengan engine_number & status sama digabung jadi 1 kartu (mis.
-  // BPKB + Buku Service yang dibundel bersamaan) -- satu tombol Serahkan
+  // Dokumen dengan engine_number, status & mode sama digabung jadi 1 kartu
+  // (mis. BPKB + Buku Service yang dibundel bersamaan) -- satu tombol Serahkan
   // menjalankan langkah yang sama untuk semuanya sekaligus. Kalau statusnya
   // sudah berbeda (diproses terpisah), tetap tampil sebagai baris sendiri.
+  //
+  // handover_mode WAJIB ikut jadi kunci: satu no mesin bisa punya STNK via
+  // ekspedisi dan Plat serah langsung sekaligus. Kalau digabung, modal cuma
+  // membaca mode dokumen pertama lalu menerapkan langkahnya ke semua anggota
+  // grup -- mendorong dokumen non-ekspedisi ke status "dikirim_ekspedisi"
+  // tanpa kurir, yang tidak bisa dilanjutkan siapa pun.
   const groupedItems = useMemo(() => {
+    const groupKeyOf = (item) => `${item.engine_number}:${item.status}:${item.handover_mode || ''}`
     const byKey = new Map()
     for (const item of items) {
-      const key = `${item.engine_number}:${item.status}`
+      const key = groupKeyOf(item)
       if (!byKey.has(key)) byKey.set(key, [])
       byKey.get(key).push(item)
     }
@@ -927,7 +934,7 @@ export default function ShowroomDocumentHandover() {
     const seen = new Set()
     for (const item of items) {
       if (seen.has(item.id)) continue
-      const group = byKey.get(`${item.engine_number}:${item.status}`)
+      const group = byKey.get(groupKeyOf(item))
       group.forEach((g) => seen.add(g.id))
       groups.push(group)
     }

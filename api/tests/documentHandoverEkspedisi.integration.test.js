@@ -131,7 +131,57 @@ test('ekspedisi_ke_konsumen ditolak (400) tanpa foto penyerahan fisik', async ()
   assert.equal(unchanged.status, 'dikirim_ekspedisi', 'status tidak boleh berubah kalau ditolak karena foto kosong')
 })
 
+test('admin_ke_ekspedisi ditolak (400) pada dokumen non-ekspedisi -- cegah status buntu', async () => {
+  // Kalau lolos, dokumen jadi status dikirim_ekspedisi tanpa kurir: akun
+  // Ekspedisi ditolak (bukan miliknya) dan serah_ke_konsumen tidak menerima
+  // status itu -- buntu permanen, cuma bisa dibereskan lewat bedah database.
+  await prismaTest.document_handovers.deleteMany({ where: { engine_number: ENG_B, document_type: 'PLAT' } })
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_B,
+      document_type: 'PLAT',
+      handover_mode: 'langsung',
+      status: 'tersedia',
+      created_by: (await prismaTest.users.findUnique({ where: { username: 'test_admin' } })).id,
+    },
+  })
+
+  const res = await callAuthenticated('post', `/api/showroom/document-handovers/${handover.id}/steps`, adminCookie, {
+    step_type: 'admin_ke_ekspedisi',
+    received_by_name: 'Pos Indonesia',
+  })
+  assert.equal(res.status, 400)
+
+  const unchanged = await prismaTest.document_handovers.findUnique({ where: { id: handover.id } })
+  assert.equal(unchanged.status, 'tersedia')
+  assert.equal(unchanged.handover_mode, 'langsung')
+})
+
+test('admin_ke_ekspedisi ditolak (400) kalau mode ekspedisi tapi kurir belum ditugaskan', async () => {
+  await prismaTest.document_handovers.deleteMany({ where: { engine_number: ENG_B, document_type: 'BPKB' } })
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_B,
+      document_type: 'BPKB',
+      handover_mode: 'ekspedisi',
+      status: 'tersedia',
+      assigned_courier_id: null,
+      created_by: (await prismaTest.users.findUnique({ where: { username: 'test_admin' } })).id,
+    },
+  })
+
+  const res = await callAuthenticated('post', `/api/showroom/document-handovers/${handover.id}/steps`, adminCookie, {
+    step_type: 'admin_ke_ekspedisi',
+    received_by_name: 'Pos Indonesia',
+  })
+  assert.equal(res.status, 400)
+
+  const unchanged = await prismaTest.document_handovers.findUnique({ where: { id: handover.id } })
+  assert.equal(unchanged.status, 'tersedia', 'status tidak boleh berubah tanpa kurir yang ditugaskan')
+})
+
 test('serah_ke_konsumen oleh Salesman ditolak (400) tanpa foto penyerahan fisik', async () => {
+  await prismaTest.document_handovers.deleteMany({ where: { engine_number: ENG_B, document_type: 'BPKB' } })
   const handover = await prismaTest.document_handovers.create({
     data: {
       engine_number: ENG_B,
@@ -179,6 +229,7 @@ test('serah_ke_konsumen oleh Salesman berhasil dengan foto penyerahan fisik', as
 })
 
 test('serah_ke_konsumen oleh Admin langsung TIDAK wajib foto (serah terima di counter)', async () => {
+  await prismaTest.document_handovers.deleteMany({ where: { engine_number: ENG_B, document_type: 'PLAT' } })
   const handover = await prismaTest.document_handovers.create({
     data: {
       engine_number: ENG_B,

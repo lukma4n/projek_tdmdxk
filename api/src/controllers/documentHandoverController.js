@@ -380,6 +380,20 @@ export async function addHandoverStep(req, res, next) {
       }
     }
 
+    // Tanpa penjaga ini, dokumen non-ekspedisi (atau ekspedisi tanpa kurir
+    // ditugaskan) bisa didorong ke status "dikirim_ekspedisi" dan jadi BUNTU
+    // PERMANEN: akun Ekspedisi ditolak karena assigned_courier_id kosong,
+    // sementara serah_ke_konsumen tidak menerima status itu. Satu-satunya
+    // jalan keluar cuma bedah database.
+    if (step_type === 'admin_ke_ekspedisi') {
+      if (handover.handover_mode !== 'ekspedisi') {
+        return res.status(400).json({ error: 'Dokumen ini bukan pengiriman via ekspedisi. Proses lewat Permintaan Ambil Dokumen dulu agar alamat & akun ekspedisinya terisi.' })
+      }
+      if (!handover.assigned_courier_id) {
+        return res.status(400).json({ error: 'Dokumen ini belum punya akun ekspedisi yang ditugaskan.' })
+      }
+    }
+
     let photo_url = null
     let photo_handover_url = null
     if (req.files) {

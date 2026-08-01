@@ -129,12 +129,25 @@ function ProcessShipmentModal({ row, onClose, onSaved }) {
     setSaving(true)
     setError('')
     try {
-      await api.processShipmentFromPickupRequest(row.id, {
+      const res = await api.processShipmentFromPickupRequest(row.id, {
         document_types: [...selectedTypes],
         assigned_courier_id: Number(courierId),
         include_buku_service: includeBuku,
       })
-      onSaved()
+      // Backend melewati dokumen yang sudah punya record serah terima
+      // (skipped). Kalau tidak ada satu pun yang jadi, permintaan ini juga
+      // tidak ditandai selesai -- jangan tampilkan pesan sukses palsu.
+      const created = res?.created?.length || 0
+      const skipped = (res?.skipped || []).map(documentTypeLabel)
+      if (created === 0 && !res?.buku_service_handover) {
+        setError(
+          skipped.length > 0
+            ? `Tidak ada yang diproses. Sudah ada record serah terima untuk: ${skipped.join(', ')}. Cek di Document Handover.`
+            : 'Tidak ada dokumen yang diproses.'
+        )
+        return
+      }
+      onSaved({ skipped })
       onClose()
     } catch (err) {
       setError(err.message || 'Gagal memproses pengiriman')
@@ -231,9 +244,13 @@ export default function ShowroomPickupRequests() {
     void Promise.resolve().then(load)
   }, [load])
 
-  const handleShipmentProcessed = () => {
+  const handleShipmentProcessed = (result) => {
     load()
-    setSuccessNotice('Pengiriman berhasil diproses. Lanjutkan langkah "Serahkan ke Ekspedisi" di Document Handover, atau proses permintaan lain dulu.')
+    const skipped = result?.skipped || []
+    setSuccessNotice(
+      'Pengiriman berhasil diproses. Lanjutkan langkah "Serahkan ke Ekspedisi" di Document Handover, atau proses permintaan lain dulu.' +
+      (skipped.length > 0 ? ` Dilewati (sudah ada record serah terima): ${skipped.join(', ')}.` : '')
+    )
   }
 
   const handleUpdateStatus = async (id, status) => {
