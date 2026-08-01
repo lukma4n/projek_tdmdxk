@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../services/api'
-import { Loader2, RefreshCw, MessageCircle, AlertCircle, IdCard, Truck, X, Package } from 'lucide-react'
+import { Loader2, RefreshCw, MessageCircle, AlertCircle, CheckCircle2, IdCard, Truck, X, Package, ArrowRight } from 'lucide-react'
 import PageHeader from '../components/ui/PageHeader'
 import Table from '../components/ui/Table'
 import Badge from '../components/ui/Badge'
@@ -208,6 +209,7 @@ export default function ShowroomPickupRequests() {
   const [updatingId, setUpdatingId] = useState(null)
   const [convertModal, setConvertModal] = useState(null)
   const [shipmentModal, setShipmentModal] = useState(null)
+  const [successNotice, setSuccessNotice] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -227,6 +229,11 @@ export default function ShowroomPickupRequests() {
   useEffect(() => {
     void Promise.resolve().then(load)
   }, [load])
+
+  const handleShipmentProcessed = () => {
+    load()
+    setSuccessNotice('Pengiriman berhasil diproses. Lanjutkan langkah "Serahkan ke Ekspedisi" di Document Handover, atau proses permintaan lain dulu.')
+  }
 
   const handleUpdateStatus = async (id, status) => {
     setUpdatingId(id)
@@ -419,6 +426,22 @@ export default function ShowroomPickupRequests() {
         </div>
       )}
 
+      {successNotice && (
+        <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-emerald-400/30 bg-success-soft p-3 text-sm text-success">
+          <CheckCircle2 size={18} className="shrink-0" />
+          <span className="flex-1">{successNotice}</span>
+          <Link
+            to="/showroom/document-handover"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-success px-3 py-1.5 text-xs font-bold text-white hover:brightness-110"
+          >
+            Buka Document Handover <ArrowRight size={12} />
+          </Link>
+          <button type="button" onClick={() => setSuccessNotice('')} className="shrink-0 rounded-lg p-1 text-success hover:bg-success/10">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       <div className="rounded-xl border border-border bg-panel shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center py-12 text-muted">
@@ -448,7 +471,7 @@ export default function ShowroomPickupRequests() {
         <ConvertToShipmentModal row={convertModal} onClose={() => setConvertModal(null)} onSaved={load} />
       )}
       {shipmentModal && (
-        <ProcessShipmentModal row={shipmentModal} onClose={() => setShipmentModal(null)} onSaved={load} />
+        <ProcessShipmentModal row={shipmentModal} onClose={() => setShipmentModal(null)} onSaved={handleShipmentProcessed} />
       )}
     </div>
   )
