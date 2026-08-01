@@ -15,6 +15,9 @@ import {
   getStckSalesLookup,
 } from '../controllers/showroomStckController.js'
 import {
+  cancelUnitBookingAdmin,
+} from '../controllers/unitBookingController.js'
+import {
   getStockUnits,
   exportStockUnitsExcel,
   getStockUnitSummary,
@@ -123,6 +126,7 @@ router.get('/stock-units/summary', authenticate, showroomAccess, getStockUnitSum
 router.get('/stock-units/filters', authenticate, showroomStockUnitFilterAccess, getStockUnitFilters)
 router.get('/stock-units/:engineNumber/ksu', authenticate, showroomAccess, getUnitKsu)
 router.patch('/stock-units/:engineNumber/ksu', authenticate, showroomAccess, updateUnitKsu)
+router.patch('/stock-units/:engineNumber/booking/cancel', authenticate, showroomAccess, cancelUnitBookingAdmin)
 router.post('/stock-units/preview', authenticate, authorizeMenu('IMPORT_SHOWROOM_STOCK_UNIT'), upload.single('file'), previewStockUnit)
 router.post('/stock-units/import', authenticate, authorizeMenu('IMPORT_SHOWROOM_STOCK_UNIT'), upload.single('file'), uploadStockUnit)
 

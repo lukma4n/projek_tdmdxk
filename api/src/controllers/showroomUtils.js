@@ -9,6 +9,21 @@ export const PRODUCT_CODE_ALIASES = {
   MV0: 'MV1',
 }
 
+export function normalizePhone(phone) {
+  if (!phone) return ''
+  return String(phone).replace(/\D/g, '')
+}
+
+// Status unit (engine_state dari import) → label ramah untuk sales/publik.
+const UNIT_STATE_MAP = {
+  'Stock RFS': { key: 'ready', label: 'Siap Jual' },
+  'Stock Reserved': { key: 'reserved', label: 'Dipesan' },
+  'Stock NRFS': { key: 'not_ready', label: 'Belum Siap' },
+}
+export function mapUnitState(state) {
+  return UNIT_STATE_MAP[state] || { key: 'other', label: state || 'Lainnya' }
+}
+
 export const DEFAULT_BATTERY_BY_SERIES = {
   'BEAT SPORTY': 'GTZ5S',
   'BEAT STREET': 'GTZ5S',

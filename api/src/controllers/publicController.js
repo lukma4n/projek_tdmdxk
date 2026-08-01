@@ -2,7 +2,8 @@ import jwt from 'jsonwebtoken'
 import { randomUUID } from 'crypto'
 import { prisma } from '../config/db.js'
 import { isTokenUsed, markTokenUsed } from '../services/usedTokenStore.js'
-import { PRODUCT_CODE_ALIASES, getAgingFifoDays, getAgingTagByIncomingDate } from './showroomUtils.js'
+import { PRODUCT_CODE_ALIASES, getAgingFifoDays, getAgingTagByIncomingDate, normalizePhone, mapUnitState } from './showroomUtils.js'
+import { getActiveBookingsMap } from './unitBookingController.js'
 
 // Umur token permintaan ambil dokumen yang dikeluarkan /check setelah verifikasi.
 // Konsumen sudah terverifikasi identitasnya saat /check — token ini hanya
@@ -22,24 +23,6 @@ function eligiblePickupDocs(track) {
   const forConsumer = !(track.finance_company && String(track.finance_company).trim())
   if (forConsumer && track.tgl_terima_bpkb && !track.tgl_penyerahan_bpkb) docs.push('BPKB')
   return docs
-}
-
-/**
- * Normalize phone number: strip all non-digits
- */
-function normalizePhone(phone) {
-  if (!phone) return ''
-  return String(phone).replace(/\D/g, '')
-}
-
-// Status unit (engine_state dari import) → label ramah untuk sales/publik.
-const UNIT_STATE_MAP = {
-  'Stock RFS': { key: 'ready', label: 'Siap Jual' },
-  'Stock Reserved': { key: 'reserved', label: 'Dipesan' },
-  'Stock NRFS': { key: 'not_ready', label: 'Belum Siap' },
-}
-function mapUnitState(state) {
-  return UNIT_STATE_MAP[state] || { key: 'other', label: state || 'Lainnya' }
 }
 
 // Warna tersimpan format "HM-HITAM MERAH" (kode-nama). Ambil bagian nama agar
@@ -93,6 +76,10 @@ export async function checkStockUnits(req, res, next) {
       : []
     const otrByCode = new Map(otrRows.map((r) => [r.product_code, r.otr_price]))
     const otrOf = (u) => otrByCode.get(PRODUCT_CODE_ALIASES[u.product_type] || u.product_type) ?? null
+
+    // Booking aktif per unit -- hanya nama & batas waktu yang publik, nomor
+    // HP tidak pernah dikirim ke response ini.
+    const bookingByEngine = await getActiveBookingsMap(units.map((u) => u.engine_number).filter(Boolean))
 
     // Daftar lokasi (selalu semua, tidak terpengaruh filter) untuk dropdown.
     const availableLocations = [...new Set(units.map((u) => u.location || 'Lainnya'))].sort((a, b) => a.localeCompare(b))
@@ -163,6 +150,12 @@ export async function checkStockUnits(req, res, next) {
         year: u.year || null,
         status: st.key,
         status_label: st.label,
+        booking: bookingByEngine.has(u.engine_number)
+          ? {
+              salesman_name: bookingByEngine.get(u.engine_number).salesman_name,
+              expires_at: bookingByEngine.get(u.engine_number).expires_at,
+            }
+          : null,
       })
     }
 

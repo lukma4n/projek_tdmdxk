@@ -7,6 +7,7 @@ import { clampLimit } from '../utils/pagination.js'
 import { prisma } from '../config/db.js'
 import { withImportLock } from '../services/importLockService.js'
 import { ensureNoActiveShowroomOpname } from './showroomOpnameController.js'
+import { attachBookingToStockUnits } from './unitBookingController.js'
 import { runShowroomSnapshotImport, getSnapshotPreviewMeta } from './showroomImport.js'
 import {
   PRODUCT_CODE_ALIASES,
@@ -211,7 +212,8 @@ export async function getStockUnits(req, res, next) {
       prisma.showroom_stock_units.count({ where }),
     ])
 
-    const enrichedData = await attachKsuToStockUnits(await enrichStockUnitsWithPrices(data), prisma)
+    const withKsu = await attachKsuToStockUnits(await enrichStockUnitsWithPrices(data), prisma)
+    const enrichedData = await attachBookingToStockUnits(withKsu)
 
     res.json({ data: enrichedData, pagination: { page: pageInt, limit: limitInt, total, totalPages: Math.ceil(total / limitInt) } })
   } catch (error) {

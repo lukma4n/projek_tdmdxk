@@ -41,6 +41,7 @@ model users {
   document_handover_steps document_handover_steps[]
   login_logs login_logs[]
   service_labels_printed customers[]
+  unit_bookings_cancelled showroom_unit_bookings[]
 }
 
 // Audit login & deteksi penyalahgunaan akun (sharing, login ditolak, dsb).
@@ -429,6 +430,25 @@ model showroom_stock_units {
   @@index([series])
   @@index([engine_state])
   @@index([stock_aging_days])
+}
+
+// Sengaja TIDAK memakai relasi FK Prisma ke showroom_stock_units (pola sama
+// dengan showroom_unit_ksu_checks) -- saat import stock ulang, unit yang
+// terjual/hilang dari file AHM dihapus via deleteMany (showroomImport.js).
+// FK ke engine_number akan memblokir deleteMany itu.
+model showroom_unit_bookings {
+  id                 Int       @id @default(autoincrement())
+  engine_number      String
+  salesman_name      String
+  salesman_phone     String
+  expires_at         DateTime
+  created_at         DateTime  @default(now())
+  cancelled_at       DateTime?
+  cancelled_by_admin Int?
+
+  cancelled_by_user users? @relation(fields: [cancelled_by_admin], references: [id])
+
+  @@index([engine_number])
 }
 
 model showroom_otr_prices {

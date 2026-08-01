@@ -52,6 +52,7 @@ export const getShowroomUnitKsu = (engineNumber) => fetchWithAuth(`/showroom/sto
 export const updateShowroomUnitKsu = (engineNumber, data) => fetchWithAuth(`/showroom/stock-units/${encodeURIComponent(engineNumber)}/ksu`, { method: 'PATCH', body: data })
 export const getShowroomKsuStandards = () => fetchWithAuth('/showroom/ksu-standards')
 export const updateShowroomKsuStandard = (productType, data) => fetchWithAuth(`/showroom/ksu-standards/${encodeURIComponent(productType)}`, { method: 'PATCH', body: data })
+export const cancelShowroomUnitBooking = (engineNumber) => fetchWithAuth(`/showroom/stock-units/${encodeURIComponent(engineNumber)}/booking/cancel`, { method: 'PATCH' })
 
 // Upload imports
 export const previewShowroomStockUnit = (file) => {

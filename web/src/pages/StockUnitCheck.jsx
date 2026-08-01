@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Search, Bike, Sun, Moon, ArrowLeft, Loader2, AlertCircle,
-  ChevronDown, MapPin, Clock, PackageCheck, Tag,
+  ChevronDown, MapPin, Clock, PackageCheck, Tag, CalendarClock, X,
 } from 'lucide-react'
 import { useThemeStore } from '../stores/themeStore'
 
@@ -27,6 +27,141 @@ function formatOtrRange(min, max) {
   return min === max ? `Rp ${jt(min)} jt` : `Rp ${jt(min)}–${jt(max)} jt`
 }
 
+function formatShortDate(value) {
+  if (!value) return '—'
+  return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+}
+
+async function createBooking(engineNumber, payload) {
+  const res = await fetch(`${API_BASE}/public/stock-units/${engineNumber}/booking`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json.error || 'Gagal booking unit')
+  return json
+}
+
+async function cancelBooking(engineNumber, salesmanPhone) {
+  const res = await fetch(`${API_BASE}/public/stock-units/${engineNumber}/booking`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ salesman_phone: salesmanPhone }),
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json.error || 'Gagal membatalkan booking')
+  return json
+}
+
+// Modal booking: dua mode berbagi satu komponen karena bentuknya mirip
+// (form pendek + submit + pesan error), hanya field & aksi yang beda.
+function BookingModal({ engineNumber, mode, currentBookingName, onClose, onSuccess }) {
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [duration, setDuration] = useState(1)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setError('')
+    setSubmitting(true)
+    try {
+      if (mode === 'create') {
+        await createBooking(engineNumber, { salesman_name: name, salesman_phone: phone, duration_days: duration })
+      } else {
+        await cancelBooking(engineNumber, phone)
+      }
+      onSuccess()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-sm rounded-2xl border border-border bg-panel p-5 shadow-2xl"
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-black text-text-strong">
+            {mode === 'create' ? 'Booking Unit' : 'Batalkan Booking'}
+          </h2>
+          <button type="button" onClick={onClose} className="rounded-lg p-1 text-faint hover:bg-hover" aria-label="Tutup">
+            <X size={18} />
+          </button>
+        </div>
+
+        {mode === 'cancel' && (
+          <p className="mb-3 text-xs font-semibold text-muted">
+            Sedang dibooking oleh <span className="text-text-strong">{currentBookingName}</span>. Masukkan nomor HP yang dipakai saat booking untuk membatalkan.
+          </p>
+        )}
+
+        {mode === 'create' && (
+          <div className="mb-3">
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-faint">Nama Sales</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full rounded-xl border border-border bg-bg px-3 py-2.5 text-sm font-medium text-text outline-none focus:border-accent"
+            />
+          </div>
+        )}
+
+        <div className="mb-3">
+          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-faint">Nomor HP</label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+            placeholder="08xxxxxxxxxx"
+            className="w-full rounded-xl border border-border bg-bg px-3 py-2.5 text-sm font-medium text-text outline-none focus:border-accent"
+          />
+        </div>
+
+        {mode === 'create' && (
+          <div className="mb-4">
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-faint">Durasi Booking</label>
+            <select
+              value={duration}
+              onChange={(e) => setDuration(Number(e.target.value))}
+              className="w-full appearance-none rounded-xl border border-border bg-bg px-3 py-2.5 text-sm font-medium text-text outline-none focus:border-accent"
+            >
+              <option value={1}>1 hari</option>
+              <option value={3}>3 hari</option>
+              <option value={7}>7 hari</option>
+            </select>
+          </div>
+        )}
+
+        {error && (
+          <p className="mb-3 rounded-lg bg-danger-soft px-3 py-2 text-xs font-semibold text-danger">{error}</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-2.5 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+        >
+          {submitting && <Loader2 size={16} className="animate-spin" />}
+          {mode === 'create' ? 'Booking Unit Ini' : 'Batalkan Booking'}
+        </button>
+      </form>
+    </div>
+  )
+}
+
 function StatusBadge({ status, label }) {
   return (
     <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${STATUS_STYLE[status] || STATUS_STYLE.other}`}>
@@ -35,9 +170,15 @@ function StatusBadge({ status, label }) {
   )
 }
 
-function ModelCard({ model }) {
+function ModelCard({ model, onBookingChange }) {
   const [open, setOpen] = useState(false)
+  const [bookingModal, setBookingModal] = useState(null) // { engineNumber, mode, currentBookingName }
   const otrLabel = formatOtrRange(model.otr_min, model.otr_max)
+
+  const handleBookingSuccess = () => {
+    setBookingModal(null)
+    onBookingChange()
+  }
   return (
     <div className="rounded-2xl border border-border bg-panel shadow-sm transition hover:border-border-strong">
       <button
@@ -137,6 +278,7 @@ function ModelCard({ model }) {
                     <th className="px-3 py-2 font-bold">No. Rangka</th>
                     <th className="px-3 py-2 font-bold">Lokasi</th>
                     <th className="px-3 py-2 font-bold">Status</th>
+                    <th className="px-3 py-2 font-bold">Booking</th>
                     <th className="px-3 py-2 text-right font-bold">OTR</th>
                     <th className="px-3 py-2 text-center font-bold">Tag</th>
                     <th className="px-3 py-2 text-right font-bold">Umur</th>
@@ -153,6 +295,26 @@ function ModelCard({ model }) {
                         <td className="px-3 py-2 font-mono text-[11.5px] text-muted">{u.chassis_number || '—'}</td>
                         <td className="px-3 py-2 text-muted">{u.location}</td>
                         <td className="px-3 py-2"><StatusBadge status={u.status} label={u.status_label} /></td>
+                        <td className="px-3 py-2">
+                          {u.booking ? (
+                            <button
+                              type="button"
+                              onClick={() => setBookingModal({ engineNumber: u.engine_number, mode: 'cancel', currentBookingName: u.booking.salesman_name })}
+                              className="inline-flex items-center gap-1 rounded-md bg-warning-soft px-1.5 py-0.5 text-[10px] font-bold text-warning hover:brightness-95"
+                              title="Klik untuk batalkan booking"
+                            >
+                              <CalendarClock size={11} /> {u.booking.salesman_name} · s.d. {formatShortDate(u.booking.expires_at)}
+                            </button>
+                          ) : u.status === 'ready' ? (
+                            <button
+                              type="button"
+                              onClick={() => setBookingModal({ engineNumber: u.engine_number, mode: 'create' })}
+                              className="rounded-md bg-accent-soft px-2 py-0.5 text-[10.5px] font-bold text-accent hover:brightness-95"
+                            >
+                              Booking
+                            </button>
+                          ) : <span className="text-faint">—</span>}
+                        </td>
                         <td className="px-3 py-2 text-right font-mono text-muted">{formatRp(u.otr_price)}</td>
                         <td className="px-3 py-2 text-center">
                           {u.aging_tag && u.aging_tag !== '-' ? (
@@ -173,6 +335,16 @@ function ModelCard({ model }) {
           </div>
         </div>
       )}
+
+      {bookingModal && (
+        <BookingModal
+          engineNumber={bookingModal.engineNumber}
+          mode={bookingModal.mode}
+          currentBookingName={bookingModal.currentBookingName}
+          onClose={() => setBookingModal(null)}
+          onSuccess={handleBookingSuccess}
+        />
+      )}
     </div>
   )
 }
@@ -187,27 +359,36 @@ export default function StockUnitCheck() {
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('')
 
+  // Penanda permintaan terbaru — respons yang sudah usang (mis. filter lokasi
+  // berubah lagi sebelum request lama selesai) diabaikan, tidak menimpa data.
+  const requestIdRef = useRef(0)
+
+  // silent=true dipakai setelah booking/cancel sukses — refresh data tanpa
+  // menampilkan spinner layar penuh yang akan menutup kartu yang sedang terbuka.
+  const loadData = useCallback(async (silent = false) => {
+    const requestId = ++requestIdRef.current
+    if (!silent) setLoading(true)
+    const params = new URLSearchParams()
+    if (location) params.set('location', location)
+    try {
+      const res = await fetch(`${API_BASE}/public/stock-units${params.toString() ? `?${params}` : ''}`)
+      if (!res.ok) throw new Error('Gagal memuat data unit')
+      const json = await res.json()
+      if (requestIdRef.current !== requestId) return
+      setData(json)
+      setError('')
+    } catch (err) {
+      if (requestIdRef.current !== requestId) return
+      setError(err.message)
+    } finally {
+      if (requestIdRef.current === requestId && !silent) setLoading(false)
+    }
+  }, [location])
+
   // Refetch saat filter lokasi berubah (agregat dihitung ulang di server).
   useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      setLoading(true)
-      const params = new URLSearchParams()
-      if (location) params.set('location', location)
-      try {
-        const res = await fetch(`${API_BASE}/public/stock-units${params.toString() ? `?${params}` : ''}`)
-        if (!res.ok) throw new Error('Gagal memuat data unit')
-        const json = await res.json()
-        if (!cancelled) { setData(json); setError('') }
-      } catch (err) {
-        if (!cancelled) setError(err.message)
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    void Promise.resolve().then(load)
-    return () => { cancelled = true }
-  }, [location])
+    void Promise.resolve().then(loadData)
+  }, [loadData])
 
   // Filter model (teks) di sisi klien — instan tanpa request ulang.
   const filteredModels = useMemo(() => {
@@ -313,7 +494,7 @@ export default function StockUnitCheck() {
         {!loading && !error && filteredModels.length > 0 && (
           <div className="space-y-3">
             {filteredModels.map((m) => (
-              <ModelCard key={m.series} model={m} />
+              <ModelCard key={m.series} model={m} onBookingChange={() => loadData(true)} />
             ))}
           </div>
         )}

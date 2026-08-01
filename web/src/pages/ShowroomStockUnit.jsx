@@ -241,6 +241,16 @@ export default function ShowroomStockUnit() {
     }
   }
 
+  const cancelBooking = async (unit) => {
+    if (!window.confirm(`Batalkan booking ${unit.booking?.salesman_name} untuk unit ini?`)) return
+    try {
+      await api.cancelShowroomUnitBooking(unit.engine_number)
+      await loadData()
+    } catch (err) {
+      alert('Gagal membatalkan booking: ' + err.message)
+    }
+  }
+
   // Batch print label
   const printLabels = (labelItems, title = 'Print Label Stock Unit') => {
     const printableItems = labelItems.filter((item) => item.engine_number)
@@ -474,7 +484,7 @@ export default function ShowroomStockUnit() {
                       className="h-4 w-4 rounded border-border-strong text-accent focus:ring-accent"
                     />
                   </th>
-                  {['Unit', 'Engine/Chassis', 'Lokasi', 'Aging', 'State', 'KSU', 'Tahun', 'Harga OTR', 'Label'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase whitespace-nowrap">{h}</th>)}
+                  {['Unit', 'Engine/Chassis', 'Lokasi', 'Aging', 'State', 'KSU', 'Booking', 'Tahun', 'Harga OTR', 'Label'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase whitespace-nowrap">{h}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -515,6 +525,18 @@ export default function ShowroomStockUnit() {
                         {KSU_LABELS[unit.ksu?.status] || 'Belum dicek'}
                       </button>
                       <p className={`text-xs mt-1 ${unit.ksu?.standard?.is_verified ? 'text-faint' : 'text-warning-600'}`}>{ksuStandardText(unit.ksu)}</p>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {unit.booking ? (
+                        <div>
+                          <p className="text-sm font-semibold text-warning-700">{unit.booking.salesman_name}</p>
+                          <p className="text-xs text-muted">{unit.booking.salesman_phone}</p>
+                          <p className="text-xs text-faint">s.d. {formatDate(unit.booking.expires_at)}</p>
+                          <button onClick={() => cancelBooking(unit)} className="mt-1 text-xs font-semibold text-danger hover:underline">
+                            Batalkan
+                          </button>
+                        </div>
+                      ) : <span className="text-xs text-faint">-</span>}
                     </td>
                     <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{unit.year || '-'}</td>
                     <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">
