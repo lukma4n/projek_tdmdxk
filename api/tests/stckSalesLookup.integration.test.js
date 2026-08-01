@@ -1,5 +1,7 @@
 import test, { before, after } from 'node:test'
 import assert from 'node:assert/strict'
+process.env.DATABASE_URL = 'file:./test.db'
+
 import {
   prismaTest,
   seedKnownUsers,
