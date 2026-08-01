@@ -91,8 +91,40 @@ function parseMdPrograms(filePath, sourceFile) {
     .filter((row) => row.product_code && row.sale_type)
 }
 
+/**
+ * Hitung item teks di seluruh halaman PDF (berhenti begitu ketemu).
+ * PDF hasil scan/foto isinya cuma gambar — nol item teks — sehingga
+ * tidak ada yang bisa di-parse, seberapa pun parser-nya disesuaikan.
+ */
+async function countPdfTextItems(buffer) {
+  const pdf = await getDocument({ data: new Uint8Array(buffer) }).promise
+  try {
+    for (let p = 1; p <= pdf.numPages; p += 1) {
+      const page = await pdf.getPage(p)
+      const textContent = await page.getTextContent()
+      const count = textContent.items.filter((it) => it.str.trim() !== '').length
+      if (count > 0) return count
+    }
+    return 0
+  } finally {
+    await pdf.destroy()
+  }
+}
+
 export async function parseMdProgramPdf(filePath, sourceFile = null) {
   const buffer = fs.readFileSync(filePath)
+
+  // Bedakan "PDF hasil scan" dari "parser belum cocok". Tanpa ini keduanya
+  // sama-sama menghasilkan 0 baris tanpa penjelasan.
+  if (await countPdfTextItems(buffer) === 0) {
+    const err = new Error(
+      'PDF ini hasil scan/foto (tidak ada teks yang bisa dibaca), jadi isinya tidak bisa diambil otomatis. ' +
+      'Minta file PDF asli dari AHM (yang teksnya bisa diblok/copy), atau pakai file Excel program.'
+    )
+    err.status = 400
+    throw err
+  }
+
   const parser = new PDFParse({ data: buffer })
   const result = await parser.getText()
   await parser.destroy()
