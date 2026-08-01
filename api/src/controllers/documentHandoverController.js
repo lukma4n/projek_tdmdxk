@@ -176,6 +176,9 @@ export async function getAvailableDocuments(req, res, next) {
       select: { engine_number: true, document_type: true },
     })
     const existingKeys = new Set(existingHandovers.map((h) => `${h.engine_number}:${h.document_type}`))
+    const bukuServiceExists = new Set(
+      existingHandovers.filter((h) => h.document_type === 'BUKU_SERVICE').map((h) => h.engine_number)
+    )
 
     const available = []
     for (const track of tracks) {
@@ -207,6 +210,7 @@ export async function getAvailableDocuments(req, res, next) {
             salesman: null,
             no_stnk: track.no_stnk,
             no_bpkb: track.no_bpkb,
+            buku_service_exists: bukuServiceExists.has(track.engine_number),
           })
         }
       }
@@ -220,7 +224,7 @@ export async function getAvailableDocuments(req, res, next) {
 
 export async function createDocumentHandover(req, res, next) {
   try {
-    const { engine_number, document_type, handover_mode, salesman_name, consumer_name, consumer_phone, notes } = req.body
+    const { engine_number, document_type, handover_mode, salesman_name, consumer_name, consumer_phone, notes, include_buku_service } = req.body
 
     if (!engine_number || !document_type) {
       return res.status(400).json({ error: 'engine_number dan document_type wajib diisi' })
@@ -248,7 +252,37 @@ export async function createDocumentHandover(req, res, next) {
       },
     })
 
-    res.status(201).json(handover)
+    // Bundling Buku Service: sengaja ditahan sampai STNK/BPKB/Plat siap
+    // diserahkan, supaya konsumen yang STNK-nya lambat jadi (slow moving)
+    // tetap punya alasan kembali ke dealer -- bukan cuma kemudahan input.
+    // Dibuat terpisah dari transaksi di atas: kalau ini gagal (mis. sudah
+    // ada), handover utama yang memang diminta admin tidak boleh ikut batal.
+    let bukuServiceHandover = null
+    if (include_buku_service && document_type !== 'BUKU_SERVICE') {
+      const existing = await prisma.document_handovers.findUnique({
+        where: { engine_number_document_type: { engine_number, document_type: 'BUKU_SERVICE' } },
+      })
+      if (!existing) {
+        bukuServiceHandover = await prisma.document_handovers.create({
+          data: {
+            engine_number,
+            document_type: 'BUKU_SERVICE',
+            handover_mode: handover_mode || 'langsung',
+            status: 'tersedia',
+            salesman_name: salesman_name || null,
+            consumer_name: consumer_name || null,
+            consumer_phone: consumer_phone || null,
+            notes: 'Dibundel otomatis saat menambah ' + document_type,
+            created_by: req.user.userId,
+          },
+          include: {
+            creator: { select: { id: true, name: true } },
+          },
+        })
+      }
+    }
+
+    res.status(201).json({ ...handover, buku_service_handover: bukuServiceHandover })
   } catch (err) {
     next(err)
   }

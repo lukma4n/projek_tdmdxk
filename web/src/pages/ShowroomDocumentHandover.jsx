@@ -437,6 +437,10 @@ function AddDocumentModal({ onClose, onSaved }) {
   const [available, setAvailable] = useState([])
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState('')
+  // Default tercentang -- Buku Service sengaja dibundel otomatis kecuali
+  // admin sadar mematikannya, supaya tidak lupa dan konsumen tetap punya
+  // alasan kembali mengambil STNK/BPKB/Plat yang lambat jadi.
+  const [includeBuku, setIncludeBuku] = useState({})
 
   const loadAvailable = useCallback(async () => {
     setLoading(true)
@@ -462,11 +466,13 @@ function AddDocumentModal({ onClose, onSaved }) {
     const key = `${doc.engine_number}:${doc.document_type}`
     setCreating(key)
     try {
+      const shouldIncludeBuku = doc.document_type !== 'BUKU_SERVICE' && !doc.buku_service_exists && (includeBuku[key] ?? true)
       await createDocumentHandover({
         engine_number: doc.engine_number,
         document_type: doc.document_type,
         consumer_name: doc.stnk_name || null,
         consumer_phone: doc.mobile || null,
+        include_buku_service: shouldIncludeBuku,
       })
       setAvailable((prev) => prev.filter((d) => `${d.engine_number}:${d.document_type}` !== key))
       onSaved()
@@ -530,6 +536,18 @@ function AddDocumentModal({ onClose, onSaved }) {
                       </div>
                       <p className="text-sm font-medium text-text truncate">{doc.stnk_name || '-'}</p>
                       <p className="text-xs text-faint">{doc.series || '-'} · {doc.no_polisi || 'Belum ada plat'}</p>
+                      {doc.document_type !== 'BUKU_SERVICE' && (
+                        <label className={`mt-1.5 flex items-center gap-1.5 text-xs ${doc.buku_service_exists ? 'text-faint' : 'text-muted cursor-pointer'}`}>
+                          <input
+                            type="checkbox"
+                            checked={doc.buku_service_exists ? false : (includeBuku[key] ?? true)}
+                            disabled={doc.buku_service_exists}
+                            onChange={(e) => setIncludeBuku((prev) => ({ ...prev, [key]: e.target.checked }))}
+                            className="h-3.5 w-3.5 rounded border-border-strong text-accent focus:ring-accent disabled:opacity-50"
+                          />
+                          {doc.buku_service_exists ? 'Buku Service sudah ditambahkan' : 'Sertakan Buku Service'}
+                        </label>
+                      )}
                     </div>
                     <button
                       onClick={() => handleCreate(doc)}
