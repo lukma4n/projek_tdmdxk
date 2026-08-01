@@ -292,7 +292,15 @@ router.get('/document-handovers/photo/:stepId', authenticate, handoverReadAccess
 router.patch('/document-handovers/:id/tracking-number', authenticate, handoverTrackingAccess, updateTrackingNumber)
 
 // Pengiriman via ekspedisi -- ubah pickup request (delivery_method EKSPEDISI)
-// jadi baris document_handovers mode 'ekspedisi'. Gate sama dengan updatePickupRequest.
-router.post('/pickup-requests/:id/process-shipment', authenticate, stnkBpkbTrackReadAccess, processShipmentFromPickupRequest)
+// jadi baris document_handovers mode 'ekspedisi'.
+//
+// Sengaja TIDAK memakai stnkBpkbTrackReadAccess (Admin/CRM/Kepala Cabang)
+// walau endpoint ini bagian dari alur pickup request: hasil akhirnya membuat
+// document_handovers, dan CRM/Kepala Cabang memang cuma diberi akses baca di
+// handover (lihat handoverReadAccess vs handoverWriteAccess di atas). Kalau
+// pakai gate pickup request, keduanya bisa membuat handover lewat pintu
+// belakang. Irisan dua kewenangan itu = Admin.
+const processShipmentAccess = authorize('Admin')
+router.post('/pickup-requests/:id/process-shipment', authenticate, processShipmentAccess, processShipmentFromPickupRequest)
 
 export default router

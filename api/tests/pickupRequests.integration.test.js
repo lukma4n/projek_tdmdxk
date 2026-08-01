@@ -46,6 +46,10 @@ test.before(async () => {
       tgl_terima_plat: new Date('2026-06-08T00:00:00Z'),
       tgl_penyerahan_plat: new Date('2026-06-10T00:00:00Z'),
       tgl_terima_bpkb: new Date('2026-06-15T00:00:00Z'),
+      // Data asli selalu mengisi tgl_terima_bpkb & tgl_jadi_bpkb bersamaan
+      // (19.078 baris, nol selisih). tgl_jadi_bpkb yang menandai BPKB siap
+      // diserahkan -- dipakai eligiblePickupDocs & getAvailableDocuments.
+      tgl_jadi_bpkb: new Date('2026-06-15T00:00:00Z'),
       no_bpkb: 'BPKB-PICKUP-001',
       bpkb_status: 'SELESAI',
     },
@@ -65,6 +69,7 @@ test.before(async () => {
       tgl_terima_plat: new Date('2026-06-08T00:00:00Z'),
       tgl_penyerahan_plat: new Date('2026-06-10T00:00:00Z'),
       tgl_terima_bpkb: new Date('2026-06-15T00:00:00Z'),
+      tgl_jadi_bpkb: new Date('2026-06-15T00:00:00Z'),
       tgl_penyerahan_bpkb: new Date('2026-06-16T00:00:00Z'),
       no_bpkb: 'BPKB-PICKUP-002',
       bpkb_status: 'SELESAI',

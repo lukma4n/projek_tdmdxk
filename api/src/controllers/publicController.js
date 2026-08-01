@@ -21,7 +21,12 @@ function eligiblePickupDocs(track) {
   if (track.tgl_terima_stnk && !track.tgl_penyerahan_stnk) docs.push('STNK')
   if (track.tgl_terima_plat && !track.tgl_penyerahan_plat) docs.push('PLAT')
   const forConsumer = !(track.finance_company && String(track.finance_company).trim())
-  if (forConsumer && track.tgl_terima_bpkb && !track.tgl_penyerahan_bpkb) docs.push('BPKB')
+  // Kesiapan BPKB memakai tgl_jadi_bpkb, sama seperti getAvailableDocuments
+  // dan seluruh modul BPKB lain (tgl_terima_bpkb = tanggal terima berkas,
+  // bukan tanda BPKB siap serah). Pada data sekarang keduanya selalu terisi
+  // bersamaan, tapi kalau suatu saat berbeda, konsumen tidak boleh diundang
+  // mengambil BPKB yang di sisi internal belum muncul sebagai siap.
+  if (forConsumer && track.tgl_jadi_bpkb && !track.tgl_penyerahan_bpkb) docs.push('BPKB')
   return docs
 }
 

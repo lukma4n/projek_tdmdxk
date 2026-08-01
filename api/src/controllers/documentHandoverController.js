@@ -690,6 +690,9 @@ export async function processShipmentFromPickupRequest(req, res, next) {
 export async function updateTrackingNumber(req, res, next) {
   try {
     const id = parseInt(req.params.id)
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: 'ID tidak valid' })
+    }
     const trackingNumber = String(req.body?.tracking_number || '').trim()
     if (!trackingNumber) {
       return res.status(400).json({ error: 'Nomor resi wajib diisi' })
