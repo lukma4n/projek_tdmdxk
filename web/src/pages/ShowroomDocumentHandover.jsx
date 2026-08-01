@@ -277,20 +277,24 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2">
-                    <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-accent hover:bg-accent-soft/30 transition-all">
-                      <Camera size={24} className="text-faint mb-1" />
-                      <span className="text-xs text-muted font-medium">Upload Foto Dokumen</span>
-                      <span className="text-[10px] text-faint mt-0.5">Maks 10MB</span>
-                      <input type="file" accept="image/jpeg,image/png" onChange={handlePhotoDocChange} className="hidden" />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setCameraTarget('doc')}
-                      className="flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border text-xs font-semibold text-muted hover:border-accent hover:text-accent transition-colors"
-                    >
-                      <Camera size={14} /> Ambil dari Kamera
-                    </button>
+                  <div className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-border rounded-xl px-3">
+                    <Camera size={22} className="text-faint mb-1.5" />
+                    <span className="text-xs text-muted font-medium mb-0.5">Foto Dokumen</span>
+                    <span className="text-[10px] text-faint mb-2.5">Maks 10MB</span>
+                    <div className="flex items-center gap-2">
+                      <label className="cursor-pointer rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text hover:border-accent hover:bg-accent-soft/30 transition-colors">
+                        Pilih File
+                        <input type="file" accept="image/jpeg,image/png" onChange={handlePhotoDocChange} className="hidden" />
+                      </label>
+                      <span className="text-[10px] text-faint">atau</span>
+                      <button
+                        type="button"
+                        onClick={() => setCameraTarget('doc')}
+                        className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text hover:border-accent hover:bg-accent-soft/30 transition-colors"
+                      >
+                        <Camera size={13} /> Kamera
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -315,20 +319,24 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2">
-                    <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-success-soft/30 transition-all">
-                      <Camera size={24} className="text-faint mb-1" />
-                      <span className="text-xs text-muted font-medium">Upload Foto Penyerahan</span>
-                      <span className="text-[10px] text-faint mt-0.5">Maks 10MB</span>
-                      <input type="file" accept="image/jpeg,image/png" onChange={handlePhotoHandoverChange} className="hidden" />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setCameraTarget('handover')}
-                      className="flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border text-xs font-semibold text-muted hover:border-emerald-400 hover:text-success transition-colors"
-                    >
-                      <Camera size={14} /> Ambil dari Kamera
-                    </button>
+                  <div className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-border rounded-xl px-3">
+                    <Camera size={22} className="text-faint mb-1.5" />
+                    <span className="text-xs text-muted font-medium mb-0.5">Foto Penyerahan</span>
+                    <span className="text-[10px] text-faint mb-2.5">Maks 10MB</span>
+                    <div className="flex items-center gap-2">
+                      <label className="cursor-pointer rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text hover:border-emerald-400 hover:bg-success-soft/30 transition-colors">
+                        Pilih File
+                        <input type="file" accept="image/jpeg,image/png" onChange={handlePhotoHandoverChange} className="hidden" />
+                      </label>
+                      <span className="text-[10px] text-faint">atau</span>
+                      <button
+                        type="button"
+                        onClick={() => setCameraTarget('handover')}
+                        className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text hover:border-emerald-400 hover:bg-success-soft/30 transition-colors"
+                      >
+                        <Camera size={13} /> Kamera
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
