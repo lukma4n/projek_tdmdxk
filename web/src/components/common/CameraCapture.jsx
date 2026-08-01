@@ -98,7 +98,11 @@ export default function CameraCapture({ open, title = 'Ambil Foto', onCapture, o
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex flex-col bg-black/90">
+    // stopPropagation: komponen ini kadang dipasang di dalam modal lain yang
+    // menutup dirinya sendiri saat area luar diklik (onClick={onClose} pada
+    // wrapper modal induk). Tanpa ini, klik tombol jepret/"Gunakan Foto" di
+    // sini akan menembus ke atas dan ikut menutup modal induknya.
+    <div className="fixed inset-0 z-[80] flex flex-col bg-black/90" onClick={(e) => e.stopPropagation()}>
       <div className="flex items-center justify-between px-4 py-3 text-white">
         <span className="text-sm font-bold">{title}</span>
         <button type="button" onClick={close} className="rounded-lg p-1.5 text-white/80 hover:bg-white/10" aria-label="Tutup">
