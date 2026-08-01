@@ -148,12 +148,17 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
     }
   }
 
+  // Serah terima lewat pihak ketiga (ekspedisi, atau salesman di lapangan)
+  // wajib foto bukti -- admin serah terima langsung di counter tidak wajib.
+  const isThirdPartyHandover = stepType === 'ekspedisi_ke_konsumen' ||
+    (stepType === 'serah_ke_konsumen' && user?.role === 'Salesman')
+
   const handleSubmit = async () => {
     if (!receivedBy.trim()) {
       alert('Nama penerima wajib diisi')
       return
     }
-    if (stepType === 'ekspedisi_ke_konsumen' && !photoHandover) {
+    if (isThirdPartyHandover && !photoHandover) {
       alert('Foto penyerahan fisik wajib dilampirkan sebagai bukti dokumen sudah diterima konsumen')
       return
     }
@@ -346,7 +351,7 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
             <div>
               <label className="block text-sm font-semibold text-text mb-1.5">
                 <Camera size={14} className="inline mr-1" />
-                Foto Penyerahan Fisik{stepType === 'ekspedisi_ke_konsumen' ? ' *' : ''}
+                Foto Penyerahan Fisik{isThirdPartyHandover ? ' *' : ''}
               </label>
               <div className="relative">
                 {previewHandover ? (
