@@ -19,6 +19,13 @@ export const getServiceBookLabels = (params = {}) => {
   return fetchWithAuth(`/showroom/label-buku-service${query ? '?' + query : ''}`)
 }
 
+// Tandai / batalkan tanda "sudah dicetak" untuk label buku service
+export const setServiceBookLabelPrinted = (soNumbers, printed) =>
+  fetchWithAuth('/showroom/label-buku-service/print-status', {
+    method: 'PATCH',
+    body: { so_numbers: soNumbers, printed },
+  })
+
 // Lookup data penjualan untuk Cetak STCK (cari per no mesin, filter hari ini/kemarin/semua)
 export const getStckSalesLookup = (params = {}) => {
   const query = new URLSearchParams(params).toString()

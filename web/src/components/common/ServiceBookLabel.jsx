@@ -1,4 +1,5 @@
-import { Printer, X } from 'lucide-react'
+import { useState } from 'react'
+import { AlertTriangle, Printer, X } from 'lucide-react'
 
 function escapeHtml(value) {
   return String(value ?? '-')
@@ -9,7 +10,9 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;')
 }
 
-export default function ServiceBookLabel({ item, onClose }) {
+export default function ServiceBookLabel({ item, onClose, onPrinted }) {
+  const [popupError, setPopupError] = useState('')
+
   const renderLabelContent = () => {
     return `
       <div class="header">BUKU SERVICE - TDM KETAPANG</div>
@@ -29,8 +32,12 @@ export default function ServiceBookLabel({ item, onClose }) {
   }
 
   const handlePrint = () => {
+    setPopupError('')
     const printWindow = window.open('', '_blank')
-    if (!printWindow) return
+    if (!printWindow) {
+      setPopupError('Jendela cetak diblokir browser. Izinkan popup untuk situs ini lalu coba lagi.')
+      return
+    }
 
     const labelHtml = `
       <!DOCTYPE html>
@@ -67,6 +74,9 @@ export default function ServiceBookLabel({ item, onClose }) {
     `
     printWindow.document.write(labelHtml)
     printWindow.document.close()
+
+    // Tandai lewat parent supaya perilakunya sama dengan Cetak Terpilih.
+    onPrinted?.(item)
   }
 
   if (!item) return null
@@ -117,6 +127,13 @@ export default function ServiceBookLabel({ item, onClose }) {
           <div className="text-center text-xs text-slate-400">
             6 label per customer (64mm × 32mm)
           </div>
+
+          {popupError && (
+            <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <span>{popupError}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 border-t border-slate-200 px-6 py-4 flex-shrink-0">

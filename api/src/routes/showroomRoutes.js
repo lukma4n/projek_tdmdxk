@@ -9,6 +9,7 @@ import {
 } from '../controllers/showroomSalesDashboardController.js'
 import {
   getServiceBookLabels,
+  updateLabelPrintStatus,
 } from '../controllers/showroomLabelServiceController.js'
 import {
   getStckSalesLookup,
@@ -106,6 +107,7 @@ router.get('/penjualan/dashboard', authenticate, showroomAccess, getShowroomSale
 router.get('/penjualan/export', authenticate, showroomAccess, exportShowroomSalesDashboard)
 
 router.get('/label-buku-service', authenticate, showroomAccess, getServiceBookLabels)
+router.patch('/label-buku-service/print-status', authenticate, showroomAccess, updateLabelPrintStatus)
 
 router.get('/stck/sales-lookup', authenticate, showroomAccess, getStckSalesLookup)
 

@@ -40,6 +40,7 @@ model users {
   document_handovers document_handovers[]
   document_handover_steps document_handover_steps[]
   login_logs login_logs[]
+  service_labels_printed customers[]
 }
 
 // Audit login & deteksi penyalahgunaan akun (sharing, login ditolak, dsb).
@@ -351,7 +352,16 @@ model customers {
   state           String   @default("aktif")
   synced_at       DateTime @default(now())
 
+  // Penanda cetak Label Buku Service. NULL = belum dicetak.
+  // Aman terhadap import ulang: uploadSales memakai update() dengan data hasil
+  // parser, jadi kolom di luar parser tidak tersentuh.
+  label_printed_at   DateTime?
+  label_printed_by   Int?
+  label_printed_user users?    @relation(fields: [label_printed_by], references: [id])
+
   followups       kpb_followups[]
+
+  @@index([label_printed_at])
 }
 
 model kpb_followups {
