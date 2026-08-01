@@ -1,6 +1,11 @@
 import { prisma } from '../config/db.js'
 import bcrypt from 'bcryptjs'
 
+// Satu sumber kebenaran role valid di backend -- harus tetap sinkron dengan
+// ROLES di web/src/config/roles.js (dua tempat berbeda, tidak dibagi lewat
+// import karena backend/frontend adalah paket terpisah).
+const VALID_ROLES = ['Admin', 'ADH', 'Kepala Cabang', 'CRM', 'Frondesk', 'Service Advisor', 'Kepala Bengkel', 'Partman', 'PIC Stock opname', 'Salesman', 'Ekspedisi', 'IT Master']
+
 export async function getUsers(req, res, next) {
   try {
     const where = {}
@@ -71,8 +76,7 @@ export async function createUser(req, res, next) {
       return res.status(400).json({ error: 'Semua field wajib diisi' })
     }
 
-    const validRoles = ['Admin', 'ADH', 'Kepala Cabang', 'CRM', 'Frondesk', 'Service Advisor', 'Kepala Bengkel', 'Partman', 'PIC Stock opname', 'Salesman', 'IT Master']
-    if (!validRoles.includes(role)) {
+    if (!VALID_ROLES.includes(role)) {
       return res.status(400).json({ error: 'Role tidak valid' })
     }
 
@@ -143,8 +147,7 @@ export async function updateUser(req, res, next) {
     const userId = parseInt(id)
     const normalizedPhone = phone ? String(phone).trim() : null
 
-    const validRoles = ['Admin', 'ADH', 'Kepala Cabang', 'CRM', 'Frondesk', 'Service Advisor', 'Kepala Bengkel', 'Partman', 'PIC Stock opname', 'Salesman', 'IT Master']
-    if (role && !validRoles.includes(role)) {
+    if (role && !VALID_ROLES.includes(role)) {
       return res.status(400).json({ error: 'Role tidak valid' })
     }
 
