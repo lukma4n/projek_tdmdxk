@@ -15,6 +15,7 @@ import {
 const ENG_A = 'DHTEST-EKSP-0001'
 const ENG_B = 'DHTEST-EKSP-0002'
 const ALL_ENGINES = [ENG_A, ENG_B]
+const HANDOVER_PHOTO = Buffer.from('fake-jpg-content-for-handover-proof-test')
 
 let adminCookie
 let partmanCookie
@@ -91,14 +92,40 @@ test('transisi admin_ke_ekspedisi TIDAK butuh nomor resi, ekspedisi_ke_konsumen 
   assert.equal(updated.tracking_number, null, 'resi belum terisi sampai ekspedisi mengisinya sendiri')
   assert.equal(updated.handover_mode, 'ekspedisi')
 
-  const step2 = await callAuthenticated('post', `/api/showroom/document-handovers/${handover.id}/steps`, courierACookie, {
-    step_type: 'ekspedisi_ke_konsumen',
-    received_by_name: 'KONSUMEN EKSPEDISI A',
-  })
+  const step2 = await request(app)
+    .post(`/api/showroom/document-handovers/${handover.id}/steps`)
+    .set('Cookie', courierACookie)
+    .attach('photo_handover', HANDOVER_PHOTO, 'bukti-terima.jpg')
+    .field('step_type', 'ekspedisi_ke_konsumen')
+    .field('received_by_name', 'KONSUMEN EKSPEDISI A')
   assert.equal(step2.status, 201)
 
   updated = await prismaTest.document_handovers.findUnique({ where: { id: handover.id } })
   assert.equal(updated.status, 'selesai')
+})
+
+test('ekspedisi_ke_konsumen ditolak (400) tanpa foto penyerahan fisik', async () => {
+  const courierA = await prismaTest.users.findUnique({ where: { username: 'test_courier_a' } })
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_B,
+      document_type: 'STNK',
+      handover_mode: 'ekspedisi',
+      status: 'dikirim_ekspedisi',
+      assigned_courier_id: courierA.id,
+      created_by: (await prismaTest.users.findUnique({ where: { username: 'test_admin' } })).id,
+    },
+  })
+
+  const res = await callAuthenticated('post', `/api/showroom/document-handovers/${handover.id}/steps`, courierACookie, {
+    step_type: 'ekspedisi_ke_konsumen',
+    received_by_name: 'KONSUMEN EKSPEDISI B',
+  })
+  assert.equal(res.status, 400)
+  assert.match(res.body.error, /foto/i)
+
+  const unchanged = await prismaTest.document_handovers.findUnique({ where: { id: handover.id } })
+  assert.equal(unchanged.status, 'dikirim_ekspedisi', 'status tidak boleh berubah kalau ditolak karena foto kosong')
 })
 
 test('PATCH tracking-number: akun Ekspedisi mengisi resi kiriman miliknya sendiri', async () => {

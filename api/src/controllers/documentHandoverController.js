@@ -391,6 +391,12 @@ export async function addHandoverStep(req, res, next) {
       }
     }
 
+    // Tanpa integrasi API kurir, foto ini satu-satunya bukti bahwa dokumen
+    // benar sudah sampai ke konsumen -- bukan cuma klaim ketik nama.
+    if (step_type === 'ekspedisi_ke_konsumen' && !photo_handover_url) {
+      return res.status(400).json({ error: 'Foto penyerahan fisik wajib dilampirkan sebagai bukti dokumen sudah diterima konsumen.' })
+    }
+
     const newStatus = transition.to
     const handoverMode = step_type === 'admin_ke_sales' ? 'via_sales'
       : step_type === 'admin_ke_ekspedisi' ? 'ekspedisi'

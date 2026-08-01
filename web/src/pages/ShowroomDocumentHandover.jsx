@@ -153,6 +153,10 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
       alert('Nama penerima wajib diisi')
       return
     }
+    if (stepType === 'ekspedisi_ke_konsumen' && !photoHandover) {
+      alert('Foto penyerahan fisik wajib dilampirkan sebagai bukti dokumen sudah diterima konsumen')
+      return
+    }
     setSaving(true)
     // Satu langkah yang sama diterapkan ke semua dokumen dalam grup --
     // berurutan (bukan Promise.all), supaya kalau ada yang gagal di tengah
@@ -342,7 +346,7 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
             <div>
               <label className="block text-sm font-semibold text-text mb-1.5">
                 <Camera size={14} className="inline mr-1" />
-                Foto Penyerahan Fisik
+                Foto Penyerahan Fisik{stepType === 'ekspedisi_ke_konsumen' ? ' *' : ''}
               </label>
               <div className="relative">
                 {previewHandover ? (
