@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useAuthStore } from '../stores/authStore'
 import { API_BASE } from '../services/api'
 import {
@@ -86,8 +86,12 @@ function SummaryCard({ label, value, icon: Icon, colorClass, borderClass, iconBg
 }
 
 // ─── Handover Step Modal ───
-function HandoverStepModal({ handover, type, salespeople, onClose, onSaved }) {
+function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
   const { user } = useAuthStore()
+  // Semua anggota grup berbagi engine_number & status yang sama (syarat
+  // pembentukan grup), jadi cukup ambil satu sebagai acuan field bersama.
+  const handover = handovers[0]
+  const isMulti = handovers.length > 1
   const [stepType, setStepType] = useState(type || 'serah_ke_konsumen')
   const [receivedBy, setReceivedBy] = useState('')
   const [notes, setNotes] = useState('')
@@ -121,26 +125,37 @@ function HandoverStepModal({ handover, type, salespeople, onClose, onSaved }) {
       return
     }
     setSaving(true)
-    try {
-      const formData = new FormData()
-      formData.append('step_type', stepType)
-      formData.append('given_by_name', user?.name || '')
-      formData.append('received_by_name', receivedBy)
-      formData.append('notes', notes)
-      if (photoDoc) formData.append('photo_doc', photoDoc)
-      if (photoHandover) formData.append('photo_handover', photoHandover)
-
-      await addHandoverStep(handover.id, formData)
-      onSaved()
+    // Satu langkah yang sama diterapkan ke semua dokumen dalam grup --
+    // berurutan (bukan Promise.all), supaya kalau ada yang gagal di tengah
+    // jalan, tetap jelas dokumen mana saja yang sudah berhasil dan mana yang
+    // belum untuk dilaporkan ke user.
+    const failed = []
+    for (const h of handovers) {
+      try {
+        const formData = new FormData()
+        formData.append('step_type', stepType)
+        formData.append('given_by_name', user?.name || '')
+        formData.append('received_by_name', receivedBy)
+        formData.append('notes', notes)
+        if (photoDoc) formData.append('photo_doc', photoDoc)
+        if (photoHandover) formData.append('photo_handover', photoHandover)
+        await addHandoverStep(h.id, formData)
+      } catch (err) {
+        failed.push(`${DOC_TYPE_LABELS[h.document_type]?.label || h.document_type}: ${err.message || 'Error'}`)
+      }
+    }
+    setSaving(false)
+    onSaved()
+    if (failed.length > 0) {
+      alert('Sebagian gagal disimpan:\n' + failed.join('\n'))
+    } else {
       onClose()
-    } catch (err) {
-      alert('Gagal menyimpan: ' + (err.message || 'Unknown error'))
-    } finally {
-      setSaving(false)
     }
   }
 
-  const docLabel = DOC_TYPE_LABELS[handover.document_type]?.label || handover.document_type
+  const docLabel = isMulti
+    ? handovers.map((h) => DOC_TYPE_LABELS[h.document_type]?.label || h.document_type).join(' + ')
+    : (DOC_TYPE_LABELS[handover.document_type]?.label || handover.document_type)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
@@ -719,13 +734,35 @@ export default function ShowroomDocumentHandover() {
     getHandoverSalespeople().then(setSalespeople).catch(() => {})
   }, [])
 
-  const getNextAction = (handover) => {
-    switch (handover.status) {
+  // Dokumen dengan engine_number & status sama digabung jadi 1 kartu (mis.
+  // BPKB + Buku Service yang dibundel bersamaan) -- satu tombol Serahkan
+  // menjalankan langkah yang sama untuk semuanya sekaligus. Kalau statusnya
+  // sudah berbeda (diproses terpisah), tetap tampil sebagai baris sendiri.
+  const groupedItems = useMemo(() => {
+    const byKey = new Map()
+    for (const item of items) {
+      const key = `${item.engine_number}:${item.status}`
+      if (!byKey.has(key)) byKey.set(key, [])
+      byKey.get(key).push(item)
+    }
+    const groups = []
+    const seen = new Set()
+    for (const item of items) {
+      if (seen.has(item.id)) continue
+      const group = byKey.get(`${item.engine_number}:${item.status}`)
+      group.forEach((g) => seen.add(g.id))
+      groups.push(group)
+    }
+    return groups
+  }, [items])
+
+  const getNextAction = (group) => {
+    switch (group[0].status) {
       case 'tersedia':
-        return { label: 'Serahkan', icon: Send, action: () => setHandoverModal({ handover, type: null }) }
+        return { label: 'Serahkan', icon: Send, action: () => setHandoverModal({ handovers: group, type: null }) }
       case 'diserahkan_ke_sales':
       case 'diterima_sales':
-        return { label: 'Ke Konsumen', icon: User, action: () => setHandoverModal({ handover, type: 'serah_ke_konsumen' }) }
+        return { label: 'Ke Konsumen', icon: User, action: () => setHandoverModal({ handovers: group, type: 'serah_ke_konsumen' }) }
       default:
         return null
     }
@@ -820,21 +857,30 @@ export default function ShowroomDocumentHandover() {
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {items.map((item) => {
-              const docConf = DOC_TYPE_LABELS[item.document_type] || {}
+            {groupedItems.map((group) => {
+              const item = group[0]
+              const isMulti = group.length > 1
+              const groupKey = group.map((g) => g.id).join('-')
               const statusConf = STATUS_CONFIG[item.status] || STATUS_CONFIG.tersedia
-              const nextAction = getNextAction(item)
-              const isExpanded = expandedId === item.id
+              const nextAction = getNextAction(group)
+              const isExpanded = expandedId === groupKey
 
               return (
-                <div key={item.id}>
+                <div key={groupKey}>
                   <div className="px-5 py-4 hover:bg-hover/50 transition-colors">
                     <div className="flex items-center gap-4">
                       {/* Doc type + Status badges */}
                       <div className="flex flex-col gap-1.5 shrink-0 w-24">
-                        <span className={`inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border ${docConf.color || 'bg-hover'}`}>
-                          {docConf.label || item.document_type}
-                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {group.map((g) => {
+                            const dConf = DOC_TYPE_LABELS[g.document_type] || {}
+                            return (
+                              <span key={g.id} className={`inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border ${dConf.color || 'bg-hover'}`}>
+                                {dConf.label || g.document_type}
+                              </span>
+                            )
+                          })}
+                        </div>
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-xs font-medium border ${statusConf.color}`}>
                           {statusConf.label}
                         </span>
@@ -862,36 +908,42 @@ export default function ShowroomDocumentHandover() {
                             className="flex items-center gap-1.5 px-3 py-2 bg-accent text-white rounded-lg text-xs font-semibold hover:brightness-110 transition-colors shadow-sm"
                           >
                             <nextAction.icon size={14} />
-                            {nextAction.label}
+                            {nextAction.label}{isMulti ? ` (${group.length})` : ''}
                           </button>
                         )}
-                        <button
-                          onClick={() => setTimelineId(item.id)}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-hover text-muted rounded-lg text-xs font-medium hover:bg-hover transition-colors"
-                        >
-                          <Clock size={14} />
-                          Riwayat
-                        </button>
-                        {!isSalesman && (
+                        {/* Riwayat/Edit/Hapus per-dokumen ambigu kalau digabung -- untuk paket
+                            (>1 dokumen), kontrol ini dipindah ke bagian expand di bawah. */}
+                        {!isMulti && (
                           <>
                             <button
-                              onClick={() => setEditHandoverModal(item)}
-                              className="p-2 text-faint hover:text-accent hover:bg-accent-soft rounded-lg transition-colors"
-                              title="Edit"
+                              onClick={() => setTimelineId(item.id)}
+                              className="flex items-center gap-1.5 px-3 py-2 bg-hover text-muted rounded-lg text-xs font-medium hover:bg-hover transition-colors"
                             >
-                              <Pencil size={16} />
+                              <Clock size={14} />
+                              Riwayat
                             </button>
-                            <button
-                              onClick={() => handleDelete(item.id)}
-                              className="p-2 text-faint hover:text-danger hover:bg-danger-soft rounded-lg transition-colors"
-                              title="Hapus"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            {!isSalesman && (
+                              <>
+                                <button
+                                  onClick={() => setEditHandoverModal(item)}
+                                  className="p-2 text-faint hover:text-accent hover:bg-accent-soft rounded-lg transition-colors"
+                                  title="Edit"
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(item.id)}
+                                  className="p-2 text-faint hover:text-danger hover:bg-danger-soft rounded-lg transition-colors"
+                                  title="Hapus"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
                           </>
                         )}
                         <button
-                          onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                          onClick={() => setExpandedId(isExpanded ? null : groupKey)}
                           className="p-2 text-faint hover:text-muted hover:bg-hover rounded-lg transition-colors"
                         >
                           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -903,6 +955,43 @@ export default function ShowroomDocumentHandover() {
                   {/* Expanded detail */}
                   {isExpanded && (
                     <div className="px-5 pb-4 bg-hover/50 border-t border-border">
+                      {isMulti && (
+                        <div className="pt-3 space-y-2">
+                          <span className="text-faint block text-xs">Dokumen dalam paket ini</span>
+                          {group.map((docItem) => {
+                            const dConf = DOC_TYPE_LABELS[docItem.document_type] || {}
+                            return (
+                              <div key={docItem.id} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-panel px-3 py-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border shrink-0 ${dConf.color || 'bg-hover'}`}>
+                                    {dConf.label || docItem.document_type}
+                                  </span>
+                                  {docItem.last_step ? (
+                                    <span className="text-xs text-muted truncate">
+                                      {STEP_LABELS[docItem.last_step.step_type] || docItem.last_step.step_type} — {formatDate(docItem.last_step.performed_at)}
+                                    </span>
+                                  ) : <span className="text-xs text-faint">Belum ada langkah</span>}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button onClick={() => setTimelineId(docItem.id)} className="p-1.5 text-faint hover:text-muted hover:bg-hover rounded-md transition-colors" title="Riwayat">
+                                    <Clock size={14} />
+                                  </button>
+                                  {!isSalesman && (
+                                    <>
+                                      <button onClick={() => setEditHandoverModal(docItem)} className="p-1.5 text-faint hover:text-accent hover:bg-accent-soft rounded-md transition-colors" title="Edit">
+                                        <Pencil size={14} />
+                                      </button>
+                                      <button onClick={() => handleDelete(docItem.id)} className="p-1.5 text-faint hover:text-danger hover:bg-danger-soft rounded-md transition-colors" title="Hapus">
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-3 text-xs">
                         <div>
                           <span className="text-faint block mb-0.5">No Chassis</span>
@@ -936,7 +1025,7 @@ export default function ShowroomDocumentHandover() {
                           <span className="text-faint block mb-0.5">Update Terakhir</span>
                           <span className="text-text">{formatDate(item.updated_at)}</span>
                         </div>
-                        {item.last_step && (
+                        {!isMulti && item.last_step && (
                           <>
                             <div className="col-span-2">
                               <span className="text-faint block mb-0.5">Langkah Terakhir</span>
@@ -962,7 +1051,7 @@ export default function ShowroomDocumentHandover() {
 
       {/* Modals */}
       {showAddModal && <AddDocumentModal onClose={() => setShowAddModal(false)} onSaved={loadData} />}
-      {handoverModal && <HandoverStepModal handover={handoverModal.handover} type={handoverModal.type} salespeople={salespeople} onClose={() => setHandoverModal(null)} onSaved={loadData} />}
+      {handoverModal && <HandoverStepModal handovers={handoverModal.handovers} type={handoverModal.type} salespeople={salespeople} onClose={() => setHandoverModal(null)} onSaved={loadData} />}
       {timelineId && <TimelineModal handoverId={timelineId} onClose={() => setTimelineId(null)} />}
       {editHandoverModal && <EditHandoverModal handover={editHandoverModal} salespeople={salespeople} onClose={() => setEditHandoverModal(null)} onSaved={loadData} />}
     </div>
