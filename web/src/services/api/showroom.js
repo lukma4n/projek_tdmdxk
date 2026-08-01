@@ -329,6 +329,7 @@ export const getDocumentHandoverSummary = (params = {}) => {
   return fetchWithAuth(`/showroom/document-handovers/summary${query ? '?' + query : ''}`)
 }
 export const getHandoverSalespeople = () => fetchWithAuth('/showroom/document-handovers/salespeople')
+export const getCourierUsers = () => fetchWithAuth('/showroom/document-handovers/couriers')
 export const getAvailableDocuments = (params = {}) => {
   const query = new URLSearchParams(params).toString()
   return fetchWithAuth(`/showroom/document-handovers/available${query ? '?' + query : ''}`)
@@ -345,3 +346,4 @@ export const getPickupRequests = (params = {}) => {
   return fetchWithAuth(`/showroom/pickup-requests${query ? '?' + query : ''}`)
 }
 export const updatePickupRequest = (id, data) => fetchWithAuth(`/showroom/pickup-requests/${id}`, { method: 'PATCH', body: data })
+export const processShipmentFromPickupRequest = (id, data) => fetchWithAuth(`/showroom/pickup-requests/${id}/process-shipment`, { method: 'POST', body: data })

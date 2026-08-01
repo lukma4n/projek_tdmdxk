@@ -664,9 +664,12 @@ export async function getPickupRequests(req, res, next) {
 }
 
 /**
- * Update status permintaan pickup. Staf menandai CONTACTED/DONE/CANCELLED
- * saat menindak lanjuti. handled_by/handled_at terisi saat status berubah
- * dari PENDING (atau di-update ulang).
+ * Update permintaan pickup. Body bisa berisi `status` (staf menandai
+ * CONTACTED/DONE/CANCELLED) dan/atau `delivery_method` + `shipping_address`
+ * (staf mengubah jadi EKSPEDISI untuk konsumen yang menghubungi langsung
+ * tanpa lewat /cek). Keduanya opsional & independen -- kirim salah satu atau
+ * dua-duanya sekaligus. handled_by/handled_at terisi hanya saat status ikut
+ * dikirim.
  */
 export async function updatePickupRequest(req, res, next) {
   try {
@@ -675,24 +678,42 @@ export async function updatePickupRequest(req, res, next) {
       return res.status(400).json({ error: 'ID tidak valid' })
     }
 
-    const status = String(req.body?.status || '').trim().toUpperCase()
-    if (!PICKUP_STATUSES.includes(status)) {
-      return res.status(400).json({ error: 'Status tidak valid. Pilih: PENDING, CONTACTED, DONE, CANCELLED.' })
-    }
-
     const existing = await prisma.showroom_pickup_requests.findUnique({ where: { id } })
     if (!existing) {
       return res.status(404).json({ error: 'Permintaan tidak ditemukan' })
     }
 
-    const updated = await prisma.showroom_pickup_requests.update({
-      where: { id },
-      data: {
-        status,
-        handled_by: req.user?.userId ?? null,
-        handled_at: new Date(),
-      },
-    })
+    const data = {}
+
+    if (req.body?.status !== undefined) {
+      const status = String(req.body.status || '').trim().toUpperCase()
+      if (!PICKUP_STATUSES.includes(status)) {
+        return res.status(400).json({ error: 'Status tidak valid. Pilih: PENDING, CONTACTED, DONE, CANCELLED.' })
+      }
+      data.status = status
+      data.handled_by = req.user?.userId ?? null
+      data.handled_at = new Date()
+    }
+
+    if (req.body?.delivery_method !== undefined) {
+      const deliveryMethod = req.body.delivery_method === 'EKSPEDISI' ? 'EKSPEDISI' : 'AMBIL_SENDIRI'
+      data.delivery_method = deliveryMethod
+      if (deliveryMethod === 'EKSPEDISI') {
+        const address = String(req.body.shipping_address || existing.shipping_address || '').trim()
+        if (!address) {
+          return res.status(400).json({ error: 'Alamat pengiriman wajib diisi untuk mengubah jadi ekspedisi.' })
+        }
+        data.shipping_address = address
+      } else {
+        data.shipping_address = null
+      }
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'Tidak ada perubahan yang dikirim' })
+    }
+
+    const updated = await prisma.showroom_pickup_requests.update({ where: { id }, data })
 
     res.json(updated)
   } catch (error) {

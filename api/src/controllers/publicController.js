@@ -309,6 +309,30 @@ export async function checkStnkBpkb(req, res, next) {
       responseData.pickup_docs = []
     }
 
+    // Status pengiriman via ekspedisi (kalau ada) -- supaya konsumen bisa cek
+    // ulang tanpa perlu token/login, cukup dengan Nomor Mesin + HP/rangka yang
+    // sudah lolos verifikasi di atas.
+    const shipmentRows = await prisma.document_handovers.findMany({
+      where: { engine_number: track.engine_number, handover_mode: 'ekspedisi' },
+      select: {
+        document_type: true,
+        status: true,
+        tracking_number: true,
+        updated_at: true,
+        assigned_courier: { select: { name: true } },
+      },
+      orderBy: { updated_at: 'desc' },
+    })
+    const SHIPMENT_DOC_LABEL = { STNK: 'STNK', BPKB: 'BPKB', PLAT: 'Plat Nomor', BUKU_SERVICE: 'Buku Service' }
+    responseData.shipments = shipmentRows.map((row) => ({
+      document_type: row.document_type,
+      document_label: SHIPMENT_DOC_LABEL[row.document_type] || row.document_type,
+      status: row.status, // tersedia | dikirim_ekspedisi | selesai
+      tracking_number: row.tracking_number || null,
+      courier_name: row.assigned_courier?.name || null,
+      updated_at: row.updated_at,
+    }))
+
     res.json(responseData)
   } catch (err) {
     next(err)
@@ -324,10 +348,15 @@ export async function checkStnkBpkb(req, res, next) {
  */
 export async function requestPickup(req, res, next) {
   try {
-    const { engine_number, pickup_token, consumer_phone, preferred_time, notes } = req.body || {}
+    const { engine_number, pickup_token, consumer_phone, preferred_time, notes, delivery_method, shipping_address } = req.body || {}
 
     if (!engine_number || !pickup_token) {
       return res.status(400).json({ error: 'Nomor Mesin dan token permintaan wajib diisi' })
+    }
+
+    const cleanDeliveryMethod = delivery_method === 'EKSPEDISI' ? 'EKSPEDISI' : 'AMBIL_SENDIRI'
+    if (cleanDeliveryMethod === 'EKSPEDISI' && !String(shipping_address || '').trim()) {
+      return res.status(400).json({ error: 'Alamat pengiriman wajib diisi untuk pengiriman via ekspedisi.' })
     }
 
     // Verifikasi token DULU — pastikan dikeluarkan /check untuk engine yang sama.
@@ -386,6 +415,8 @@ export async function requestPickup(req, res, next) {
         notes: notes ? String(notes).slice(0, 1000) : null,
         ktp_photo_url: `/uploads/pickup-ktp/${req.file.filename}`,
         status: 'PENDING',
+        delivery_method: cleanDeliveryMethod,
+        shipping_address: cleanDeliveryMethod === 'EKSPEDISI' ? String(shipping_address).trim().slice(0, 500) : null,
       }
     })
 

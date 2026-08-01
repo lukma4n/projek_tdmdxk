@@ -23,7 +23,10 @@ import {
   Info,
   Copy,
   MessageCircle,
-  Send
+  Send,
+  Truck,
+  MapPin,
+  Home,
 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { selfCheckUrl } from '../config/selfCheck'
@@ -80,6 +83,9 @@ export default function StnkBpkbCheck() {
   const [pickupDate, setPickupDate] = useState('')
   const [pickupHour, setPickupHour] = useState('')
   const [pickupNotes, setPickupNotes] = useState('')
+  // Pengiriman via ekspedisi: AMBIL_SENDIRI (default) atau EKSPEDISI.
+  const [deliveryMethod, setDeliveryMethod] = useState('AMBIL_SENDIRI')
+  const [shippingAddress, setShippingAddress] = useState('')
   const [pickupSubmitting, setPickupSubmitting] = useState(false)
   const [pickupSuccess, setPickupSuccess] = useState(null)
   const [pickupError, setPickupError] = useState('')
@@ -233,6 +239,10 @@ export default function StnkBpkbCheck() {
       setPickupError('Foto KTP wajib dilampirkan. Unggah foto KTP pemilik (JPG/PNG, maks 10MB).')
       return
     }
+    if (deliveryMethod === 'EKSPEDISI' && !shippingAddress.trim()) {
+      setPickupError('Alamat pengiriman wajib diisi untuk pengiriman via ekspedisi.')
+      return
+    }
     setPickupSubmitting(true)
     setPickupError('')
     setPickupSuccess(null)
@@ -241,7 +251,12 @@ export default function StnkBpkbCheck() {
       formData.append('engine_number', result.engine_number)
       formData.append('pickup_token', result.pickup_token)
       formData.append('consumer_phone', pickupPhone.trim())
-      formData.append('preferred_time', formatPreferredTime(pickupDate, pickupHour))
+      formData.append('delivery_method', deliveryMethod)
+      if (deliveryMethod === 'EKSPEDISI') {
+        formData.append('shipping_address', shippingAddress.trim())
+      } else {
+        formData.append('preferred_time', formatPreferredTime(pickupDate, pickupHour))
+      }
       formData.append('notes', pickupNotes.trim())
       formData.append('ktp_photo', ktpFile)
 
@@ -256,6 +271,7 @@ export default function StnkBpkbCheck() {
       setKtpPreview('')
       setPickupDate('')
       setPickupHour('')
+      setShippingAddress('')
     } catch (err) {
       setPickupError(err.message || 'Gagal mengirim permintaan. Coba lagi atau hubungi dealer.')
     } finally {
@@ -461,6 +477,39 @@ export default function StnkBpkbCheck() {
               </div>
             </div>
 
+            {/* Status pengiriman via ekspedisi (kalau ada) */}
+            {result.shipments && result.shipments.length > 0 && (
+              <div className="rounded-3xl border border-accent/20 bg-accent/10 p-6 shadow-md shadow-accent/5">
+                <div className="flex items-center gap-2.5">
+                  <Truck size={20} className="text-accent" />
+                  <h4 className="font-bold text-accent text-base">Status Pengiriman</h4>
+                </div>
+                <ul className="mt-3 space-y-3">
+                  {result.shipments.map((s) => (
+                    <li key={s.document_type} className="flex items-start gap-3 rounded-2xl border border-border bg-panel p-3.5">
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
+                        {s.status === 'selesai' ? <CheckCircle2 size={16} /> : <Truck size={16} />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-text-strong">{s.document_label}</p>
+                        <p className="text-xs font-semibold text-accent">
+                          {s.status === 'tersedia' && 'Menunggu diserahkan ke ekspedisi'}
+                          {s.status === 'dikirim_ekspedisi' && 'Sedang dikirim'}
+                          {s.status === 'selesai' && 'Sudah diterima'}
+                        </p>
+                        {s.tracking_number && (
+                          <p className="mt-1 text-xs text-muted">
+                            Resi: <span className="font-mono font-semibold text-text">{s.tracking_number}</span>
+                            {s.courier_name && <> · {s.courier_name}</>}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Status Penjemputan / Callout Banner — BPKB leasing tidak diambil konsumen */}
             {((result.stnk.is_done && !result.stnk.is_delivered) || (result.bpkb.is_done && !result.bpkb.is_delivered && result.bpkb.for_consumer)) && (
               <div className="flex gap-4 rounded-3xl border border-accent/20 bg-accent/10 p-6 shadow-md shadow-accent/5">
@@ -547,42 +596,96 @@ export default function StnkBpkbCheck() {
                   </div>
                   <div>
                     <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
-                      Waktu Preferensi Pengambilan (opsional)
+                      Cara Pengambilan
                     </label>
-                    <p className="mb-2 text-[11px] text-muted">
-                      Pilih tanggal & perkiraan jam. Jam operasional pengambilan 08.00–17.00.
-                    </p>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="relative">
-                        <Calendar size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                        <input
-                          id="pickup-date"
-                          type="date"
-                          value={pickupDate}
-                          min={todayLocalStr()}
-                          onChange={(e) => setPickupDate(e.target.value)}
-                          className="w-full rounded-xl border border-border bg-hover px-4 py-3 pl-9 text-sm transition-all focus:outline-none focus:border-accent focus:ring-4 focus:ring-accent/10 text-text"
-                        />
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryMethod('AMBIL_SENDIRI')}
+                        className={`flex flex-col items-center gap-1.5 rounded-xl border-2 py-3.5 text-sm font-bold transition-all ${
+                          deliveryMethod === 'AMBIL_SENDIRI'
+                            ? 'border-accent bg-accent-soft text-accent'
+                            : 'border-border bg-hover text-muted hover:border-accent/40'
+                        }`}
+                      >
+                        <Home size={18} /> Ambil Sendiri
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryMethod('EKSPEDISI')}
+                        className={`flex flex-col items-center gap-1.5 rounded-xl border-2 py-3.5 text-sm font-bold transition-all ${
+                          deliveryMethod === 'EKSPEDISI'
+                            ? 'border-accent bg-accent-soft text-accent'
+                            : 'border-border bg-hover text-muted hover:border-accent/40'
+                        }`}
+                      >
+                        <Truck size={18} /> Kirim via Ekspedisi
+                      </button>
+                    </div>
+                  </div>
+
+                  {deliveryMethod === 'AMBIL_SENDIRI' ? (
+                    <div>
+                      <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
+                        Waktu Preferensi Pengambilan (opsional)
+                      </label>
+                      <p className="mb-2 text-[11px] text-muted">
+                        Pilih tanggal & perkiraan jam. Jam operasional pengambilan 08.00–17.00.
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="relative">
+                          <Calendar size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                          <input
+                            id="pickup-date"
+                            type="date"
+                            value={pickupDate}
+                            min={todayLocalStr()}
+                            onChange={(e) => setPickupDate(e.target.value)}
+                            className="w-full rounded-xl border border-border bg-hover px-4 py-3 pl-9 text-sm transition-all focus:outline-none focus:border-accent focus:ring-4 focus:ring-accent/10 text-text"
+                          />
+                        </div>
+                        <div className="relative">
+                          <Clock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                          <input
+                            id="pickup-hour"
+                            type="time"
+                            value={pickupHour}
+                            min="08:00"
+                            max="17:00"
+                            onChange={(e) => setPickupHour(e.target.value)}
+                            className="w-full rounded-xl border border-border bg-hover px-4 py-3 pl-9 text-sm transition-all focus:outline-none focus:border-accent focus:ring-4 focus:ring-accent/10 text-text"
+                          />
+                        </div>
                       </div>
+                      {(pickupDate || pickupHour) && (
+                        <p className="mt-2 text-[11px] font-semibold text-accent">
+                          {formatPreferredTime(pickupDate, pickupHour)}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <label htmlFor="pickup-address" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
+                        Alamat Pengiriman *
+                      </label>
+                      <p className="mb-2 text-[11px] text-muted">
+                        Dealer akan memesan ekspedisi ke alamat ini. Isi selengkap mungkin (jalan, RT/RW, kelurahan, kecamatan, kota).
+                      </p>
                       <div className="relative">
-                        <Clock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                        <input
-                          id="pickup-hour"
-                          type="time"
-                          value={pickupHour}
-                          min="08:00"
-                          max="17:00"
-                          onChange={(e) => setPickupHour(e.target.value)}
-                          className="w-full rounded-xl border border-border bg-hover px-4 py-3 pl-9 text-sm transition-all focus:outline-none focus:border-accent focus:ring-4 focus:ring-accent/10 text-text"
+                        <MapPin size={16} className="pointer-events-none absolute left-3 top-3.5 text-muted" />
+                        <textarea
+                          id="pickup-address"
+                          value={shippingAddress}
+                          onChange={(e) => setShippingAddress(e.target.value)}
+                          placeholder="Contoh: Jl. Merdeka No. 12, RT 03/RW 01, Kel. Sukajadi, Kec. Delta Pawan, Ketapang"
+                          required
+                          rows={3}
+                          maxLength={500}
+                          className="w-full rounded-xl border px-4 py-3 pl-9 text-sm transition-all focus:outline-none border-border bg-hover text-text focus:border-accent focus:ring-4 focus:ring-accent/10"
                         />
                       </div>
                     </div>
-                    {(pickupDate || pickupHour) && (
-                      <p className="mt-2 text-[11px] font-semibold text-accent">
-                        {formatPreferredTime(pickupDate, pickupHour)}
-                      </p>
-                    )}
-                  </div>
+                  )}
                   <div>
                     <label htmlFor="pickup-notes" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-accent">
                       Catatan (opsional)

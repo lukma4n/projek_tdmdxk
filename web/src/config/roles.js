@@ -13,6 +13,7 @@ export const ROLES = Object.freeze({
   ADMIN_CRM: 'CRM',
   MASTER_IT: 'IT Master',
   SALESMAN: 'Salesman',
+  EKSPEDISI: 'Ekspedisi',
 })
 
 // UI labels (database value -> display label)
@@ -27,6 +28,7 @@ export const ROLE_LABELS = Object.freeze({
   [ROLES.PARTMAN]: 'Partman',
   [ROLES.ADMIN_CRM]: 'Admin CRM',
   [ROLES.SALESMAN]: 'Salesman',
+  [ROLES.EKSPEDISI]: 'Ekspedisi',
 })
 
 // UI label resolver
@@ -98,13 +100,14 @@ export const DOCUMENT_HANDOVER_ROLES = [
   ROLES.ADMIN_CRM,
   ROLES.KEPALA_CABANG,
   ROLES.SALESMAN,
+  ROLES.EKSPEDISI,
 ]
 
 // Default redirects after login
 export function getDefaultRoute(role) {
   if (role === ROLES.ADMIN_SHOWROOM) return '/showroom/dashboard'
   if (role === ROLES.ADMIN_CRM) return '/follow-up-kpb'
-  if (role === ROLES.SALESMAN) return '/showroom/document-handover'
+  if (role === ROLES.SALESMAN || role === ROLES.EKSPEDISI) return '/showroom/document-handover'
   if (role === ROLES.ADH || role === ROLES.PIC_STOCK_OPNAME) {
     return '/showroom/opname-unit'
   }

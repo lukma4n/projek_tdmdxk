@@ -51,6 +51,7 @@ const STATUS_CONFIG = {
   diserahkan_ke_sales: { label: 'Di Salesman', color: 'bg-accent-soft text-accent-text border-accent-soft', step: 2 },
   diterima_sales: { label: 'Diterima Sales', color: 'bg-indigo-100 text-indigo-700 border-indigo-200', step: 3 },
   diserahkan_ke_konsumen: { label: 'Diserahkan', color: 'bg-warning-soft text-warning border-amber-200', step: 4 },
+  dikirim_ekspedisi: { label: 'Dikirim Ekspedisi', color: 'bg-warning-soft text-warning border-amber-200', step: 2 },
   selesai: { label: 'Selesai', color: 'bg-success-soft text-success border-emerald-200', step: 5 },
 }
 
@@ -58,6 +59,8 @@ const STEP_LABELS = {
   admin_ke_sales: 'Admin ke Salesman',
   sales_terima: 'Salesman Terima',
   serah_ke_konsumen: 'Serahkan ke Konsumen',
+  admin_ke_ekspedisi: 'Serahkan ke Ekspedisi',
+  ekspedisi_ke_konsumen: 'Ekspedisi Konfirmasi Diterima',
 }
 
 function formatDate(value) {
@@ -94,8 +97,19 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
   // pembentukan grup), jadi cukup ambil satu sebagai acuan field bersama.
   const handover = handovers[0]
   const isMulti = handovers.length > 1
-  const [stepType, setStepType] = useState(type || 'serah_ke_konsumen')
-  const [receivedBy, setReceivedBy] = useState('')
+  // Mode ekspedisi cuma punya 1 langkah valid per status -- tidak ada
+  // pilihan Ke Salesman/Langsung Konsumen seperti mode lain.
+  const isEkspedisi = handover.handover_mode === 'ekspedisi'
+  const initialStepType = type || (isEkspedisi ? (handover.status === 'tersedia' ? 'admin_ke_ekspedisi' : 'ekspedisi_ke_konsumen') : 'serah_ke_konsumen')
+  const [stepType, setStepType] = useState(initialStepType)
+  // Serah ke ekspedisi: penerima = akun kurir yang sudah ditugaskan (bukan
+  // ketikan bebas). Konfirmasi diterima: penerima = konsumen, boleh dikoreksi.
+  const [receivedBy, setReceivedBy] = useState(() => {
+    if (initialStepType === 'admin_ke_ekspedisi') return handover.assigned_courier?.name || ''
+    if (initialStepType === 'ekspedisi_ke_konsumen') return handover.consumer_name || ''
+    return ''
+  })
+  const [trackingNumber, setTrackingNumber] = useState('')
   const [notes, setNotes] = useState('')
   
   const [photoDoc, setPhotoDoc] = useState(null)
@@ -139,6 +153,10 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
       alert('Nama penerima wajib diisi')
       return
     }
+    if (stepType === 'admin_ke_ekspedisi' && !trackingNumber.trim()) {
+      alert('Nomor resi wajib diisi saat menyerahkan ke ekspedisi')
+      return
+    }
     setSaving(true)
     // Satu langkah yang sama diterapkan ke semua dokumen dalam grup --
     // berurutan (bukan Promise.all), supaya kalau ada yang gagal di tengah
@@ -152,6 +170,7 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
         formData.append('given_by_name', user?.name || '')
         formData.append('received_by_name', receivedBy)
         formData.append('notes', notes)
+        if (stepType === 'admin_ke_ekspedisi') formData.append('tracking_number', trackingNumber.trim())
         if (photoDoc) formData.append('photo_doc', photoDoc)
         if (photoHandover) formData.append('photo_handover', photoHandover)
         await addHandoverStep(h.id, formData)
@@ -187,38 +206,56 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
           </div>
         </div>
         <div className="px-6 py-5 space-y-5">
+          {isEkspedisi && handover.shipping_address && (
+            <div className="rounded-xl border border-border bg-hover px-4 py-3 text-sm">
+              <p className="text-xs font-bold uppercase tracking-wide text-faint mb-1">Alamat Pengiriman</p>
+              <p className="text-text">{handover.shipping_address}</p>
+              {handover.assigned_courier?.name && (
+                <p className="mt-1 text-xs text-muted">Ekspedisi: <span className="font-semibold text-text">{handover.assigned_courier.name}</span></p>
+              )}
+            </div>
+          )}
+
           {/* Step type */}
           <div>
             <label className="block text-sm font-semibold text-text mb-2">Jenis Serah Terima</label>
-            <div className="grid grid-cols-2 gap-2">
-              {handover.status === 'tersedia' && (
-                <>
-                  <button
-                    onClick={() => setStepType('admin_ke_sales')}
-                    className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${stepType === 'admin_ke_sales' ? 'border-accent bg-accent-soft text-accent-text' : 'border-border text-muted hover:border-border-strong'}`}
-                  >
-                    <Users size={18} className="mx-auto mb-1" />
-                    Ke Salesman
-                  </button>
+            {isEkspedisi ? (
+              // Mode ekspedisi: cuma 1 langkah valid per status, tidak ada pilihan.
+              <div className="p-3 rounded-xl border-2 border-accent bg-accent-soft text-accent-text text-sm font-medium flex items-center justify-center gap-2">
+                <Truck size={18} />
+                {stepType === 'admin_ke_ekspedisi' ? 'Serahkan ke Ekspedisi' : 'Tandai Diterima Konsumen'}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {handover.status === 'tersedia' && (
+                  <>
+                    <button
+                      onClick={() => setStepType('admin_ke_sales')}
+                      className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${stepType === 'admin_ke_sales' ? 'border-accent bg-accent-soft text-accent-text' : 'border-border text-muted hover:border-border-strong'}`}
+                    >
+                      <Users size={18} className="mx-auto mb-1" />
+                      Ke Salesman
+                    </button>
+                    <button
+                      onClick={() => setStepType('serah_ke_konsumen')}
+                      className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${stepType === 'serah_ke_konsumen' ? 'border-emerald-500 bg-success-soft text-success' : 'border-border text-muted hover:border-border-strong'}`}
+                    >
+                      <User size={18} className="mx-auto mb-1" />
+                      Langsung Konsumen
+                    </button>
+                  </>
+                )}
+                {(handover.status === 'diserahkan_ke_sales' || handover.status === 'diterima_sales') && (
                   <button
                     onClick={() => setStepType('serah_ke_konsumen')}
-                    className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${stepType === 'serah_ke_konsumen' ? 'border-emerald-500 bg-success-soft text-success' : 'border-border text-muted hover:border-border-strong'}`}
+                    className="col-span-2 p-3 rounded-xl border-2 border-emerald-500 bg-success-soft text-success text-sm font-medium"
                   >
                     <User size={18} className="mx-auto mb-1" />
-                    Langsung Konsumen
+                    Serahkan ke Konsumen
                   </button>
-                </>
-              )}
-              {(handover.status === 'diserahkan_ke_sales' || handover.status === 'diterima_sales') && (
-                <button
-                  onClick={() => setStepType('serah_ke_konsumen')}
-                  className="col-span-2 p-3 rounded-xl border-2 border-emerald-500 bg-success-soft text-success text-sm font-medium"
-                >
-                  <User size={18} className="mx-auto mb-1" />
-                  Serahkan ke Konsumen
-                </button>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Given by */}
@@ -231,10 +268,25 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
             />
           </div>
 
+          {/* Nomor resi -- cuma saat serah ke ekspedisi */}
+          {stepType === 'admin_ke_ekspedisi' && (
+            <div>
+              <label className="block text-sm font-semibold text-text mb-1.5">Nomor Resi *</label>
+              <input
+                value={trackingNumber}
+                onChange={(e) => setTrackingNumber(e.target.value)}
+                placeholder="Contoh: JX1234567890"
+                className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+              />
+            </div>
+          )}
+
           {/* Received by */}
           <div>
             <label className="block text-sm font-semibold text-text mb-1.5">
-              {stepType === 'admin_ke_sales' ? 'Nama Salesman Penerima' : 'Nama Konsumen Penerima'} *
+              {stepType === 'admin_ke_sales' ? 'Nama Salesman Penerima'
+                : stepType === 'admin_ke_ekspedisi' ? 'Akun Ekspedisi Penerima'
+                : 'Nama Konsumen Penerima'} *
             </label>
             {stepType === 'admin_ke_sales' ? (
               <select
@@ -247,6 +299,12 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
                   <option key={s.id} value={s.name}>{s.name}{s.team_leader ? ` (${s.team_leader})` : ''}</option>
                 ))}
               </select>
+            ) : stepType === 'admin_ke_ekspedisi' ? (
+              <input
+                value={receivedBy}
+                disabled
+                className="w-full px-4 py-2.5 border border-border bg-hover text-muted rounded-xl text-sm focus:outline-none cursor-not-allowed font-medium"
+              />
             ) : (
               <input
                 value={receivedBy}
@@ -805,6 +863,8 @@ export default function ShowroomDocumentHandover() {
       case 'diserahkan_ke_sales':
       case 'diterima_sales':
         return { label: 'Ke Konsumen', icon: User, action: () => setHandoverModal({ handovers: group, type: 'serah_ke_konsumen' }) }
+      case 'dikirim_ekspedisi':
+        return { label: 'Tandai Diterima', icon: CheckCircle2, action: () => setHandoverModal({ handovers: group, type: 'ekspedisi_ke_konsumen' }) }
       default:
         return null
     }
@@ -1053,12 +1113,31 @@ export default function ShowroomDocumentHandover() {
                         </div>
                         <div>
                           <span className="text-faint block mb-0.5">Mode Serah Terima</span>
-                          <span className="font-medium text-text">{item.handover_mode === 'via_sales' ? 'Via Salesman' : 'Langsung Konsumen'}</span>
+                          <span className="font-medium text-text">
+                            {item.handover_mode === 'via_sales' ? 'Via Salesman' : item.handover_mode === 'ekspedisi' ? 'Via Ekspedisi' : 'Langsung Konsumen'}
+                          </span>
                         </div>
-                        <div>
-                          <span className="text-faint block mb-0.5">Salesman</span>
-                          <span className="text-text">{item.salesman_name || '-'}</span>
-                        </div>
+                        {item.handover_mode === 'ekspedisi' ? (
+                          <>
+                            <div>
+                              <span className="text-faint block mb-0.5">Ekspedisi</span>
+                              <span className="text-text">{item.assigned_courier?.name || '-'}</span>
+                            </div>
+                            <div>
+                              <span className="text-faint block mb-0.5">Nomor Resi</span>
+                              <span className="font-mono text-text">{item.tracking_number || '-'}</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-faint block mb-0.5">Alamat Pengiriman</span>
+                              <span className="text-text">{item.shipping_address || '-'}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div>
+                            <span className="text-faint block mb-0.5">Salesman</span>
+                            <span className="text-text">{item.salesman_name || '-'}</span>
+                          </div>
+                        )}
                         <div>
                           <span className="text-faint block mb-0.5">Konsumen Penerima</span>
                           <span className="text-text">{item.consumer_name || '-'}</span>

@@ -27,6 +27,15 @@ export async function getDocumentHandovers(req, res, next) {
       } else {
         where.salesman_name = req.user.name
       }
+    } else if (req.user.role === 'Ekspedisi') {
+      if (search) {
+        where.AND = [
+          { assigned_courier_id: req.user.userId },
+          { OR: [{ engine_number: { contains: search } }, { consumer_name: { contains: search } }] },
+        ]
+      } else {
+        where.assigned_courier_id = req.user.userId
+      }
     } else if (salesman_name) {
       where.salesman_name = salesman_name
       if (search) {
@@ -49,6 +58,7 @@ export async function getDocumentHandovers(req, res, next) {
         where,
         include: {
           creator: { select: { id: true, name: true } },
+          assigned_courier: { select: { id: true, name: true } },
           steps: {
             orderBy: { performed_at: 'desc' },
             take: 1,
@@ -111,6 +121,8 @@ export async function getDocumentHandoverSummary(req, res, next) {
     if (document_type) where.document_type = document_type
     if (req.user.role === 'Salesman') {
       where.salesman_name = req.user.name
+    } else if (req.user.role === 'Ekspedisi') {
+      where.assigned_courier_id = req.user.userId
     }
 
     const [byStatusRaw, byDocTypeRaw, completedThisMonth] = await Promise.all([
@@ -143,6 +155,19 @@ export async function getHandoverSalespeople(req, res, next) {
       orderBy: { name: 'asc' },
     })
     res.json(salespeople)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getCourierUsers(req, res, next) {
+  try {
+    const couriers = await prisma.users.findMany({
+      where: { role: 'Ekspedisi' },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    })
+    res.json(couriers)
   } catch (err) {
     next(err)
   }
@@ -222,6 +247,41 @@ export async function getAvailableDocuments(req, res, next) {
   }
 }
 
+/**
+ * Bundling Buku Service: sengaja ditahan sampai STNK/BPKB/Plat siap
+ * diserahkan (atau dikirim ekspedisi), supaya konsumen yang STNK-nya lambat
+ * jadi (slow moving) tetap punya alasan kembali ke dealer -- bukan cuma
+ * kemudahan input. Dipanggil terpisah dari pembuatan handover utama: kalau
+ * ini gagal (mis. sudah ada), handover utama yang memang diminta tidak boleh
+ * ikut batal. Dipakai baik oleh createDocumentHandover maupun
+ * processShipmentFromPickupRequest supaya logikanya satu sumber kebenaran.
+ */
+async function createBukuServiceBundleIfNeeded({
+  engineNumber, triggerDocType, handoverMode, consumerName, consumerPhone,
+  shippingAddress, assignedCourierId, createdBy,
+}) {
+  if (triggerDocType === 'BUKU_SERVICE') return null
+  const existing = await prisma.document_handovers.findUnique({
+    where: { engine_number_document_type: { engine_number: engineNumber, document_type: 'BUKU_SERVICE' } },
+  })
+  if (existing) return null
+  return prisma.document_handovers.create({
+    data: {
+      engine_number: engineNumber,
+      document_type: 'BUKU_SERVICE',
+      handover_mode: handoverMode,
+      status: 'tersedia',
+      consumer_name: consumerName || null,
+      consumer_phone: consumerPhone || null,
+      shipping_address: shippingAddress || null,
+      assigned_courier_id: assignedCourierId || null,
+      notes: 'Dibundel otomatis saat menambah ' + triggerDocType,
+      created_by: createdBy,
+    },
+    include: { creator: { select: { id: true, name: true } } },
+  })
+}
+
 export async function createDocumentHandover(req, res, next) {
   try {
     const { engine_number, document_type, handover_mode, salesman_name, consumer_name, consumer_phone, notes, include_buku_service } = req.body
@@ -252,34 +312,16 @@ export async function createDocumentHandover(req, res, next) {
       },
     })
 
-    // Bundling Buku Service: sengaja ditahan sampai STNK/BPKB/Plat siap
-    // diserahkan, supaya konsumen yang STNK-nya lambat jadi (slow moving)
-    // tetap punya alasan kembali ke dealer -- bukan cuma kemudahan input.
-    // Dibuat terpisah dari transaksi di atas: kalau ini gagal (mis. sudah
-    // ada), handover utama yang memang diminta admin tidak boleh ikut batal.
     let bukuServiceHandover = null
-    if (include_buku_service && document_type !== 'BUKU_SERVICE') {
-      const existing = await prisma.document_handovers.findUnique({
-        where: { engine_number_document_type: { engine_number, document_type: 'BUKU_SERVICE' } },
+    if (include_buku_service) {
+      bukuServiceHandover = await createBukuServiceBundleIfNeeded({
+        engineNumber: engine_number,
+        triggerDocType: document_type,
+        handoverMode: handover_mode || 'langsung',
+        consumerName: consumer_name,
+        consumerPhone: consumer_phone,
+        createdBy: req.user.userId,
       })
-      if (!existing) {
-        bukuServiceHandover = await prisma.document_handovers.create({
-          data: {
-            engine_number,
-            document_type: 'BUKU_SERVICE',
-            handover_mode: handover_mode || 'langsung',
-            status: 'tersedia',
-            salesman_name: salesman_name || null,
-            consumer_name: consumer_name || null,
-            consumer_phone: consumer_phone || null,
-            notes: 'Dibundel otomatis saat menambah ' + document_type,
-            created_by: req.user.userId,
-          },
-          include: {
-            creator: { select: { id: true, name: true } },
-          },
-        })
-      }
     }
 
     res.status(201).json({ ...handover, buku_service_handover: bukuServiceHandover })
@@ -291,7 +333,7 @@ export async function createDocumentHandover(req, res, next) {
 export async function addHandoverStep(req, res, next) {
   try {
     const { id } = req.params
-    const { step_type, given_by_name, received_by_name, notes } = req.body
+    const { step_type, given_by_name, received_by_name, notes, tracking_number } = req.body
 
     const handover = await prisma.document_handovers.findUnique({
       where: { id: parseInt(id) },
@@ -300,7 +342,7 @@ export async function addHandoverStep(req, res, next) {
       return res.status(404).json({ error: 'Record serah terima tidak ditemukan' })
     }
 
-    const validStepTypes = ['admin_ke_sales', 'sales_terima', 'serah_ke_konsumen']
+    const validStepTypes = ['admin_ke_sales', 'sales_terima', 'serah_ke_konsumen', 'admin_ke_ekspedisi', 'ekspedisi_ke_konsumen']
     if (!validStepTypes.includes(step_type)) {
       return res.status(400).json({ error: `step_type harus salah satu: ${validStepTypes.join(', ')}` })
     }
@@ -309,6 +351,8 @@ export async function addHandoverStep(req, res, next) {
       admin_ke_sales: { from: ['tersedia'], to: 'diserahkan_ke_sales' },
       sales_terima: { from: ['diserahkan_ke_sales'], to: 'diterima_sales' },
       serah_ke_konsumen: { from: ['tersedia', 'diterima_sales', 'diserahkan_ke_sales'], to: 'selesai' },
+      admin_ke_ekspedisi: { from: ['tersedia'], to: 'dikirim_ekspedisi' },
+      ekspedisi_ke_konsumen: { from: ['dikirim_ekspedisi'], to: 'selesai' },
     }
 
     const transition = transitions[step_type]
@@ -327,6 +371,21 @@ export async function addHandoverStep(req, res, next) {
       }
     }
 
+    if (req.user.role === 'Ekspedisi') {
+      if (!handover.assigned_courier_id || handover.assigned_courier_id !== req.user.userId) {
+        return res.status(403).json({ error: 'Akses ditolak. Kiriman ini tidak ditugaskan kepada Anda.' })
+      }
+      if (step_type !== 'ekspedisi_ke_konsumen') {
+        return res.status(403).json({ error: 'Ekspedisi hanya diizinkan untuk menandai dokumen sudah diterima konsumen.' })
+      }
+    }
+
+    // Nomor resi wajib saat serah ke ekspedisi -- tanpa itu kiriman tidak
+    // bisa dilacak sama sekali, bertentangan dengan tujuan fitur ini.
+    if (step_type === 'admin_ke_ekspedisi' && !String(tracking_number || '').trim()) {
+      return res.status(400).json({ error: 'Nomor resi wajib diisi saat menyerahkan ke ekspedisi.' })
+    }
+
     let photo_url = null
     let photo_handover_url = null
     if (req.files) {
@@ -339,7 +398,9 @@ export async function addHandoverStep(req, res, next) {
     }
 
     const newStatus = transition.to
-    const handoverMode = step_type === 'admin_ke_sales' ? 'via_sales' : handover.handover_mode
+    const handoverMode = step_type === 'admin_ke_sales' ? 'via_sales'
+      : step_type === 'admin_ke_ekspedisi' ? 'ekspedisi'
+      : handover.handover_mode
 
     const [step] = await prisma.$transaction([
       prisma.document_handover_steps.create({
@@ -362,6 +423,7 @@ export async function addHandoverStep(req, res, next) {
           handover_mode: handoverMode,
           ...(step_type === 'admin_ke_sales' && received_by_name ? { salesman_name: received_by_name } : {}),
           ...(step_type === 'serah_ke_konsumen' && received_by_name ? { consumer_name: received_by_name } : {}),
+          ...(step_type === 'admin_ke_ekspedisi' ? { tracking_number: String(tracking_number).trim() } : {}),
         },
       }),
     ])
@@ -482,6 +544,112 @@ export async function deleteDocumentHandover(req, res, next) {
     await prisma.document_handovers.delete({ where: { id: parseInt(id) } })
 
     res.json({ success: true })
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
+ * POST /showroom/pickup-requests/:id/process-shipment
+ * Body: { document_types: string[], assigned_courier_id, include_buku_service? }
+ *
+ * Ubah permintaan pickup (delivery_method EKSPEDISI) jadi baris
+ * document_handovers mode 'ekspedisi'. document_types adalah subset dari
+ * requested_docs milik permintaan ini -- staf boleh memproses sebagian dulu
+ * kalau tidak semua dokumen yang diminta konsumen sudah siap dikirim.
+ */
+export async function processShipmentFromPickupRequest(req, res, next) {
+  try {
+    const pickupId = parseInt(req.params.id)
+    if (!Number.isInteger(pickupId) || pickupId <= 0) {
+      return res.status(400).json({ error: 'ID tidak valid' })
+    }
+
+    const { document_types: documentTypesRaw, assigned_courier_id: assignedCourierIdRaw, include_buku_service: includeBukuService } = req.body || {}
+
+    const pickupRequest = await prisma.showroom_pickup_requests.findUnique({ where: { id: pickupId } })
+    if (!pickupRequest) {
+      return res.status(404).json({ error: 'Permintaan tidak ditemukan' })
+    }
+    if (pickupRequest.delivery_method !== 'EKSPEDISI') {
+      return res.status(400).json({ error: 'Permintaan ini bukan pengiriman via ekspedisi' })
+    }
+    if (!pickupRequest.shipping_address) {
+      return res.status(400).json({ error: 'Permintaan ini belum punya alamat pengiriman' })
+    }
+
+    const requestedDocs = String(pickupRequest.requested_docs || '').split(',').map((s) => s.trim()).filter(Boolean)
+    const typesToProcess = Array.isArray(documentTypesRaw)
+      ? [...new Set(documentTypesRaw.map((t) => String(t).trim()).filter(Boolean))]
+      : []
+
+    if (typesToProcess.length === 0) {
+      return res.status(400).json({ error: 'document_types wajib diisi' })
+    }
+
+    const invalidTypes = typesToProcess.filter((t) => !requestedDocs.includes(t))
+    if (invalidTypes.length > 0) {
+      return res.status(400).json({ error: `Tipe dokumen berikut tidak diminta di permintaan ini: ${invalidTypes.join(', ')}` })
+    }
+
+    const assignedCourierId = Number(assignedCourierIdRaw)
+    if (!Number.isInteger(assignedCourierId) || assignedCourierId <= 0) {
+      return res.status(400).json({ error: 'assigned_courier_id wajib diisi' })
+    }
+    const courier = await prisma.users.findUnique({ where: { id: assignedCourierId } })
+    if (!courier || courier.role !== 'Ekspedisi') {
+      return res.status(400).json({ error: 'Akun ekspedisi tidak valid' })
+    }
+
+    // Non-atomik per baris (pola sama seperti bundling Buku Service) --
+    // kalau satu tipe sudah pernah punya handover, yang lain tetap diproses.
+    const created = []
+    const skipped = []
+    for (const docType of typesToProcess) {
+      const existing = await prisma.document_handovers.findUnique({
+        where: { engine_number_document_type: { engine_number: pickupRequest.engine_number, document_type: docType } },
+      })
+      if (existing) {
+        skipped.push(docType)
+        continue
+      }
+      const handover = await prisma.document_handovers.create({
+        data: {
+          engine_number: pickupRequest.engine_number,
+          document_type: docType,
+          handover_mode: 'ekspedisi',
+          status: 'tersedia',
+          consumer_name: pickupRequest.consumer_name || null,
+          consumer_phone: pickupRequest.consumer_phone || null,
+          shipping_address: pickupRequest.shipping_address,
+          assigned_courier_id: courier.id,
+          created_by: req.user.userId,
+        },
+      })
+      created.push(handover)
+    }
+
+    const bukuServiceHandover = includeBukuService
+      ? await createBukuServiceBundleIfNeeded({
+          engineNumber: pickupRequest.engine_number,
+          triggerDocType: typesToProcess[0],
+          handoverMode: 'ekspedisi',
+          consumerName: pickupRequest.consumer_name,
+          consumerPhone: pickupRequest.consumer_phone,
+          shippingAddress: pickupRequest.shipping_address,
+          assignedCourierId: courier.id,
+          createdBy: req.user.userId,
+        })
+      : null
+
+    if (created.length > 0 || bukuServiceHandover) {
+      await prisma.showroom_pickup_requests.update({
+        where: { id: pickupId },
+        data: { status: 'DONE', handled_by: req.user.userId, handled_at: new Date() },
+      })
+    }
+
+    res.status(201).json({ created, skipped, buku_service_handover: bukuServiceHandover })
   } catch (err) {
     next(err)
   }

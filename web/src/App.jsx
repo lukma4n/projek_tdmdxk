@@ -108,7 +108,7 @@ function DefaultRoute() {
   if (user?.role === ROLES.ADMIN_CRM) return <Navigate to="/follow-up-kpb" replace />
   if (user?.role === ROLES.ADH) return <Navigate to="/showroom/opname-unit" replace />
   if (user?.role === ROLES.PIC_STOCK_OPNAME) return <Navigate to="/showroom/opname-unit" replace />
-  if (user?.role === ROLES.SALESMAN) return <Navigate to="/showroom/document-handover" replace />
+  if (user?.role === ROLES.SALESMAN || user?.role === ROLES.EKSPEDISI) return <Navigate to="/showroom/document-handover" replace />
   
   return (
     <RoleGuard menuKey="DASHBOARD_BENGKEL">

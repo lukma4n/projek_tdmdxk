@@ -87,8 +87,9 @@ import {
 import { uploadImage } from '../middleware/upload.js'
 
 import {
-  getDocumentHandovers, getDocumentHandoverSummary, getHandoverSalespeople,
+  getDocumentHandovers, getDocumentHandoverSummary, getHandoverSalespeople, getCourierUsers,
   getAvailableDocuments, createDocumentHandover, updateDocumentHandover, deleteDocumentHandover, addHandoverStep, getHandoverSteps, getHandoverPhoto,
+  processShipmentFromPickupRequest,
 } from '../controllers/documentHandoverController.js'
 import { uploadHandoverPhoto } from '../middleware/upload.js'
 
@@ -263,24 +264,33 @@ router.patch('/marketing-targets/:id', authenticate, marketingTargetWriteAccess,
 router.delete('/marketing-targets/:id', authenticate, marketingTargetWriteAccess, deleteMarketingTarget)
 
 // Document Handover (Serah Terima Dokumen)
-// Read  : semua role yang punya akses halaman (termasuk Kepala untuk monitoring)
-// Write : Admin Showroom + Salesman (operator aktif)
+// Read  : semua role yang punya akses halaman (termasuk Kepala untuk monitoring) + Ekspedisi (kiriman miliknya sendiri)
+// Write : Admin Showroom + Salesman (operator aktif) -- Ekspedisi TIDAK termasuk, sengaja
+//         dipisah ke handoverStepAccess supaya tidak kebagian create/update/delete
+// Step  : siapa saja yang boleh menjalankan langkah serah terima (pembatasan detail per
+//         step_type ada di dalam addHandoverStep) -- Salesman & Ekspedisi cuma boleh 1 step masing2
 // Delete: Admin Showroom + Kepala Cabang (kontrol ketat, tidak bisa dihapus sembarangan)
-const handoverReadAccess  = authorize('Admin', 'CRM', 'Service Advisor', 'Kepala Cabang', 'Kepala Bengkel', 'Salesman')
+const handoverReadAccess  = authorize('Admin', 'CRM', 'Service Advisor', 'Kepala Cabang', 'Kepala Bengkel', 'Salesman', 'Ekspedisi')
 const handoverWriteAccess = authorize('Admin', 'Salesman')
+const handoverStepAccess = authorize('Admin', 'Salesman', 'Ekspedisi')
 const handoverDeleteAccess = authorize('Admin', 'Kepala Cabang')
 router.get('/document-handovers', authenticate, handoverReadAccess, getDocumentHandovers)
 router.get('/document-handovers/summary', authenticate, handoverReadAccess, getDocumentHandoverSummary)
 router.get('/document-handovers/salespeople', authenticate, handoverWriteAccess, getHandoverSalespeople)
+router.get('/document-handovers/couriers', authenticate, handoverWriteAccess, getCourierUsers)
 router.get('/document-handovers/available', authenticate, handoverWriteAccess, getAvailableDocuments)
 router.post('/document-handovers', authenticate, handoverWriteAccess, createDocumentHandover)
 router.get('/document-handovers/:id/steps', authenticate, handoverReadAccess, getHandoverSteps)
 router.put('/document-handovers/:id', authenticate, handoverWriteAccess, updateDocumentHandover)
 router.delete('/document-handovers/:id', authenticate, handoverDeleteAccess, deleteDocumentHandover)
-router.post('/document-handovers/:id/steps', authenticate, handoverWriteAccess, uploadHandoverPhoto.fields([
+router.post('/document-handovers/:id/steps', authenticate, handoverStepAccess, uploadHandoverPhoto.fields([
   { name: 'photo_doc', maxCount: 1 },
   { name: 'photo_handover', maxCount: 1 }
 ]), addHandoverStep)
 router.get('/document-handovers/photo/:stepId', authenticate, handoverReadAccess, getHandoverPhoto)
+
+// Pengiriman via ekspedisi -- ubah pickup request (delivery_method EKSPEDISI)
+// jadi baris document_handovers mode 'ekspedisi'. Gate sama dengan updatePickupRequest.
+router.post('/pickup-requests/:id/process-shipment', authenticate, stnkBpkbTrackReadAccess, processShipmentFromPickupRequest)
 
 export default router

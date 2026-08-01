@@ -42,6 +42,7 @@ model users {
   login_logs login_logs[]
   service_labels_printed customers[]
   unit_bookings_cancelled showroom_unit_bookings[]
+  ekspedisi_assignments document_handovers[] @relation("EkspedisiAssignee")
 }
 
 // Audit login & deteksi penyalahgunaan akun (sharing, login ditolak, dsb).
@@ -974,12 +975,18 @@ model document_handovers {
   id              Int       @id @default(autoincrement())
   engine_number   String
   document_type   String                           // STNK | BPKB | BUKU_SERVICE | PLAT
-  handover_mode   String    @default("langsung")   // "via_sales" | "langsung"
-  status          String    @default("tersedia")   // tersedia | diserahkan_ke_sales | diterima_sales | diserahkan_ke_konsumen | selesai
+  handover_mode   String    @default("langsung")   // "via_sales" | "langsung" | "ekspedisi"
+  status          String    @default("tersedia")   // tersedia | diserahkan_ke_sales | diterima_sales | dikirim_ekspedisi | selesai
 
   salesman_name   String?
   consumer_name   String?
   consumer_phone  String?
+
+  // Pengiriman via ekspedisi -- assigned_courier_id menunjuk ke akun users
+  // berrole 'Ekspedisi' (bukan teks bebas), satu sumber kebenaran nama kurir.
+  shipping_address    String?
+  assigned_courier_id Int?
+  tracking_number     String?
 
   notes           String?
 
@@ -988,12 +995,14 @@ model document_handovers {
   updated_at      DateTime  @updatedAt
 
   creator         users     @relation(fields: [created_by], references: [id])
+  assigned_courier users?   @relation("EkspedisiAssignee", fields: [assigned_courier_id], references: [id])
   steps           document_handover_steps[]
 
   @@unique([engine_number, document_type])
   @@index([status])
   @@index([document_type, status])
   @@index([salesman_name])
+  @@index([assigned_courier_id])
   @@index([created_at])
 }
 
@@ -1038,6 +1047,10 @@ model showroom_pickup_requests {
   requested_docs String?
   preferred_time String?
   notes          String?
+  // AMBIL_SENDIRI (default) | EKSPEDISI -- dipilih konsumen di /cek, atau
+  // diubah staf kalau konsumen menghubungi langsung tanpa lewat /cek.
+  delivery_method  String  @default("AMBIL_SENDIRI")
+  shipping_address String?
   // Path foto KTP yang dilampirkan konsumen saat mengajukan (wajib).
   // Disajikan ke staf via route auth GET /showroom/pickup-requests/:id/ktp.
   ktp_photo_url  String?
