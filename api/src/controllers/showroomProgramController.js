@@ -44,6 +44,39 @@ function parsePeriod(text) {
   }
 }
 
+/**
+ * Baca tanggal dari sel Excel. safeReadExcel tidak memakai cellDates, jadi
+ * tanggal datang sebagai angka serial — tapi user juga sering mengetiknya
+ * sebagai teks, sehingga ketiga bentuk perlu didukung.
+ */
+function parseDateValue(value) {
+  if (value === null || value === undefined || value === '') return null
+
+  if (value instanceof Date) {
+    return new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()))
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const parsed = xlsx.SSF.parse_date_code(value)
+    return parsed ? new Date(Date.UTC(parsed.y, parsed.m - 1, parsed.d)) : null
+  }
+
+  const text = String(value).trim()
+  let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/) // 2026-08-01
+  if (match) return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])))
+
+  match = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/) // 01/08/2026
+  if (match) return new Date(Date.UTC(Number(match[3]), Number(match[2]) - 1, Number(match[1])))
+
+  match = text.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/) // 1 Agustus 2026
+  if (match) {
+    const month = monthNumber(match[2])
+    if (month !== null) return new Date(Date.UTC(Number(match[3]), month, Number(match[1])))
+  }
+
+  return null
+}
+
 function extractCodes(prefix) {
   const blacklist = new Set(['ALL', 'RAKITAN', 'SERIES', 'DELUXE', 'SMART', 'KEY', 'STREET', 'VARIO', 'BEAT', 'SUPRA', 'GTR', 'ADV'])
   return prefix
@@ -73,21 +106,31 @@ function parseMdPrograms(filePath, sourceFile) {
   const ws = wb.Sheets.SCP
   if (!ws) return []
   return xlsx.utils.sheet_to_json(ws, { defval: '' })
-    .map((row) => ({
-      product_code: upper(row.Product),
-      sale_type: upper(row['Tipe Jualan']),
-      ahm_discount: numberValue(row['Diskon AHM']),
-      md_discount: numberValue(row['Diskon MD']),
-      dealer_discount: numberValue(row['Diskon Dealer']),
-      total_discount: numberValue(row['Total Diskon']),
-      area: 'All Area',
-      program_name: 'SCP Workbook',
-      document_number: 'WORKBOOK',
-      period_start: new Date('1970-01-01'),
-      period_end: null,
-      is_active: true,
-      source_file: sourceFile,
-    }))
+    .map((row) => {
+      // Kolom periode & dokumen opsional. Kalau diisi, program ikut kedaluwarsa
+      // otomatis seperti impor PDF; kalau kosong, pakai default lama supaya
+      // file SCP yang sudah beredar tetap terbaca.
+      const periodStart = parseDateValue(row['Periode Mulai'])
+      const periodEnd = parseDateValue(row['Periode Selesai'])
+      const documentNumber = clean(row['No Dokumen'])
+      const programName = clean(row['Nama Program'])
+
+      return {
+        product_code: upper(row.Product),
+        sale_type: upper(row['Tipe Jualan']),
+        ahm_discount: numberValue(row['Diskon AHM']),
+        md_discount: numberValue(row['Diskon MD']),
+        dealer_discount: numberValue(row['Diskon Dealer']),
+        total_discount: numberValue(row['Total Diskon']),
+        area: 'All Area',
+        program_name: programName || 'SCP Workbook',
+        document_number: documentNumber || 'WORKBOOK',
+        period_start: periodStart || new Date('1970-01-01'),
+        period_end: periodEnd,
+        is_active: true,
+        source_file: sourceFile,
+      }
+    })
     .filter((row) => row.product_code && row.sale_type)
 }
 
