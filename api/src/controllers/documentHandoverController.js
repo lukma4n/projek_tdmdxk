@@ -494,7 +494,7 @@ export async function getHandoverPhoto(req, res, next) {
 export async function updateDocumentHandover(req, res, next) {
   try {
     const { id } = req.params
-    const { salesman_name, consumer_name, consumer_phone, notes } = req.body
+    const { salesman_name, consumer_name, consumer_phone, notes, shipping_address } = req.body
 
     const existing = await prisma.document_handovers.findUnique({ where: { id: parseInt(id) } })
     if (!existing) {
@@ -510,10 +510,14 @@ export async function updateDocumentHandover(req, res, next) {
     const handover = await prisma.document_handovers.update({
       where: { id: parseInt(id) },
       data: {
-        salesman_name: salesman_name || null,
         consumer_name: consumer_name || null,
         consumer_phone: consumer_phone || null,
         notes: notes || null,
+        // salesman_name/shipping_address cuma disentuh kalau memang dikirim --
+        // form edit mode ekspedisi tidak mengirim salesman_name (tidak relevan
+        // utk mode itu), dan mode lain tidak mengirim shipping_address.
+        ...(salesman_name !== undefined ? { salesman_name: salesman_name || null } : {}),
+        ...(shipping_address !== undefined ? { shipping_address: shipping_address || null } : {}),
       },
     })
     res.json(handover)

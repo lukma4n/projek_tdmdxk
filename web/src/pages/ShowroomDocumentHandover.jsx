@@ -726,9 +726,11 @@ function AddDocumentModal({ onClose, onSaved }) {
 
 // ─── Edit Document Modal ───
 function EditHandoverModal({ handover, salespeople, onClose, onSaved }) {
+  const isEkspedisi = handover.handover_mode === 'ekspedisi'
   const [salesmanName, setSalesmanName] = useState(handover.salesman_name || '')
   const [consumerName, setConsumerName] = useState(handover.consumer_name || '')
   const [consumerPhone, setConsumerPhone] = useState(handover.consumer_phone || '')
+  const [shippingAddress, setShippingAddress] = useState(handover.shipping_address || '')
   const [notes, setNotes] = useState(handover.notes || '')
   const [saving, setSaving] = useState(false)
 
@@ -736,9 +738,12 @@ function EditHandoverModal({ handover, salespeople, onClose, onSaved }) {
     setSaving(true)
     try {
       await updateDocumentHandover(handover.id, {
-        salesman_name: salesmanName,
+        // Salesman tidak relevan utk mode ekspedisi -- jangan dikirim, biar
+        // backend tidak menimpa field yang memang tidak dipakai mode ini.
+        ...(isEkspedisi ? {} : { salesman_name: salesmanName }),
         consumer_name: consumerName,
         consumer_phone: consumerPhone,
+        ...(isEkspedisi ? { shipping_address: shippingAddress } : {}),
         notes: notes,
       })
       onSaved()
@@ -760,19 +765,32 @@ function EditHandoverModal({ handover, salespeople, onClose, onSaved }) {
           </div>
         </div>
         <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-text mb-1.5">Salesman</label>
-            <select
-              value={salesmanName}
-              onChange={(e) => setSalesmanName(e.target.value)}
-              className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-panel"
-            >
-              <option value="">-- Pilih Salesman --</option>
-              {salespeople.map((s) => (
-                <option key={s.id} value={s.name}>{s.name}</option>
-              ))}
-            </select>
-          </div>
+          {isEkspedisi ? (
+            <div>
+              <label className="block text-sm font-semibold text-text mb-1.5">Alamat Pengiriman</label>
+              <textarea
+                value={shippingAddress}
+                onChange={(e) => setShippingAddress(e.target.value)}
+                rows={2}
+                className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 resize-none"
+              />
+              <p className="mt-1 text-xs text-faint">Ekspedisi: {handover.assigned_courier?.name || '-'} (tidak bisa diubah di sini)</p>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-semibold text-text mb-1.5">Salesman</label>
+              <select
+                value={salesmanName}
+                onChange={(e) => setSalesmanName(e.target.value)}
+                className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-panel"
+              >
+                <option value="">-- Pilih Salesman --</option>
+                {salespeople.map((s) => (
+                  <option key={s.id} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-semibold text-text mb-1.5">Nama Konsumen</label>
             <input
@@ -820,6 +838,11 @@ function EditHandoverModal({ handover, salespeople, onClose, onSaved }) {
 export default function ShowroomDocumentHandover() {
   const { user } = useAuthStore()
   const isSalesman = user?.role === 'Salesman'
+  const isEkspedisiRole = user?.role === 'Ekspedisi'
+  // Tambah Dokumen/Edit/Hapus dikunci ke Admin -- backend juga menolak (403)
+  // kalau Salesman/Ekspedisi mencoba endpoint ini, tombol yang tampil harus
+  // konsisten dengan itu (jangan tampilkan aksi yang ujung2nya gagal).
+  const canManageHandover = !isSalesman && !isEkspedisiRole
   // Server sudah membatasi getDocumentHandovers utk role Ekspedisi ke kiriman
   // miliknya sendiri, jadi cukup cek role di sini (tidak perlu cek kepemilikan
   // per-baris lagi) untuk menampilkan aksi isi/ubah resi.
@@ -942,7 +965,7 @@ export default function ShowroomDocumentHandover() {
           <p className="text-sm text-muted">Monitoring penyerahan STNK, BPKB, Buku Service & Plat ke salesman/konsumen</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {!isSalesman && (
+          {canManageHandover && (
             <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 transition-colors shadow-lg shadow-accent/20">
               <Plus size={16} /> Tambah Dokumen
             </button>
@@ -1078,7 +1101,7 @@ export default function ShowroomDocumentHandover() {
                               <Clock size={14} />
                               Riwayat
                             </button>
-                            {!isSalesman && (
+                            {canManageHandover && (
                               <>
                                 <button
                                   onClick={() => setEditHandoverModal(item)}
@@ -1137,7 +1160,7 @@ export default function ShowroomDocumentHandover() {
                                   <button onClick={() => setTimelineId(docItem.id)} className="p-1.5 text-faint hover:text-muted hover:bg-hover rounded-md transition-colors" title="Riwayat">
                                     <Clock size={14} />
                                   </button>
-                                  {!isSalesman && (
+                                  {canManageHandover && (
                                     <>
                                       <button onClick={() => setEditHandoverModal(docItem)} className="p-1.5 text-faint hover:text-accent hover:bg-accent-soft rounded-md transition-colors" title="Edit">
                                         <Pencil size={14} />
