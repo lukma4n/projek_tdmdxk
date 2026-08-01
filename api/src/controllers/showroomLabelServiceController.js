@@ -32,7 +32,9 @@ function badRequest(message) {
  *   - date: bentuk lama, artinya from = to (tetap didukung)
  *
  * Response: daftar transaksi penjualan untuk cetak label buku service,
- * lengkap dengan team leader dan status cetak.
+ * lengkap dengan status cetak. Filter yang didukung: SCO & Salesman —
+ * keduanya tercatat langsung di report penjualan, tanpa perlu join tebakan
+ * ke master data seperti Team Leader.
  */
 export async function getServiceBookLabels(req, res, next) {
   try {
@@ -57,49 +59,35 @@ export async function getServiceBookLabels(req, res, next) {
 
     if (from > to) throw badRequest('Tanggal "dari" tidak boleh melewati tanggal "sampai"')
 
-    const [records, salespeople] = await Promise.all([
-      prisma.customers.findMany({
-        where: {
-          branch_code: 'DXK',
-          so_date: { gte: from, lte: to },
-        },
-        orderBy: [{ so_date: 'asc' }, { so_number: 'asc' }],
-        select: {
-          id: true,
-          so_number: true,
-          so_date: true,
-          customer_name: true,
-          no_engine: true,
-          no_frame: true,
-          type: true,
-          color: true,
-          model: true,
-          kecamatan: true,
-          kabupaten: true,
-          salesman: true,
-          sales_coord_name: true,
-          sales_type: true,
-          label_printed_at: true,
-          label_printed_user: { select: { name: true } },
-        },
-      }),
-      prisma.showroom_salespeople.findMany({ select: { name: true, team_leader: true } }),
-    ])
-
-    // Nama salesman di transaksi tidak selalu persis sama dengan master,
-    // jadi dicocokkan setelah dinormalisasi.
-    const teamLeaderBySalesman = new Map()
-    for (const person of salespeople) {
-      if (person.name) teamLeaderBySalesman.set(person.name.trim().toUpperCase(), person.team_leader || null)
-    }
+    const records = await prisma.customers.findMany({
+      where: {
+        branch_code: 'DXK',
+        so_date: { gte: from, lte: to },
+      },
+      orderBy: [{ so_date: 'asc' }, { so_number: 'asc' }],
+      select: {
+        id: true,
+        so_number: true,
+        so_date: true,
+        customer_name: true,
+        no_engine: true,
+        no_frame: true,
+        type: true,
+        color: true,
+        model: true,
+        kecamatan: true,
+        kabupaten: true,
+        salesman: true,
+        sales_coord_name: true,
+        sales_type: true,
+        label_printed_at: true,
+        label_printed_user: { select: { name: true } },
+      },
+    })
 
     const items = records.map((r, i) => {
       const alamatParts = [r.kecamatan, r.kabupaten].filter(Boolean)
       const alamat = alamatParts.length > 0 ? alamatParts.join(', ').toUpperCase() : '-'
-      const salesman = r.salesman || '-'
-      // null = salesman di luar master. Baris tetap dikembalikan; frontend
-      // mengelompokkannya sebagai "(Tanpa Team Leader)" agar tidak hilang.
-      const teamLeader = teamLeaderBySalesman.get(salesman.trim().toUpperCase()) || null
 
       return {
         no: i + 1,
@@ -112,9 +100,8 @@ export async function getServiceBookLabels(req, res, next) {
         color: r.color || '-',
         model: r.model || '-',
         alamat,
-        salesman,
+        salesman: r.salesman || '-',
         sales_coord_name: r.sales_coord_name || '-',
-        team_leader: teamLeader,
         sales_type: r.sales_type || '-',
         printed_at: r.label_printed_at,
         printed_by_name: r.label_printed_user?.name || null,

@@ -13,8 +13,6 @@ import {
   Circle,
 } from 'lucide-react'
 
-const NO_TEAM_LEADER = '__NO_TL__'
-
 function escapeHtml(value) {
   return String(value ?? '-')
     .replace(/&/g, '&amp;')
@@ -37,12 +35,6 @@ function getTodayStr() {
   return toDateStr(new Date())
 }
 
-function daysAgoStr(days) {
-  const d = new Date()
-  d.setDate(d.getDate() - days)
-  return toDateStr(d)
-}
-
 function formatPrintedAt(value) {
   if (!value) return ''
   return new Date(value).toLocaleString('id-ID', {
@@ -59,7 +51,6 @@ export default function ShowroomLabelBukuService() {
   const [dateTo, setDateTo] = useState(getTodayStr)
   const [selectedItem, setSelectedItem] = useState(null)
   const [search, setSearch] = useState('')
-  const [teamLeader, setTeamLeader] = useState('')
   const [sco, setSco] = useState('')
   const [salesman, setSalesman] = useState('')
   const [status, setStatus] = useState('unprinted')
@@ -88,35 +79,21 @@ export default function ShowroomLabelBukuService() {
     void loadData()
   }, [loadData])
 
-  const handleShortcut = (type) => {
-    if (type === 'today') {
-      setDateFrom(getTodayStr())
-      setDateTo(getTodayStr())
-    } else if (type === 'yesterday') {
-      setDateFrom(daysAgoStr(1))
-      setDateTo(daysAgoStr(1))
-    } else if (type === 'week') {
-      setDateFrom(daysAgoStr(6))
-      setDateTo(getTodayStr())
-    }
+  const handleToday = () => {
+    setDateFrom(getTodayStr())
+    setDateTo(getTodayStr())
   }
 
   // Opsi dropdown diturunkan dari hasil rentang yang sedang dibuka, supaya user
   // tidak disodori pilihan yang hasilnya nol.
   const options = useMemo(() => {
-    const tl = new Set()
     const scoSet = new Set()
     const salesSet = new Set()
-    let hasNoTl = false
     for (const item of items) {
-      if (item.team_leader) tl.add(item.team_leader)
-      else hasNoTl = true
       if (item.sales_coord_name && item.sales_coord_name !== '-') scoSet.add(item.sales_coord_name)
       if (item.salesman && item.salesman !== '-') salesSet.add(item.salesman)
     }
     return {
-      teamLeaders: [...tl].sort(),
-      hasNoTl,
       scos: [...scoSet].sort(),
       salesmen: [...salesSet].sort(),
     }
@@ -127,9 +104,6 @@ export default function ShowroomLabelBukuService() {
     return items.filter((item) => {
       if (status === 'unprinted' && item.printed_at) return false
       if (status === 'printed' && !item.printed_at) return false
-      if (teamLeader === NO_TEAM_LEADER) {
-        if (item.team_leader) return false
-      } else if (teamLeader && item.team_leader !== teamLeader) return false
       if (sco && item.sales_coord_name !== sco) return false
       if (salesman && item.salesman !== salesman) return false
       if (!s) return true
@@ -140,7 +114,7 @@ export default function ShowroomLabelBukuService() {
         item.salesman.toLowerCase().includes(s)
       )
     })
-  }, [items, search, status, teamLeader, sco, salesman])
+  }, [items, search, status, sco, salesman])
 
   // Seleksi bertahan saat filter berubah, tapi hanya baris yang terlihat yang
   // ikut dicetak — mencegah tercetaknya baris yang sedang tersembunyi.
@@ -325,14 +299,8 @@ export default function ShowroomLabelBukuService() {
             className={selectClass}
             aria-label="Tanggal sampai"
           />
-          <button onClick={() => handleShortcut('today')} className="px-3 py-2 text-xs font-semibold bg-accent text-white rounded-lg hover:brightness-110 transition-colors">
+          <button onClick={handleToday} className="px-3 py-2 text-xs font-semibold bg-accent text-white rounded-lg hover:brightness-110 transition-colors">
             Hari Ini
-          </button>
-          <button onClick={() => handleShortcut('yesterday')} className="px-3 py-2 text-xs font-semibold bg-hover text-text rounded-lg hover:bg-hover transition-colors">
-            Kemarin
-          </button>
-          <button onClick={() => handleShortcut('week')} className="px-3 py-2 text-xs font-semibold bg-hover text-text rounded-lg hover:bg-hover transition-colors">
-            7 Hari
           </button>
           <button
             onClick={loadData}
@@ -376,12 +344,6 @@ export default function ShowroomLabelBukuService() {
             className="w-full pl-9 pr-4 py-2.5 text-sm border border-border rounded-xl bg-panel text-text focus:outline-none focus:ring-2 focus:ring-accent-soft shadow-sm"
           />
         </div>
-
-        <select value={teamLeader} onChange={(e) => setTeamLeader(e.target.value)} className={selectClass} aria-label="Filter team leader">
-          <option value="">Semua Team Leader</option>
-          {options.teamLeaders.map((tl) => <option key={tl} value={tl}>{tl}</option>)}
-          {options.hasNoTl && <option value={NO_TEAM_LEADER}>(Tanpa Team Leader)</option>}
-        </select>
 
         <select value={sco} onChange={(e) => setSco(e.target.value)} className={selectClass} aria-label="Filter SCO">
           <option value="">Semua SCO</option>
@@ -430,7 +392,7 @@ export default function ShowroomLabelBukuService() {
                   <th className="py-3 px-4 font-semibold text-muted">Customer</th>
                   <th className="py-3 px-4 font-semibold text-muted">No Mesin</th>
                   <th className="py-3 px-4 font-semibold text-muted">Model</th>
-                  <th className="py-3 px-4 font-semibold text-muted">Team Leader</th>
+                  <th className="py-3 px-4 font-semibold text-muted">SCO</th>
                   <th className="py-3 px-4 font-semibold text-muted">Salesman</th>
                   <th className="py-3 px-4 font-semibold text-muted">Leasing</th>
                   <th className="py-3 px-4 font-semibold text-muted">Status</th>
@@ -458,9 +420,7 @@ export default function ShowroomLabelBukuService() {
                     <td className="py-3 px-4 font-medium text-text">{item.customer_name}</td>
                     <td className="py-3 px-4 font-mono text-xs text-muted">{item.no_engine}</td>
                     <td className="py-3 px-4 text-muted">{item.model}</td>
-                    <td className="py-3 px-4 text-muted">
-                      {item.team_leader || <span className="text-faint italic">Tanpa TL</span>}
-                    </td>
+                    <td className="py-3 px-4 text-muted">{item.sales_coord_name}</td>
                     <td className="py-3 px-4 text-muted">{item.salesman}</td>
                     <td className="py-3 px-4">
                       <span

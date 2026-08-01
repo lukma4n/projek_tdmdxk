@@ -14,9 +14,10 @@ import {
 const SO_IN_MASTER = 'LBL-TST-IN'
 const SO_NO_MASTER = 'LBL-TST-NOMASTER'
 const SO_OUT_RANGE = 'LBL-TST-OUTRANGE'
-const SALESMAN_IN_MASTER = 'LBL TEST SALESMAN'
-const SALESMAN_NO_MASTER = 'LBL TEST TANPA MASTER'
-const TEAM_LEADER = 'LBL TEST TL'
+const SALESMAN_A = 'LBL TEST SALESMAN A'
+const SALESMAN_B = 'LBL TEST SALESMAN B'
+const SCO_A = 'LBL TEST SCO A'
+const SCO_B = 'LBL TEST SCO B'
 
 function atNoon(daysAgo) {
   const d = new Date()
@@ -39,16 +40,11 @@ let partmanCookie
 
 async function cleanup() {
   await prismaTest.customers.deleteMany({ where: { so_number: { in: ALL_SO } } })
-  await prismaTest.showroom_salespeople.deleteMany({ where: { name: SALESMAN_IN_MASTER } })
 }
 
 before(async () => {
   await seedKnownUsers()
   await cleanup()
-
-  await prismaTest.showroom_salespeople.create({
-    data: { name: SALESMAN_IN_MASTER, team_leader: TEAM_LEADER },
-  })
 
   await prismaTest.customers.createMany({
     data: [
@@ -59,8 +55,8 @@ before(async () => {
         no_engine: 'LBLENG0001',
         no_frame: 'LBLFRAME0001',
         model: 'SCOOPY',
-        salesman: SALESMAN_IN_MASTER,
-        sales_coord_name: 'SCO SATU',
+        salesman: SALESMAN_A,
+        sales_coord_name: SCO_A,
         kecamatan: 'DELTA PAWAN',
         kabupaten: 'KAB. KETAPANG',
         branch_code: 'DXK',
@@ -72,8 +68,8 @@ before(async () => {
         no_engine: 'LBLENG0002',
         no_frame: 'LBLFRAME0002',
         model: 'BEAT',
-        salesman: SALESMAN_NO_MASTER,
-        sales_coord_name: 'SCO DUA',
+        salesman: SALESMAN_B,
+        sales_coord_name: SCO_B,
         kecamatan: 'MUARA PAWAN',
         kabupaten: 'KAB. KETAPANG',
         branch_code: 'DXK',
@@ -85,7 +81,7 @@ before(async () => {
         no_engine: 'LBLENG0003',
         no_frame: 'LBLFRAME0003',
         model: 'VARIO',
-        salesman: SALESMAN_IN_MASTER,
+        salesman: SALESMAN_A,
         branch_code: 'DXK',
       },
     ],
@@ -119,17 +115,19 @@ test('rentang tanggal memuat batas awal & akhir, menolak yang di luar', async ()
   assert.ok(!soNumbers.includes(SO_OUT_RANGE), 'transaksi 30 hari lalu tidak boleh ikut')
 })
 
-test('salesman di luar master menghasilkan team_leader null tapi baris tetap muncul', async () => {
+test('sales_coord_name & salesman ikut terbawa apa adanya dari report penjualan', async () => {
   const today = toDateStr(atNoon(0))
   const res = await callAuthenticated('get', `/api/showroom/label-buku-service?date_from=${today}&date_to=${today}`, adminCookie)
   assert.equal(res.status, 200)
 
-  const inMaster = res.body.items.find((i) => i.so_number === SO_IN_MASTER)
-  const noMaster = res.body.items.find((i) => i.so_number === SO_NO_MASTER)
+  const rowA = res.body.items.find((i) => i.so_number === SO_IN_MASTER)
+  const rowB = res.body.items.find((i) => i.so_number === SO_NO_MASTER)
 
-  assert.equal(inMaster.team_leader, TEAM_LEADER)
-  assert.equal(noMaster.team_leader, null)
-  assert.ok(noMaster, 'baris tanpa master tidak boleh hilang dari hasil')
+  assert.equal(rowA.salesman, SALESMAN_A)
+  assert.equal(rowA.sales_coord_name, SCO_A)
+  assert.equal(rowB.salesman, SALESMAN_B)
+  assert.equal(rowB.sales_coord_name, SCO_B)
+  assert.equal(res.body.items.some((i) => 'team_leader' in i), false, 'field team_leader sudah dihapus dari response')
 })
 
 test('param date lama masih didukung', async () => {
