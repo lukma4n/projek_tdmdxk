@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { selfCheckUrl } from '../config/selfCheck'
+import { documentTypeLabel } from '../config/documentTypes'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 // Nomor WhatsApp dealer untuk request pengambilan dokumen (format internasional, mis. 6281...).
@@ -576,7 +577,7 @@ export default function StnkBpkbCheck() {
                   <h3 className="text-sm font-bold uppercase tracking-wider text-faint">Ajukan Permintaan Ambil Dokumen</h3>
                 </div>
                 <p className="mt-3 text-sm leading-relaxed text-muted">
-                  Dokumen siap diambil: <strong className="text-text-strong">{result.pickup_docs.join(', ')}</strong>.
+                  Dokumen siap diambil: <strong className="text-text-strong">{result.pickup_docs.map(documentTypeLabel).join(', ')}</strong>.
                   Isi data di bawah agar staf kami dapat menghubungi Anda untuk penjadwalan pengambilan.
                 </p>
                 <form onSubmit={handleRequestPickup} className="mt-4 grid gap-4">
@@ -780,7 +781,7 @@ export default function StnkBpkbCheck() {
                   <h4 className="font-bold text-success text-base">Permintaan Terkirim</h4>
                   <p className="text-sm mt-1 leading-relaxed text-muted">{pickupSuccess}</p>
                   <p className="text-xs mt-3 text-muted">
-                    Dokumen yang diminta: <strong className="text-text-strong">{result.pickup_docs.join(', ')}</strong> • No. Mesin {result.engine_number}
+                    Dokumen yang diminta: <strong className="text-text-strong">{result.pickup_docs.map(documentTypeLabel).join(', ')}</strong> • No. Mesin {result.engine_number}
                   </p>
                 </div>
               </div>

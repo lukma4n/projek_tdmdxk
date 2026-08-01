@@ -5,6 +5,7 @@ import { Loader2, RefreshCw, MessageCircle, AlertCircle, CheckCircle2, IdCard, T
 import PageHeader from '../components/ui/PageHeader'
 import Table from '../components/ui/Table'
 import Badge from '../components/ui/Badge'
+import { documentTypeLabel } from '../config/documentTypes'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
@@ -159,7 +160,7 @@ function ProcessShipmentModal({ row, onClose, onSaved }) {
           {docTypes.map((type) => (
             <label key={type} className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-text cursor-pointer has-[:checked]:border-accent has-[:checked]:bg-accent-soft has-[:checked]:text-accent">
               <input type="checkbox" checked={selectedTypes.has(type)} onChange={() => toggleType(type)} className="h-3.5 w-3.5" />
-              {type}
+              {documentTypeLabel(type)}
             </label>
           ))}
         </div>
@@ -288,7 +289,14 @@ export default function ShowroomPickupRequests() {
     {
       key: 'requested_docs',
       label: 'Dokumen',
-      render: (v) => (v ? <span className="font-semibold text-text">{v}</span> : '-'),
+      render: (v) =>
+        v ? (
+          <span className="font-semibold text-text">
+            {v.split(',').map((s) => s.trim()).filter(Boolean).map(documentTypeLabel).join(', ')}
+          </span>
+        ) : (
+          '-'
+        ),
     },
     {
       key: 'delivery_method',

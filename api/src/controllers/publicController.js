@@ -19,7 +19,7 @@ const PICKUP_TOKEN_TTL = '15m'
 function eligiblePickupDocs(track) {
   const docs = []
   if (track.tgl_terima_stnk && !track.tgl_penyerahan_stnk) docs.push('STNK')
-  if (track.tgl_terima_plat && !track.tgl_penyerahan_plat) docs.push('Plat Nomor')
+  if (track.tgl_terima_plat && !track.tgl_penyerahan_plat) docs.push('PLAT')
   const forConsumer = !(track.finance_company && String(track.finance_company).trim())
   if (forConsumer && track.tgl_terima_bpkb && !track.tgl_penyerahan_bpkb) docs.push('BPKB')
   return docs
