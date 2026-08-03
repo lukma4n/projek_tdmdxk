@@ -14,6 +14,16 @@ function lockConflictError(message = 'Proses import sedang berjalan. Coba lagi s
   return error
 }
 
+// Lock hanya valid selama proses yang memegangnya masih hidup. Bila proses mati
+// di tengah import (OOM-kill PM2, restart, crash), blok `finally` di
+// withImportLock tidak pernah jalan sehingga lock tertinggal di DB dan memblokir
+// semua import berikutnya sampai TTL habis. Karena itu semua lock dibuang saat
+// startup — tidak mungkin ada import yang selamat melewati restart proses.
+export async function releaseStaleImportLocks() {
+  const result = await prisma.import_locks.deleteMany({})
+  return result.count
+}
+
 export async function getImportLocks() {
   const now = new Date()
   const rows = await prisma.import_locks.findMany({

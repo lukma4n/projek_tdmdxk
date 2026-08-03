@@ -19,7 +19,10 @@ module.exports = {
       out_file: './logs/pm2-out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
-      max_memory_restart: '500M',
+      // Import workshop full-history (78rb baris) memuncak di ~660MB saat parsing
+      // Excel. Batas 500M sebelumnya membuat PM2 me-restart proses tepat di tengah
+      // import, meninggalkan lock nyangkut di tabel import_locks.
+      max_memory_restart: '1024M',
       autorestart: true,
       watch: false,
       max_restarts: 10,

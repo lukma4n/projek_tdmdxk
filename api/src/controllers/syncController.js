@@ -6,6 +6,7 @@ import { parseHotlineFile, parseStockFile, parseWorkshopFile, parseImportFile } 
 import { createAuditLog, getOperationalAuditLogs } from '../services/auditService.js'
 import { endMaintenance, startMaintenance } from '../services/maintenanceService.js'
 import { withImportLock } from '../services/importLockService.js'
+import { bulkUpsertWorkOrders } from '../services/workshopImportService.js'
 import { ensureNoActiveOpname, OPEN_IMPORT_BLOCK_STATUSES } from './opnameController.js'
 
 async function cleanupUpload(req) {
@@ -164,7 +165,7 @@ export async function uploadWorkshop(req, res, next) {
   try {
     if (!req.file?.path) return res.status(400).json({ error: 'File wajib diupload' })
     await withImportLock('sync:workshop', async () => {
-      const { records: finalRecords, errors, preview } = parseWorkshopFile(req.file.path)
+      const { records: finalRecords, errors, preview } = await parseWorkshopFile(req.file.path)
       const backup = await createDatabaseBackup('pre_import_workshop')
 
       const woNumbers = finalRecords.map((record) => record.wo_number)
@@ -173,21 +174,12 @@ export async function uploadWorkshop(req, res, next) {
         select: { wo_number: true },
       })
       const existingWoNumbers = new Set(existingWos.map((wo) => wo.wo_number))
-      const createRecords = finalRecords.filter((record) => !existingWoNumbers.has(record.wo_number))
-      const updateRecords = finalRecords.filter((record) => existingWoNumbers.has(record.wo_number))
+      const createdCount = woNumbers.filter((wo) => !existingWoNumbers.has(wo)).length
+      const updatedCount = woNumbers.length - createdCount
 
       // Upsert by wo_number: preserves other work orders, allows daily/incremental updates!
       await prisma.$transaction(async (tx) => {
-        if (createRecords.length > 0) {
-          await tx.work_orders.createMany({ data: createRecords })
-        }
-
-        for (const record of updateRecords) {
-          await tx.work_orders.update({
-            where: { wo_number: record.wo_number },
-            data: record,
-          })
-        }
+        await bulkUpsertWorkOrders(tx, finalRecords)
       }, { maxWait: 20000, timeout: 120000 })
 
       await prisma.sync_logs.create({
@@ -212,8 +204,8 @@ export async function uploadWorkshop(req, res, next) {
           filename: req.file.originalname,
           rows_success: finalRecords.length,
           rows_error: errors.length,
-          created: createRecords.length,
-          updated: updateRecords.length,
+          created: createdCount,
+          updated: updatedCount,
           date_range: preview.dateRange,
           warnings: preview.warnings,
           backup: backup.filename,
@@ -227,8 +219,8 @@ export async function uploadWorkshop(req, res, next) {
       res.json({
         message: 'Import Workshop selesai',
         success: finalRecords.length,
-        created: createRecords.length,
-        updated: updateRecords.length,
+        created: createdCount,
+        updated: updatedCount,
         errors: errors.length,
         errorDetails: errors.slice(0, 10),
         importMode: 'workshop_upsert_by_wo',
@@ -246,7 +238,7 @@ export async function uploadWorkshop(req, res, next) {
 export async function previewImport(req, res, next) {
   try {
     if (!req.file?.path) return res.status(400).json({ error: 'File wajib diupload' })
-    const result = parseImportFile(req.params.module, req.file.path)
+    const result = await parseImportFile(req.params.module, req.file.path)
     const preview = { ...result.preview }
 
     if (req.params.module === 'sales') {

@@ -1,5 +1,6 @@
 import xlsx from 'xlsx'
 import { safeReadExcel } from '../utils/excelValidator.js'
+import { streamExcelRows } from '../utils/excelStream.js'
 
 function parseAgingDays(agingStr) {
   if (!agingStr) return 0
@@ -282,12 +283,28 @@ export function parseStockFile(filePath) {
   }
 }
 
-export function parseWorkshopFile(filePath) {
-  const rows = readRows(filePath).slice(4)
+// Dibaca streaming (bukan readRows) karena file workshop full-history bisa
+// 139k baris — memuat seluruh workbook sekaligus memicu OOM-kill di produksi.
+// Pembaca streaming lebih ketat soal struktur OOXML daripada xlsx; file dari
+// generator lain bisa ditolak, jadi tetap sediakan jalur lama sebagai cadangan.
+export async function parseWorkshopFile(filePath) {
+  // Baris 1-4 adalah blok judul report, baris 5 header kolom (ikut terbaca lalu
+  // tersaring oleh pengecekan isi di parser, sama seperti versi sebelumnya).
+  try {
+    return await buildWorkshopResult(streamExcelRows(filePath, { fromRowNumber: 5 }))
+  } catch (error) {
+    console.warn(`⚠️  Streaming Excel gagal (${error.message}), memakai pembaca non-streaming.`)
+    return buildWorkshopResult(readRows(filePath).slice(4))
+  }
+}
+
+async function buildWorkshopResult(rows) {
   const parsedRecords = new Map()
   const errors = []
+  let scannedRows = 0
 
-  for (const row of rows) {
+  for await (const row of rows) {
+    scannedRows++
     if (!row || !row[3]) continue
     if (!row[4] || row[4] === 'State') continue
     if (!row[6] || row[6] === 'Type') continue
@@ -364,11 +381,12 @@ export function parseWorkshopFile(filePath) {
   }
 
   const records = Array.from(parsedRecords.values())
+  parsedRecords.clear()
   return {
     records,
     errors,
     preview: preview('workshop', records, errors, {
-      dedupedWoRows: rows.length - records.length,
+      dedupedWoRows: scannedRows - records.length,
       ...summarizeWorkshopYearToDate(records),
     }),
   }
@@ -431,7 +449,7 @@ export function parseSalesFile(filePath) {
   return { records, errors, preview: preview('sales', records, errors, { dedupedSoRows: rows.length - records.length }) }
 }
 
-export function parseImportFile(module, filePath) {
+export async function parseImportFile(module, filePath) {
   switch (module) {
     case 'hotline':
       return parseHotlineFile(filePath)

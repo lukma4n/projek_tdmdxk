@@ -12,6 +12,7 @@ import { connectRedis } from './config/redis.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { maintenanceGuard } from './middleware/maintenance.js'
 import { requestId } from './middleware/requestId.js'
+import { releaseStaleImportLocks } from './services/importLockService.js'
 
 // Routes
 import authRoutes from './routes/authRoutes.js'
@@ -169,6 +170,11 @@ app.use(errorHandler)
 async function start() {
   await connectDB()
   await connectRedis()
+
+  const staleLocks = await releaseStaleImportLocks().catch(() => 0)
+  if (staleLocks > 0) {
+    console.log(`🔓 ${staleLocks} import lock tertinggal dari proses sebelumnya dibersihkan.`)
+  }
 
   const server = app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`)
