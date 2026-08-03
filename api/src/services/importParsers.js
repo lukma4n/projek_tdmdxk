@@ -392,19 +392,42 @@ async function buildWorkshopResult(rows) {
   }
 }
 
-export function parseSalesFile(filePath) {
-  const rows = readRows(filePath).slice(6)
+// Streaming seperti parseWorkshopFile: file Report Penjualan full-history juga
+// bisa puluhan ribu baris, dan memuat seluruh workbook sekaligus memicu OOM.
+export async function parseSalesFile(filePath) {
+  try {
+    return await buildSalesResult(streamExcelRows(filePath, { fromRowNumber: 7 }))
+  } catch (error) {
+    console.warn(`⚠️  Streaming Excel gagal (${error.message}), memakai pembaca non-streaming.`)
+    return buildSalesResult(readRows(filePath).slice(6))
+  }
+}
+
+async function buildSalesResult(rows) {
   const records = []
   const errors = []
   const seenSONumbers = new Set()
+  let scannedRows = 0
 
-  for (const row of rows) {
-    if (!row[0]) continue
+  for await (const row of rows) {
+    scannedRows++
+    if (!row || !row[0]) continue
     if (row[1] !== 'DXK') continue
     if (!row[4]) continue
 
     try {
       const soNumber = String(row[4]).trim()
+
+      // customers.so_date wajib di schema. Sebelumnya baris tanpa tanggal valid
+      // tetap diloloskan dengan nilai null, lalu createMany gagal dan MEMBATALKAN
+      // seluruh import dengan error Prisma mentah — preview bilang semua baris
+      // valid, upload mati 500. Tolak per baris supaya terlihat sejak preview.
+      const soDate = typeof row[6] === 'number' ? excelDateToJSDate(row[6]) : null
+      if (!isValidDate(soDate)) {
+        errors.push({ row: row[0], error: `Tanggal SO tidak valid untuk ${soNumber}: ${row[6] ?? '(kosong)'}` })
+        continue
+      }
+
       if (seenSONumbers.has(soNumber)) continue
       seenSONumbers.add(soNumber)
 
@@ -415,7 +438,7 @@ export function parseSalesFile(filePath) {
       records.push({
         so_number: soNumber,
         state: String(row[5] || 'aktif'),
-        so_date: row[6] && typeof row[6] === 'number' ? excelDateToJSDate(row[6]) : null,
+        so_date: soDate,
         sales_type: String(row[7] || ''),
         payment_type: String(row[8] || ''),
         salesman: String(row[12] || ''),
@@ -446,7 +469,7 @@ export function parseSalesFile(filePath) {
     }
   }
 
-  return { records, errors, preview: preview('sales', records, errors, { dedupedSoRows: rows.length - records.length }) }
+  return { records, errors, preview: preview('sales', records, errors, { dedupedSoRows: scannedRows - records.length }) }
 }
 
 export async function parseImportFile(module, filePath) {

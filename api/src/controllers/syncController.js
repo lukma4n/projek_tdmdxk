@@ -6,7 +6,7 @@ import { parseHotlineFile, parseStockFile, parseWorkshopFile, parseImportFile } 
 import { createAuditLog, getOperationalAuditLogs } from '../services/auditService.js'
 import { endMaintenance, startMaintenance } from '../services/maintenanceService.js'
 import { withImportLock } from '../services/importLockService.js'
-import { bulkUpsertWorkOrders } from '../services/workshopImportService.js'
+import { bulkUpsert } from '../services/bulkUpsertService.js'
 import { ensureNoActiveOpname, OPEN_IMPORT_BLOCK_STATUSES } from './opnameController.js'
 
 async function cleanupUpload(req) {
@@ -179,7 +179,7 @@ export async function uploadWorkshop(req, res, next) {
 
       // Upsert by wo_number: preserves other work orders, allows daily/incremental updates!
       await prisma.$transaction(async (tx) => {
-        await bulkUpsertWorkOrders(tx, finalRecords)
+        await bulkUpsert(tx, 'work_orders', 'wo_number', finalRecords)
       }, { maxWait: 20000, timeout: 120000 })
 
       await prisma.sync_logs.create({

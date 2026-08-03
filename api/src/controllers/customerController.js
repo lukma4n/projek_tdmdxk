@@ -10,6 +10,7 @@ import { createDatabaseBackup } from '../services/backupService.js'
 import { parseSalesFile } from '../services/importParsers.js'
 import { createAuditLog } from '../services/auditService.js'
 import { withImportLock } from '../services/importLockService.js'
+import { bulkUpsert } from '../services/bulkUpsertService.js'
 import { excelDateToJSDate, formatForExcel } from '../utils/excelUtils.js'
 
 // ─── KPB Configuration ────────────────────────────────────────────────────
@@ -608,7 +609,7 @@ export async function uploadSales(req, res, next) {
   try {
     if (!req.file?.path) return res.status(400).json({ error: 'File wajib diupload' })
     await withImportLock('sync:sales', async () => {
-      const { records: validRecords, errors } = parseSalesFile(req.file.path)
+      const { records: validRecords, errors } = await parseSalesFile(req.file.path)
       const backup = await createDatabaseBackup('pre_import_sales')
 
     const soNumbers = validRecords.map((record) => record.so_number)
@@ -617,21 +618,12 @@ export async function uploadSales(req, res, next) {
       select: { so_number: true },
     })
     const existingSoNumbers = new Set(existingCustomers.map((customer) => customer.so_number))
-    const createRecords = validRecords.filter((record) => !existingSoNumbers.has(record.so_number))
-    const updateRecords = validRecords.filter((record) => existingSoNumbers.has(record.so_number))
+    const createdCount = soNumbers.filter((soNumber) => !existingSoNumbers.has(soNumber)).length
+    const updatedCount = soNumbers.length - createdCount
 
     // Upsert by so_number: preserve customer IDs so KPB follow-up history survives re-import.
     await prisma.$transaction(async (tx) => {
-      if (createRecords.length > 0) {
-        await tx.customers.createMany({ data: createRecords })
-      }
-
-      for (const record of updateRecords) {
-        await tx.customers.update({
-          where: { so_number: record.so_number },
-          data: record,
-        })
-      }
+      await bulkUpsert(tx, 'customers', 'so_number', validRecords)
     }, { maxWait: 20000, timeout: 180000 })
 
     const success = validRecords.length
@@ -657,8 +649,8 @@ export async function uploadSales(req, res, next) {
         filename: req.file.originalname,
         rows_success: success,
         rows_error: errors.length,
-        created: createRecords.length,
-        updated: updateRecords.length,
+        created: createdCount,
+        updated: updatedCount,
         backup: backup.filename,
       },
     })
@@ -669,8 +661,8 @@ export async function uploadSales(req, res, next) {
       res.json({
         message: 'Import penjualan selesai',
         success,
-        created: createRecords.length,
-        updated: updateRecords.length,
+        created: createdCount,
+        updated: updatedCount,
         errors: errors.length,
         errorDetails: errors.slice(0, 10),
         backup: backup.filename,

@@ -9,6 +9,9 @@ const prismaDir = path.resolve(__dirname, '../../prisma')
 const dbPath = path.join(prismaDir, 'dev.db')
 const backupDir = path.join(prismaDir, 'backups')
 
+// Sejalan dengan retensi backup terjadwal (14) di scripts/backup-db.js.
+const PRE_IMPORT_KEEP = 14
+
 function timestamp() {
   return new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12)
 }
@@ -29,6 +32,14 @@ export async function createDatabaseBackup(reason = 'manual') {
   // Mode WAL: flush data dari dev.db-wal ke dev.db agar salinan file konsisten/komplit.
   await prisma.$queryRawUnsafe('PRAGMA wal_checkpoint(TRUNCATE);').catch(() => {})
   await fs.copyFile(dbPath, target)
+
+  // Backup pre-import dibuat setiap kali import dijalankan dan dulu hanya bisa
+  // dibersihkan lewat endpoint manual — di produksi menumpuk jadi 123 file /
+  // 8,9 GB. Rotasi otomatis agar tidak pelan-pelan menghabiskan disk.
+  if (safeReason.startsWith('pre_import')) {
+    await cleanupPreImportBackups(PRE_IMPORT_KEEP).catch(() => {})
+  }
+
   return { filename, path: target, created_at: new Date().toISOString() }
 }
 

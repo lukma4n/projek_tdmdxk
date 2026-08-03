@@ -36,11 +36,45 @@ test('parseSalesFile filters DXK rows and deduplicates SO number', async () => {
   const headerRows = Array.from({ length: 6 }, () => ['header'])
   const { dir, filePath } = await writeWorkbook([...headerRows, dxkRow, otherBranchRow, duplicateRow])
   try {
-    const { records, errors } = parseSalesFile(filePath)
+    const { records, errors } = await parseSalesFile(filePath)
     assert.equal(errors.length, 0)
     assert.equal(records.length, 1)
     assert.equal(records[0].so_number, 'SO001')
     assert.equal(records[0].branch_code, 'DXK')
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true })
+  }
+})
+
+test('parseSalesFile menolak baris tanpa tanggal SO valid, bukan meloloskan so_date null', async () => {
+  // customers.so_date wajib di schema; baris ber-so_date null dulu lolos preview
+  // lalu membuat createMany gagal dan membatalkan seluruh import dengan 500.
+  const validRow = []
+  validRow[0] = 1
+  validRow[1] = 'DXK'
+  validRow[4] = 'SO001'
+  validRow[6] = 45000
+  validRow[15] = 'Budi'
+
+  const textDateRow = [...validRow]
+  textDateRow[0] = 2
+  textDateRow[4] = 'SO002'
+  textDateRow[6] = '13/07/2026'
+
+  const emptyDateRow = [...validRow]
+  emptyDateRow[0] = 3
+  emptyDateRow[4] = 'SO003'
+  emptyDateRow[6] = undefined
+
+  const headerRows = Array.from({ length: 6 }, () => ['header'])
+  const { dir, filePath } = await writeWorkbook([...headerRows, validRow, textDateRow, emptyDateRow])
+  try {
+    const { records, errors } = await parseSalesFile(filePath)
+    assert.equal(records.length, 1, 'hanya baris bertanggal valid yang diterima')
+    assert.equal(records[0].so_number, 'SO001')
+    assert.ok(records.every((record) => record.so_date instanceof Date))
+    assert.equal(errors.length, 2, 'dua baris bermasalah dilaporkan sebagai error baris')
+    assert.match(errors[0].error, /Tanggal SO tidak valid/)
   } finally {
     await fs.rm(dir, { recursive: true, force: true })
   }
