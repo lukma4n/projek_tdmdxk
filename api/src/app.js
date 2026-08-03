@@ -13,6 +13,7 @@ import { errorHandler } from './middleware/errorHandler.js'
 import { maintenanceGuard } from './middleware/maintenance.js'
 import { requestId } from './middleware/requestId.js'
 import { releaseStaleImportLocks } from './services/importLockService.js'
+import { cleanupStaleUploads } from './services/uploadCleanupService.js'
 
 // Routes
 import authRoutes from './routes/authRoutes.js'
@@ -174,6 +175,12 @@ async function start() {
   const staleLocks = await releaseStaleImportLocks().catch(() => 0)
   if (staleLocks > 0) {
     console.log(`🔓 ${staleLocks} import lock tertinggal dari proses sebelumnya dibersihkan.`)
+  }
+
+  const staleUploads = await cleanupStaleUploads().catch(() => ({ deleted: 0, bytes: 0 }))
+  if (staleUploads.deleted > 0) {
+    const mb = (staleUploads.bytes / 1024 / 1024).toFixed(1)
+    console.log(`🧹 ${staleUploads.deleted} file upload tertinggal dibersihkan (${mb} MB).`)
   }
 
   const server = app.listen(PORT, () => {
