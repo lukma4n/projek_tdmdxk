@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { AlertTriangle, Printer, X } from 'lucide-react'
 
+// Jumlah label per konsumen — 6 dipakai di buku service, sisanya cadangan
+// kalau stiker rusak saat ditempel. Diekspor supaya halaman cetak massal
+// memakai angka yang sama (dua jalur cetak, satu sumber angka).
+export const LABELS_PER_CUSTOMER = 9
+
 function escapeHtml(value) {
   return String(value ?? '-')
     .replace(/&/g, '&amp;')
@@ -61,12 +66,7 @@ export default function ServiceBookLabel({ item, onClose, onPrinted }) {
       </head>
       <body>
         <div class="page">
-          <div class="label">${renderLabelContent()}</div>
-          <div class="label">${renderLabelContent()}</div>
-          <div class="label">${renderLabelContent()}</div>
-          <div class="label">${renderLabelContent()}</div>
-          <div class="label">${renderLabelContent()}</div>
-          <div class="label">${renderLabelContent()}</div>
+          ${Array.from({ length: LABELS_PER_CUSTOMER }, () => `<div class="label">${renderLabelContent()}</div>`).join('')}
         </div>
         <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 200); };</script>
       </body>
@@ -93,9 +93,9 @@ export default function ServiceBookLabel({ item, onClose, onPrinted }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {/* Label Preview - 6 Labels */}
+          {/* Label Preview */}
           <div className="space-y-3">
-            {[1, 2, 3, 4, 5, 6].map((num) => (
+            {Array.from({ length: LABELS_PER_CUSTOMER }, (_, i) => i + 1).map((num) => (
               <div key={num} className="mx-auto max-w-[280px] rounded-lg border border-slate-300 bg-white p-4">
                 <div className="mb-1 text-xs font-bold text-blue-600">BUKU SERVICE - TDM KETAPANG</div>
                 <div className="mt-1 space-y-0.5 text-[9px] text-slate-900 leading-tight">
@@ -125,7 +125,7 @@ export default function ServiceBookLabel({ item, onClose, onPrinted }) {
           </div>
 
           <div className="text-center text-xs text-slate-400">
-            6 label per customer (64mm × 32mm)
+            {LABELS_PER_CUSTOMER} label per customer (64mm × 32mm)
           </div>
 
           {popupError && (

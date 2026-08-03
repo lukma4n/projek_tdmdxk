@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { api } from '../services/api'
-import ServiceBookLabel from '../components/common/ServiceBookLabel'
+import ServiceBookLabel, { LABELS_PER_CUSTOMER } from '../components/common/ServiceBookLabel'
 import {
   Loader2,
   AlertTriangle,
@@ -174,7 +174,7 @@ export default function ShowroomLabelBukuService() {
 
     const allLabels = []
     labelItems.forEach((item) => {
-      allLabels.push(item, item, item, item, item, item)
+      for (let i = 0; i < LABELS_PER_CUSTOMER; i += 1) allLabels.push(item)
     })
 
     const labelsPerPage = 12 // 3 kolom x 4 baris
@@ -313,7 +313,7 @@ export default function ShowroomLabelBukuService() {
             disabled={!visibleSelected.length}
             className="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Printer size={16} /> Cetak Terpilih ({visibleSelected.length * 6} label)
+            <Printer size={16} /> Cetak Terpilih ({visibleSelected.length * LABELS_PER_CUSTOMER} label)
           </button>
         </div>
       </div>
