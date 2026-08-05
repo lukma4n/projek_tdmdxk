@@ -163,3 +163,32 @@ test('draf BPKB juga menyebut tipe motor dan nomor polisi', async () => {
   assert.ok(baris, 'baris BPKB uji harus ada')
   assert.match(baris.draft_message, /motor Honda VARIO125 dengan nomor polisi KB7788ZZ/)
 })
+
+test('baris membawa jumlah kontak dan jarak kontak terakhir', async () => {
+  // Penanda urutan garap: status saja tidak cukup untuk memutuskan siapa
+  // berikutnya — yang menentukan adalah sudah berapa kali dan berapa lama lalu.
+  const user = await prismaTest.users.findUnique({ where: { username: 'test_crm' } })
+  const duaHariLalu = new Date()
+  duaHariLalu.setDate(duaHariLalu.getDate() - 2)
+
+  await prismaTest.showroom_document_followups.createMany({
+    data: [
+      { document_type: 'STNK', engine_number: ENG_BELUM, status: 'sudah_dihubungi', created_by: user.id, followup_at: new Date('2026-01-01') },
+      { document_type: 'STNK', engine_number: ENG_BELUM, status: 'sudah_dihubungi', created_by: user.id, followup_at: duaHariLalu },
+    ],
+  })
+
+  const res = await callAuthenticated('get', '/api/showroom/document-followups/stnk', crmCookie)
+  const baris = res.body.data.find((r) => r.engine_number === ENG_BELUM)
+  assert.equal(baris.followup_count, 2, 'dihitung semua kontak, bukan cuma yang terakhir')
+  assert.equal(baris.last_contact_days, 2)
+
+  await prismaTest.showroom_document_followups.deleteMany({ where: { engine_number: ENG_BELUM } })
+})
+
+test('yang belum pernah dihubungi ditandai jelas', async () => {
+  const res = await callAuthenticated('get', '/api/showroom/document-followups/stnk', crmCookie)
+  const baris = res.body.data.find((r) => r.engine_number === ENG_BELUM)
+  assert.equal(baris.followup_count, 0)
+  assert.equal(baris.last_contact_days, null, 'null, bukan 0 — belum pernah bukan berarti hari ini')
+})

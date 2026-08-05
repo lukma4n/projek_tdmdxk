@@ -74,6 +74,12 @@ function buildDocumentTrackWhere(documentType, query) {
   return where
 }
 
+/**
+ * Riwayat kontak per unit: yang terakhir + berapa kali sudah dihubungi.
+ *
+ * Jumlah kontak dihitung di pass yang sama dengan pencarian yang terakhir —
+ * barisnya sudah ditarik semua, jadi tidak ada query tambahan.
+ */
 async function getLatestDocumentFollowups(documentType, engineNumbers) {
   if (engineNumbers.length === 0) return new Map()
   const followups = await prisma.showroom_document_followups.findMany({
@@ -82,11 +88,13 @@ async function getLatestDocumentFollowups(documentType, engineNumbers) {
     include: { creator: { select: { id: true, username: true, name: true, role: true } } },
   })
 
-  const latest = new Map()
+  const riwayat = new Map()
   for (const followup of followups) {
-    if (!latest.has(followup.engine_number)) latest.set(followup.engine_number, followup)
+    const ada = riwayat.get(followup.engine_number)
+    if (ada) ada.jumlah++
+    else riwayat.set(followup.engine_number, { terakhir: followup, jumlah: 1 })
   }
-  return latest
+  return riwayat
 }
 
 function trackToFollowupRow(documentType, item) {
@@ -140,12 +148,22 @@ function trackToFollowupRow(documentType, item) {
   }
 }
 
-function attachDocumentFollowups(documentType, rows, followups) {
-  return rows.map((item) => ({
-    ...item,
-    document_type: documentType,
-    followup: followups.get(item.engine_number) || null,
-  }))
+function attachDocumentFollowups(documentType, rows, riwayat) {
+  const hariIni = new Date()
+  return rows.map((item) => {
+    const r = riwayat.get(item.engine_number) || null
+    return {
+      ...item,
+      document_type: documentType,
+      followup: r?.terakhir || null,
+      // Dua angka ini yang menentukan siapa digarap berikutnya: yang belum
+      // pernah disentuh, lalu yang paling lama tidak dikabari.
+      followup_count: r?.jumlah || 0,
+      last_contact_days: r
+        ? Math.floor((hariIni - new Date(r.terakhir.followup_at)) / (24 * 60 * 60 * 1000))
+        : null,
+    }
+  })
 }
 
 async function buildDocumentFollowupData(documentType, query) {

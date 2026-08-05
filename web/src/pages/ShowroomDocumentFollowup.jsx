@@ -295,6 +295,19 @@ export default function ShowroomDocumentFollowup({ type }) {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-accent-soft text-accent border-accent-soft"><Icon size={11} />{isStnk ? 'STNK' : 'BPKB'}</span>
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${statusColors[currentStatus] || statusColors.belum_dihubungi}`}>{statuses.find((s) => s.value === currentStatus)?.label || currentStatus}</span>
+                        {/* Penanda urutan garap: yang belum pernah disentuh
+                            menonjol, yang sudah menampilkan berapa kali dan
+                            kapan terakhir — itu yang menentukan siapa berikutnya. */}
+                        {item.followup_count > 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-hover text-muted border-border" title={`Terakhir dihubungi ${item.followup?.creator?.name || item.followup?.creator?.username || '-'}`}>
+                            <MessageCircle size={10} />
+                            {item.followup_count}× · {item.last_contact_days === 0 ? 'hari ini' : `${item.last_contact_days} hari lalu`}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-warning-50 text-warning-600 border-warning-200">
+                            Belum pernah dihubungi
+                          </span>
+                        )}
                         <span
                           className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${
                             item.waiting_days > 180
