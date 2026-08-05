@@ -30,13 +30,13 @@ before(async () => {
   await prismaTest.showroom_stnk_bpkb_tracks.createMany({
     data: [
       // STNK jadi, belum diserahkan → memang perlu ditagih
-      { ...dasar, engine_number: ENG_BELUM, stnk_status: 'BELUM_DIAMBIL', bpkb_status: 'BELUM_JADI', stnk_name: 'Konsumen Belum Ambil' },
+      { ...dasar, engine_number: ENG_BELUM, stnk_status: 'BELUM_DIAMBIL', bpkb_status: 'BELUM_JADI', stnk_name: 'Konsumen Belum Ambil', series: 'SCOOPY', category_name: 'MATIC LOW END', no_polisi: 'KB4216GAC', mobile: '081255500011', tgl_terima_stnk: new Date() },
       // STNK sudah diserahkan → tidak boleh muncul
       { ...dasar, engine_number: ENG_SUDAH, stnk_status: 'SUDAH_DIAMBIL', bpkb_status: 'SUDAH_DIAMBIL', stnk_name: 'Konsumen Sudah Ambil' },
       // STNK belum jadi → juga tidak boleh muncul
       { ...dasar, engine_number: ENG_BELUM_JADI, stnk_status: 'BELUM_JADI', bpkb_status: 'BELUM_JADI', stnk_name: 'Konsumen STNK Belum Jadi' },
       // BPKB cash siap diambil → untuk memastikan sisi BPKB tidak ikut berubah
-      { ...dasar, engine_number: ENG_BPKB, stnk_status: 'SUDAH_DIAMBIL', bpkb_status: 'BELUM_DIAMBIL', finance_company: null, tgl_jadi_bpkb: new Date(), stnk_name: 'Konsumen BPKB Cash' },
+      { ...dasar, engine_number: ENG_BPKB, stnk_status: 'SUDAH_DIAMBIL', bpkb_status: 'BELUM_DIAMBIL', finance_company: null, tgl_jadi_bpkb: new Date(), stnk_name: 'Konsumen BPKB Cash', series: 'VARIO125', category_name: 'MATIC MID END', no_polisi: 'KB7788ZZ', mobile: '081255500022' },
     ],
   })
 })
@@ -138,4 +138,28 @@ test('daftar rentang ikut dikirim supaya frontend tidak perlu menghardcode', asy
   const res = await callAuthenticated('get', '/api/showroom/document-followups/BPKB?limit=1', crmCookie)
   assert.equal(res.body.agingBuckets.length, 6)
   assert.deepEqual(res.body.agingBuckets.map((b) => b.value), ['1-30', '31-60', '61-90', '91-180', '181-365', '365+'])
+})
+
+test('draf STNK menyebut tipe motor dan nomor polisi yang sebenarnya', async () => {
+  // Regresi: perender sempat membaca item.series/item.no_polisi, padahal baris
+  // di sini hasil trackToFollowupRow yang memakai nama lain (model,
+  // police_number). Salah baca tidak error — pesannya diam-diam berbunyi
+  // "motor Honda Honda dengan nomor polisi -" dan itu terkirim ke konsumen.
+  const res = await callAuthenticated('get', '/api/showroom/document-followups/stnk', crmCookie)
+  assert.equal(res.status, 200)
+  const baris = res.body.data.find((r) => r.engine_number === ENG_BELUM)
+  assert.ok(baris, 'baris uji harus ada')
+
+  assert.match(baris.draft_message, /motor Honda SCOOPY dengan nomor polisi KB4216GAC/)
+  assert.doesNotMatch(baris.draft_message, /Honda Honda/)
+  assert.doesNotMatch(baris.draft_message, /nomor polisi -/)
+  assert.match(baris.wa_url, /^https:\/\/wa\.me\/6281255500011\?text=/)
+})
+
+test('draf BPKB juga menyebut tipe motor dan nomor polisi', async () => {
+  // Baris BPKB dulu tidak memetakan police_number sama sekali.
+  const res = await callAuthenticated('get', '/api/showroom/document-followups/bpkb', crmCookie)
+  const baris = res.body.data.find((r) => r.engine_number === ENG_BPKB)
+  assert.ok(baris, 'baris BPKB uji harus ada')
+  assert.match(baris.draft_message, /motor Honda VARIO125 dengan nomor polisi KB7788ZZ/)
 })

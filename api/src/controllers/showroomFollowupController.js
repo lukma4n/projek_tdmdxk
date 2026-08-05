@@ -105,6 +105,9 @@ function trackToFollowupRow(documentType, item) {
       engine_number: item.engine_number,
       stnk_name: item.stnk_name,
       applicant_name: item.stnk_name,
+      // Nama model yang dikenali konsumen (SCOOPY), bukan segmen internal
+      // (CUB LOW END). Dipakai pesan WhatsApp dan ditampilkan di layar.
+      model: item.series || item.category_name || null,
       stnk_location: item.lokasi_stnk,
       stnk_ready_date: item.tgl_terima_stnk,
       stnk_expired_date: item.tgl_jtp_stnk,
@@ -123,6 +126,8 @@ function trackToFollowupRow(documentType, item) {
     stnk_name: item.stnk_name,
     applicant_name: item.stnk_name,
     requestor_name: item.stnk_name,
+    model: item.series || item.category_name || null,
+    police_number: item.no_polisi,
     bpkb_location: item.lokasi_bpkb,
     bpkb_number: item.no_bpkb,
     bpkb_ready_date: item.tgl_jadi_bpkb,
@@ -204,9 +209,12 @@ export async function getDocumentFollowups(req, res, next) {
     // diubah dari UI — halaman tidak lagi menyusun teksnya sendiri.
     const render = await muatPerenderMassal()
     const denganDraf = paginated.map((item) => {
+      // Sumbernya baris hasil trackToFollowupRow, BUKAN baris tabel — nama
+      // fieldnya berbeda (police_number, bukan no_polisi). Salah baca di sini
+      // tidak error, cuma diam-diam jatuh ke fallback "Honda" dan "-".
       const pesan = render.dokumen([documentType], {
         engineNumber: item.engine_number, customerName: item.stnk_name,
-        model: item.series || item.category_name, noPolisi: item.no_polisi,
+        model: item.model, noPolisi: item.police_number,
       })
       return { ...item, draft_message: pesan, wa_url: waMeUrl(item.mobile || item.customer_phone, pesan) }
     })
