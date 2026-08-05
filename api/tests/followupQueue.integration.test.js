@@ -192,3 +192,23 @@ test('riwayat kontak bisa ditelusuri per target', async () => {
   assert.equal(res.body.data[0].note, 'telepon pertama')
   assert.ok(Array.isArray(res.body.pengiriman))
 })
+
+test('nomor bermasalah bisa dibuka beserta alasannya', async () => {
+  // Sebelumnya nomor tak layak hilang diam-diam dan admin tak tahu ada apa —
+  // baru ketahuan saat WhatsApp menolaknya, setelah waktu staf terbuang.
+  const body = await ambilAntrean('&nomor=bermasalah')
+  const rusak = body.data.find((r) => r.key === `${PREFIX}ENGD`)
+  assert.ok(rusak, 'baris ber-nomor rusak harus muncul di filter ini')
+  assert.equal(rusak.phone_valid, false)
+  // '01234' → '621234': gagal di awalan seluler (628) sebelum sampai cek panjang.
+  assert.equal(rusak.alasan_nomor, 'bukan_seluler')
+  assert.equal(rusak.nomor_tersimpan, '01234', 'nomor apa adanya ikut supaya bisa diperbaiki')
+  assert.equal(rusak.wa_url, '', 'tanpa tautan WA — memang tidak bisa dihubungi')
+  assert.ok(body.data.every((r) => r.phone_valid === false), 'filter ini hanya berisi yang bermasalah')
+})
+
+test('alasan tersaring dirinci per jenis masalah', async () => {
+  const body = await ambilAntrean()
+  assert.ok(body.tersaring.per_alasan, 'rincian alasan wajib ada')
+  assert.equal(typeof body.alasan_nomor_label.dobel, 'string', 'kamus alasan datang dari server')
+})

@@ -4,7 +4,7 @@ import { buildFollowupQueue } from '../services/followupQueueService.js'
 import { getDailyUsage, pastikanJatahHarianCukup, catatPengiriman, BatasHarianError } from '../services/whatsappLimitService.js'
 import { muatPerenderMassal } from '../services/templateService.js'
 import { documentTemplateKey } from '../services/followupMessages.js'
-import { waMeUrl, normalizePhone } from '../utils/phone.js'
+import { waMeUrl, normalizePhone, ALASAN_NOMOR } from '../utils/phone.js'
 import { KPB_LEVELS } from './customerController.js'
 
 const JENIS_VALID = ['KPB', 'STNK', 'BPKB']
@@ -39,7 +39,7 @@ async function lampirkanDraf(items) {
  */
 export async function getFollowupQueue(req, res, next) {
   try {
-    const { page = 1, limit = 50, kind = 'all', area = 'all', search = '', include_invalid_phone } = req.query
+    const { page = 1, limit = 50, kind = 'all', area = 'all', search = '', include_invalid_phone, nomor } = req.query
     const pageInt = Math.max(1, parseInt(page) || 1)
     const limitInt = clampLimit(limit, 50)
 
@@ -48,6 +48,7 @@ export async function getFollowupQueue(req, res, next) {
       area,
       search,
       includeInvalidPhone: include_invalid_phone === 'true',
+      onlyInvalidPhone: nomor === 'bermasalah',
     })
 
     // Draf hanya disiapkan untuk baris yang benar-benar tampil. Merendernya
@@ -59,6 +60,9 @@ export async function getFollowupQueue(req, res, next) {
       data: halaman,
       ringkasan,
       tersaring,
+      // Kamus alasan dikirim dari server supaya kalimatnya tidak ditulis ulang
+      // (dan lama-lama berbeda) di frontend.
+      alasan_nomor_label: ALASAN_NOMOR,
       daily: await getDailyUsage(),
       pagination: {
         page: pageInt,

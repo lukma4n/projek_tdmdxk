@@ -61,6 +61,8 @@ export default function FollowupCenter() {
   const [areas, setAreas] = useState([])
 
   const [kind, setKind] = useState('all')
+  const [nomorBermasalah, setNomorBermasalah] = useState(false)
+  const [alasanLabel, setAlasanLabel] = useState({})
   const [area, setArea] = useState('all')
   const [search, setSearch] = useState('')
   const [searchDraft, setSearchDraft] = useState('')
@@ -75,10 +77,14 @@ export default function FollowupCenter() {
     try {
       setLoading(true)
       setError('')
-      const res = await api.getFollowupQueue({ kind, area, search, page, limit: 50 })
+      const res = await api.getFollowupQueue({
+        kind, area, search, page, limit: 50,
+        ...(nomorBermasalah && { nomor: 'bermasalah' }),
+      })
       setItems(res.data || [])
       setRingkasan(res.ringkasan || { total: 0, per_jenis: {}, belum_dihubungi: 0 })
       setTersaring(res.tersaring || {})
+      setAlasanLabel(res.alasan_nomor_label || {})
       setDaily(res.daily || null)
       setPagination(res.pagination || { page: 1, totalPages: 1, total: 0 })
     } catch (err) {
@@ -86,7 +92,7 @@ export default function FollowupCenter() {
     } finally {
       setLoading(false)
     }
-  }, [kind, area, search, page])
+  }, [kind, area, search, page, nomorBermasalah])
 
   // Pola `void Promise.resolve().then(...)` dipakai konsisten dengan halaman
   // lain di proyek ini: menunda setState keluar dari fase render effect.
@@ -169,7 +175,8 @@ export default function FollowupCenter() {
   }
 
   const jumlahTersaring = useMemo(
-    () => Object.values(tersaring).reduce((a, b) => a + (b || 0), 0),
+    () => ['nomor_tidak_valid', 'baru_dihubungi', 'dijadwalkan_nanti']
+      .reduce((a, k) => a + (tersaring[k] || 0), 0),
     [tersaring],
   )
 
@@ -255,6 +262,20 @@ export default function FollowupCenter() {
             {j.label}
           </button>
         ))}
+        {/* Nomor bermasalah tidak lagi hilang diam-diam: bisa dibuka, dilihat
+            alasannya, dan diperbaiki di sumber datanya. */}
+        <button
+          onClick={() => { setNomorBermasalah((v) => !v); setPage(1) }}
+          className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium ${
+            nomorBermasalah
+              ? 'bg-danger-600 border-danger-600 text-white'
+              : 'bg-panel border-border text-muted hover:bg-hover'
+          }`}
+        >
+          <AlertTriangle size={14} />
+          Nomor bermasalah
+          {!nomorBermasalah && tersaring.nomor_tidak_valid > 0 && ` (${tersaring.nomor_tidak_valid})`}
+        </button>
       </div>
 
       {jumlahTersaring > 0 && (
@@ -264,7 +285,12 @@ export default function FollowupCenter() {
           {tersaring.baru_dihubungi > 0 && (tersaring.dijadwalkan_nanti > 0 || tersaring.nomor_tidak_valid > 0) && ', '}
           {tersaring.dijadwalkan_nanti > 0 && `${tersaring.dijadwalkan_nanti} dijadwalkan hubungi ulang`}
           {tersaring.dijadwalkan_nanti > 0 && tersaring.nomor_tidak_valid > 0 && ', '}
-          {tersaring.nomor_tidak_valid > 0 && `${tersaring.nomor_tidak_valid} nomor HP tidak valid`}
+          {tersaring.nomor_tidak_valid > 0 && `${tersaring.nomor_tidak_valid} nomor HP bermasalah`}
+          {tersaring.per_alasan && Object.keys(tersaring.per_alasan).length > 0 && (
+            <> — {Object.entries(tersaring.per_alasan)
+              .map(([k, n]) => `${n} ${(alasanLabel[k] || k).toLowerCase()}`)
+              .join(', ')}</>
+          )}
         </p>
       )}
 
@@ -313,7 +339,12 @@ export default function FollowupCenter() {
                           {item.customer_name || '(tanpa nama)'}
                         </p>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-                          <span className="flex items-center gap-1"><Phone size={12} />{item.phone || '-'}</span>
+                          <span className="flex items-center gap-1">
+                            <Phone size={12} />
+                            {item.phone_valid
+                              ? item.phone
+                              : <span className="text-danger-600">{item.nomor_tersimpan || '(kosong)'}</span>}
+                          </span>
                           {item.model && <span className="flex items-center gap-1"><Bike size={12} />{item.model}</span>}
                           {item.area && <span className="flex items-center gap-1"><MapPin size={12} />{item.area}</span>}
                           {item.kind === 'KPB' && item.kpb_label && (
@@ -324,6 +355,12 @@ export default function FollowupCenter() {
                           )}
                         </div>
                         <p className="text-xs text-accent">{item.alasan_prioritas}</p>
+                        {!item.phone_valid && (
+                          <p className="text-xs text-danger-600 flex items-center gap-1">
+                            <AlertTriangle size={12} className="shrink-0" />
+                            {alasanLabel[item.alasan_nomor] || 'Nomor HP tidak bisa dihubungi'} — perbaiki nomornya dulu
+                          </p>
+                        )}
                         {item.tertunda_lain?.length > 0 && (
                           <p className="text-xs text-muted">
                             Konsumen ini juga punya {item.tertunda_lain.map((t) => t.kind).join(', ')} tertunda —

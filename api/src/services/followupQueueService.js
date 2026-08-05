@@ -1,6 +1,6 @@
 import { prisma } from '../config/db.js'
 import { KPB_LEVELS, addMonths } from '../controllers/customerController.js'
-import { normalizePhone } from '../utils/phone.js'
+import { periksaNomor } from '../utils/phone.js'
 import { hitungSkor, terlaluBaruDihubungi } from './followupPriority.js'
 
 // Antrean follow-up terpadu: KPB + STNK + BPKB dalam satu daftar berurut
@@ -217,20 +217,23 @@ function satukanPerNomor(items) {
  *  - baru dihubungi <7 hari → mencegah pola kirim berulang yang memicu blokir
  *  - dijadwalkan hubungi ulang di masa depan → hormati janji konsumen
  */
-export async function buildFollowupQueue({ kind, area, search, includeInvalidPhone = false } = {}) {
+export async function buildFollowupQueue({ kind, area, search, includeInvalidPhone = false, onlyInvalidPhone = false } = {}) {
+  // Menampilkan yang bermasalah saja tetap butuh mereka ikut dibangun dulu.
+  if (onlyInvalidPhone) includeInvalidPhone = true
   const hariIni = new Date()
   const batasHari = awalHariIni()
 
   const [targetKpb, targetDokumen] = await Promise.all([ambilTargetKpb(hariIni), ambilTargetDokumen(hariIni)])
   const riwayat = await ambilRiwayat(targetKpb, targetDokumen)
 
-  const tersaring = { nomor_tidak_valid: 0, baru_dihubungi: 0, dijadwalkan_nanti: 0 }
+  const tersaring = { nomor_tidak_valid: 0, baru_dihubungi: 0, dijadwalkan_nanti: 0, per_alasan: {} }
   const items = []
 
   for (const t of [...targetKpb, ...targetDokumen]) {
-    const phone = normalizePhone(t.phone_raw)
-    if (!phone && !includeInvalidPhone) {
+    const nomor = periksaNomor(t.phone_raw)
+    if (!nomor.valid && !includeInvalidPhone) {
       tersaring.nomor_tidak_valid++
+      tersaring.per_alasan[nomor.alasan] = (tersaring.per_alasan[nomor.alasan] || 0) + 1
       continue
     }
 
@@ -261,8 +264,12 @@ export async function buildFollowupQueue({ kind, area, search, includeInvalidPho
 
     items.push({
       ...t,
-      phone,
-      phone_valid: Boolean(phone),
+      phone: nomor.phone,
+      phone_valid: nomor.valid,
+      // Alasan + nomor apa adanya ikut dikirim supaya admin tahu APA yang harus
+      // diperbaiki. "Nomor tidak valid" saja tidak memberi tahu apa-apa.
+      alasan_nomor: nomor.alasan,
+      nomor_tersimpan: t.phone_raw || null,
       skor,
       alasan_prioritas: alasan,
       status: followup?.status || 'belum_dihubungi',
@@ -273,6 +280,7 @@ export async function buildFollowupQueue({ kind, area, search, includeInvalidPho
 
   let hasil = satukanPerNomor(gabungDokumenSeunit(items))
 
+  if (onlyInvalidPhone) hasil = hasil.filter((i) => !i.phone_valid)
   if (kind && kind !== 'all') hasil = hasil.filter((i) => i.kind === kind || i.kebutuhan?.includes(kind))
   // Tidak peka huruf: kecamatan yang sama ditulis berbeda di dua sumber
   // ("AIR UPAS" vs "Air Upas"), jadi pencocokan persis akan menghasilkan nol.
