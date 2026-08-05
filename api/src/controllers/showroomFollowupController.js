@@ -204,7 +204,10 @@ export async function getDocumentFollowups(req, res, next) {
     // diubah dari UI — halaman tidak lagi menyusun teksnya sendiri.
     const render = await muatPerenderMassal()
     const denganDraf = paginated.map((item) => {
-      const pesan = render.dokumen([documentType], { engineNumber: item.engine_number })
+      const pesan = render.dokumen([documentType], {
+        engineNumber: item.engine_number, customerName: item.stnk_name,
+        model: item.series || item.category_name, noPolisi: item.no_polisi,
+      })
       return { ...item, draft_message: pesan, wa_url: waMeUrl(item.mobile || item.customer_phone, pesan) }
     })
 

@@ -161,7 +161,10 @@ test('draf pesan + tautan wa.me ikut dalam antrean', async () => {
   assert.equal(res.status, 200)
   const baris = res.body.data.find((r) => r.key === `${PREFIX}ENGDUA`)
   assert.ok(baris, 'baris uji harus ada di antrean')
-  assert.match(baris.draft_message, /STNK dan BPKB motor Honda anda Sudah Jadi/)
+  assert.match(baris.draft_message, /Bapak\/Ibu Konsumen Dua Dokumen, kami menginformasikan bahwa STNK dan BPKB/)
   assert.match(baris.wa_url, /^https:\/\/wa\.me\/6281200000009\?text=/)
-  assert.ok(decodeURIComponent(baris.wa_url.split('text=')[1]).includes('Sudah Jadi'))
+  // Nama konsumen harus ikut sampai ke tautannya, bukan cuma ada di draft_message.
+  const teksDiTautan = decodeURIComponent(baris.wa_url.split('text=')[1])
+  assert.ok(teksDiTautan.includes('SUDAH JADI'))
+  assert.ok(teksDiTautan.includes('Konsumen Dua Dokumen'))
 })

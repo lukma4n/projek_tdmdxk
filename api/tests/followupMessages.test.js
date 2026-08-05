@@ -49,7 +49,7 @@ const KPB_HARAPAN = [
 const STNK_HARAPAN = [
   'Salam Satu Hati Pelanggan Setia Honda',
   '',
-  'Kami Mau menginformasikan Bahwa STNK motor Honda anda Sudah Jadi',
+  'Bapak/Ibu MAT JUNI, kami menginformasikan bahwa STNK motor Honda REVO dengan nomor polisi KB5080IR SUDAH JADI.',
   'Diharapkan untuk segera mengambil STNK di Dealer Honda TDM Motor.',
   'ALAMAT : JL Ahmad Yani no 133,kel Mulia Baru, Delta Pawan',
   '',
@@ -71,7 +71,7 @@ const STNK_HARAPAN = [
 const BPKB_HARAPAN = [
   'Salam Satu Hati Pelanggan Setia Honda',
   '',
-  'kami Mau menginformasikan Bahwa BPKB motor Honda anda Sudah Jadi',
+  'Bapak/Ibu MAT JUNI, kami menginformasikan bahwa BPKB motor Honda REVO dengan nomor polisi KB5080IR SUDAH JADI.',
   'Diharapkan untuk segera mengambil BPKB di Dealer Honda TDM Motor.',
   'ALAMAT : JL Ahmad Yani no 133,kel Mulia Baru, Delta Pawan',
   '',
@@ -105,12 +105,12 @@ test('pesan KPB persis sama dengan template lama', () => {
   assert.equal(hasil, KPB_HARAPAN)
 })
 
-test('pesan STNK persis sama dengan template lama', () => {
-  assert.equal(buildStnkMessage({ engineNumber: 'JBK1E2146575' }), STNK_HARAPAN)
+test('pesan STNK menyebut nama, tipe motor, dan nomor polisi', () => {
+  assert.equal(buildStnkMessage({ engineNumber: 'JBK1E2146575', customerName: 'MAT JUNI', model: 'REVO', noPolisi: 'KB5080IR' }), STNK_HARAPAN)
 })
 
-test('pesan BPKB persis sama dengan template lama', () => {
-  assert.equal(buildBpkbMessage({ engineNumber: 'EF32E1000330' }), BPKB_HARAPAN)
+test('pesan BPKB menyebut nama, tipe motor, dan nomor polisi', () => {
+  assert.equal(buildBpkbMessage({ engineNumber: 'EF32E1000330', customerName: 'MAT JUNI', model: 'REVO', noPolisi: 'KB5080IR' }), BPKB_HARAPAN)
 })
 
 test('semua pesan di bawah batas 1024 karakter Wablas', () => {
@@ -124,11 +124,11 @@ test('semua pesan di bawah batas 1024 karakter Wablas', () => {
     daysRemaining: -90,
   })
   assert.ok(kpb.length < 1024, `KPB ${kpb.length} karakter`)
-  assert.ok(buildStnkMessage({ engineNumber: 'JBK1E2146575' }).length < 1024)
-  assert.ok(buildBpkbMessage({ engineNumber: 'EF32E1000330' }).length < 1024)
+  assert.ok(buildStnkMessage({ engineNumber: 'JBK1E2146575', customerName: 'MAT JUNI', model: 'REVO', noPolisi: 'KB5080IR' }).length < 1024)
+  assert.ok(buildBpkbMessage({ engineNumber: 'EF32E1000330', customerName: 'MAT JUNI', model: 'REVO', noPolisi: 'KB5080IR' }).length < 1024)
 })
 
 test('buildDocumentMessage memilih template sesuai tipe', () => {
-  assert.equal(buildDocumentMessage('STNK', { engineNumber: 'JBK1E2146575' }), STNK_HARAPAN)
-  assert.equal(buildDocumentMessage('BPKB', { engineNumber: 'EF32E1000330' }), BPKB_HARAPAN)
+  assert.equal(buildDocumentMessage('STNK', { engineNumber: 'JBK1E2146575', customerName: 'MAT JUNI', model: 'REVO', noPolisi: 'KB5080IR' }), STNK_HARAPAN)
+  assert.equal(buildDocumentMessage('BPKB', { engineNumber: 'EF32E1000330', customerName: 'MAT JUNI', model: 'REVO', noPolisi: 'KB5080IR' }), BPKB_HARAPAN)
 })

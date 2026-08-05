@@ -27,7 +27,10 @@ async function lampirkanDraf(items) {
           customerName: item.customer_name, model: item.model,
           kpbLabel: item.kpb_label, dueDate: item.due_date, daysRemaining: item.days_remaining,
         })
-      : render.dokumen(item.kebutuhan || [item.kind], { engineNumber: item.engine_number })
+      : render.dokumen(item.kebutuhan || [item.kind], {
+          engineNumber: item.engine_number, customerName: item.customer_name,
+          model: item.model, noPolisi: item.no_polisi,
+        })
 
     return { ...item, draft_message: pesan, wa_url: waMeUrl(item.phone, pesan) }
   })

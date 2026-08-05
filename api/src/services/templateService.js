@@ -145,7 +145,10 @@ export function previewTemplate(key, content) {
         customerName: 'BUDI SANTOSO', model: 'VARIO125', kpbLabel: 'KPB1',
         dueDate: new Date(), daysRemaining: -5,
       })
-    : dokumenValues({ engineNumber: 'JBK1E2146575' })
+    : dokumenValues({
+        engineNumber: 'JBK1E2146575', customerName: 'BUDI SANTOSO',
+        model: 'REVO', noPolisi: 'KB1234XY',
+      })
   const hasil = renderTemplate(isi, contoh)
   return { preview: hasil, panjang: hasil.length, batas: MAX_PANJANG_PESAN }
 }
