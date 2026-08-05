@@ -1,9 +1,12 @@
 # Catatan Sesi Terakhir — DXK Operation System
 
 Tanggal: **2026-08-05**
-Branch: **`feat/followup-center-whatsapp`** (commit `f1aa001`, bercabang dari `d8a6eee` di `main`).
-Status: **belum di-push, belum di-merge ke `main`, belum di-deploy.**
-Verifikasi: **API test 189 pass / 0 fail**, lint 0 error (1 warning pre-existing), build sukses, `prisma validate` valid.
+Branch: **`main`** (commit `e0c8e9b`). **Sudah di-push dan sudah di-deploy ke produksi.**
+Verifikasi: **API test 182 pass / 0 fail**, lint 0 error (1 warning pre-existing), build sukses, `prisma validate` valid.
+
+> ⚠️ **Gateway WhatsApp (Wablas) DIHAPUS di hari yang sama.** Kalau membaca bagian
+> mana pun di bawah yang menyebut pengiriman otomatis, baca §5 dulu — pengiriman
+> sekarang MANUAL lewat WhatsApp Web. Lihat [[wablas-diblokir-mode-manual]].
 
 > Catatan sesi-sesi sebelumnya (FASE 2 pickup request, self-check publik, single-session, cek-unit) sudah selesai & ter-merge — ringkasannya ada di `CLAUDE.md` dan histori `git log`.
 
@@ -11,7 +14,12 @@ Verifikasi: **API test 189 pass / 0 fail**, lint 0 error (1 warning pre-existing
 
 ## 0. Yang dikerjakan sesi ini
 
-**Pusat Follow-up terpadu + kirim WhatsApp lewat gateway Wablas.**
+Dua babak dalam satu hari: membangun Pusat Follow-up dengan gateway WhatsApp
+otomatis (§0-§2), lalu **membongkar gatewaynya** setelah nomor dealer diblokir
+untuk kedua kalinya (§5). Yang bertahan: antrean prioritas, template, jadwal,
+riwayat. Yang hilang: pengiriman otomatis.
+
+**Babak 1 — Pusat Follow-up terpadu + gateway Wablas (kemudian dicabut).**
 
 Latar belakang: KPB, STNK, dan BPKB sebelumnya tiga daftar terpisah yang tidak saling tahu padahal berbagi satu nomor WhatsApp. Nomor gateway dealer dibatasi WhatsApp pada **2026-08-04** dengan alasan "pengiriman pesan otomatis atau massal". Jadi masalahnya bukan "bagaimana menghubungi semua" tapi "siapa 30 orang hari ini".
 
@@ -97,3 +105,102 @@ pm2 restart <app>
 - User test (password `password`): `haris`/Admin, `guntur`/Kepala Cabang, `astri`/CRM, `danu`/Service Advisor, `imam`/Kepala Bengkel. (`itmaster` password BUKAN `password`.) Integration test: user `test_*` (password `password123`) di `tests/helpers.js`.
 - **Setiap integration test WAJIB `process.env.DATABASE_URL = 'file:./test.db'` sebelum import `helpers.js`** — kalau tidak, app menembak `dev.db` (data kerja asli).
 - Uji cepat antrean terhadap data asli: skrip sementara di `api/` yang meng-import `services/followupQueueService.js` dan memanggil `buildFollowupQueue({})` (harus di dalam `api/` supaya `node_modules` ter-resolve).
+
+
+---
+
+## 5. Babak 2 — Wablas diblokir, pengiriman jadi manual (commit `48afc45`, `b06abbe`, `58586f6`, `e0c8e9b`)
+
+### Apa yang terjadi
+
+Beberapa jam setelah gateway aktif, nomor dealer `6289504400622` dibatasi
+WhatsApp untuk **kedua kalinya**. Log pengiriman menunjukkan sebabnya: 5 pesan
+dalam **94 detik**, dua terakhir berjarak **7 dan 8 detik**.
+
+Batas 30/hari membatasi JUMLAH, tapi tidak ada satu pun aturan tentang JARAK
+antar pesan — dan justru laju itu yang terbaca sebagai blast. Akun Wablas-nya
+sendiri disetel `delay_message: 60 detik`; memanggil `/api/send-message`
+langsung melewatinya, jadi sistem mengirim ~8x lebih rapat daripada anjuran
+gatewaynya sendiri.
+
+### Keputusan: gateway dihapus, bukan diperlambat
+
+Menambah jeda menyelesaikan insiden hari itu, tapi Wablas bekerja dengan
+mengotomasi aplikasi konsumen — melanggar ketentuan WhatsApp — jadi pacing
+hanya menunda masalah yang sama. `wablasService.js` dan tesnya dihapus; kode
+yang bisa mengirim WhatsApp sendiri terlalu berbahaya untuk ditinggalkan.
+
+### Cara kerja sekarang
+
+Server menyiapkan draf (`draft_message` + `wa_url` ikut dalam respons daftar) →
+browser membuka `wa.me` → **staf menekan Kirim di WhatsApp Web miliknya**.
+
+- Tiga endpoint kirim lama diganti SATU: `POST /api/followup/contact/:kind/:key`.
+  Tidak mengirim apa pun — hanya memotong jatah harian dan mencatat kontak.
+- `window.open` WAJIB dipanggil langsung di handler klik. Karena itu teks pesan
+  ikut dalam respons antrean; menunggu request dulu membuat browser
+  memblokirnya sebagai popup.
+- Batas 30/hari DIPERTAHANKAN: membuka 60 draf lalu mengirim semuanya dalam
+  sepuluh menit tetap blast. Yang hilang cuma sinyal otomatisnya.
+- Kontak dicatat saat draf DIBUKA, bukan saat terkirim — sistem tidak bisa tahu
+  tombol Kirim ditekan. Menghitung lebih lebih aman daripada mengirimi orang
+  yang sama dua kali.
+
+### Nomor HP: dikenali & bisa diperbaiki
+
+Aturan lama menerima apa saja sepanjang 11-15 digit lalu menempel `62` di
+depannya, jadi `4378400000000` dan `000000000000` pun lolos ke antrean dan baru
+ditolak WhatsApp setelah waktu staf terbuang. Dari 39.996 nomor produksi,
+**3,84% bermasalah**: 1.084 terlalu panjang, 278 berisi dua nomor tersalin jadi
+satu, 145 bukan seluler, 30 terlalu pendek.
+
+Sekarang: wajib berawalan `628`, panjang 11-14 karakter (`utils/phone.js`).
+Alasan penolakan + nomor apa adanya ikut ke UI, ada filter **"Nomor bermasalah"**
+di Pusat Follow-up, dan nomornya bisa langsung dibetulkan lewat ikon pensil
+(`PATCH /api/followup/phone/:kind/:key`, masuk audit log). Endpoint lama
+`PATCH /showroom/stnk-bpkb-tracks/:engineNumber/mobile` ikut diperketat —
+sebelumnya menerima apa saja sepanjang 8 digit.
+
+Di produksi: 2.269 layak dihubungi, 29 bermasalah.
+
+### Pesan dokumen dipersonalkan
+
+Template STNK/BPKB dulu berbunyi "STNK motor Honda anda Sudah Jadi" — terbaca
+seperti pesan massal. Sekarang:
+
+> Bapak/Ibu **MAT JUNI**, kami menginformasikan bahwa STNK motor Honda **REVO**
+> dengan nomor polisi **KB5080IR** SUDAH JADI.
+
+Variabel `{nama}`, `{tipe_motor}`, `{no_polisi}` boleh dipakai di template
+dokumen. `{tipe_motor}` memakai `series` (REVO), bukan `category_name`
+(CUB LOW END) — yang dikenali konsumen adalah nama modelnya. Blok persyaratan
+dan jam buka dipertahankan persis seperti yang berjalan di produksi.
+
+---
+
+## 6. Keadaan produksi setelah sesi ini
+
+- Kode di `e0c8e9b`, PM2 `dxk-api` online.
+- `.env` produksi: **tidak ada lagi `WABLAS_*`**. Yang relevan tersisa
+  `PUBLIC_URL=https://tdmketapang.net` dan `WHATSAPP_DAILY_LIMIT=30`.
+- Tabel `whatsapp_send_logs` kini bermakna **log kontak**, bukan log kirim.
+  Kolom `message_id`/`quota_left` peninggalan gateway, selalu null — sengaja
+  tidak di-drop agar deploy tak perlu menyentuh skema DB produksi.
+- Belum ada template kustom tersimpan (`whatsapp_templates` kosong), jadi semua
+  memakai bawaan di `services/followupMessages.js`.
+
+### Yang perlu disampaikan ke staf
+
+Beri jeda antar konsumen — jangan 10 draf berturut-turut dalam semenit. Sekitar
+satu menit sekali sudah cukup; 30 pesan tersebar seharian jauh lebih aman.
+Nomor `6289504400622` masih dalam pembatasan per 2026-08-05, jadi WhatsApp Web-nya
+pun belum tentu bisa mengirim sampai pulih.
+
+### Jalur resmi kalau volume menuntut (belum dikerjakan)
+
+WhatsApp Business Cloud API resmi. Tarif Indonesia per 1 Juli 2026: utility
+Rp 356,65/pesan, marketing Rp 586,33, +PPN 11%. Untuk 30 pesan/hari × 26 hari
+≈ **Rp 309.000/bulan**. Tarif Meta sama di semua BSP; lewat Cloud API langsung
+tidak ada biaya platform. Catatan penting: **template KPB kemungkinan dinilai
+MARKETING** (memuat alamat, jam buka, ajakan), dan butuh nomor yang BELUM
+terdaftar di WhatsApp biasa + verifikasi Meta Business.
