@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '../services/api'
 import {
   AlertTriangle, Bike, CalendarClock, CheckCircle2, ChevronLeft, ChevronRight, Clock,
-  FileBadge, FileText, History, Loader2, MapPin, MessageCircle, Phone, RefreshCw, Search, User, X,
+  FileBadge, FileText, History, Loader2, MapPin, MessageCircle, Pencil, Phone, RefreshCw, Search, User, X,
 } from 'lucide-react'
 
 const JENIS = [
@@ -72,6 +72,8 @@ export default function FollowupCenter() {
   const [error, setError] = useState('')
   const [busyKey, setBusyKey] = useState('')
   const [detail, setDetail] = useState(null)
+  const [editNomor, setEditNomor] = useState(null)   // { key, draft }
+  const [simpanNomor, setSimpanNomor] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
@@ -161,6 +163,20 @@ export default function FollowupCenter() {
       alert('Gagal menyimpan jadwal: ' + err.message)
     } finally {
       setBusyKey('')
+    }
+  }
+
+  const simpanPerbaikanNomor = async (item) => {
+    setSimpanNomor(true)
+    try {
+      const res = await api.updateFollowupPhone(item.kind, item.key, editNomor.draft)
+      setEditNomor(null)
+      await loadData()
+      alert(res.message)
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setSimpanNomor(false)
     }
   }
 
@@ -339,12 +355,38 @@ export default function FollowupCenter() {
                           {item.customer_name || '(tanpa nama)'}
                         </p>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-                          <span className="flex items-center gap-1">
-                            <Phone size={12} />
-                            {item.phone_valid
-                              ? item.phone
-                              : <span className="text-danger-600">{item.nomor_tersimpan || '(kosong)'}</span>}
-                          </span>
+                          {editNomor?.key === `${item.kind}:${item.key}` ? (
+                            <span className="flex items-center gap-1">
+                              <Phone size={12} />
+                              <input
+                                autoFocus
+                                value={editNomor.draft}
+                                onChange={(e) => setEditNomor({ ...editNomor, draft: e.target.value })}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') simpanPerbaikanNomor(item)
+                                  if (e.key === 'Escape') setEditNomor(null)
+                                }}
+                                placeholder="08xx..."
+                                className="w-40 px-2 py-1 bg-panel border border-border rounded text-xs focus:outline-none focus:ring-2 focus:ring-accent"
+                              />
+                              <button onClick={() => simpanPerbaikanNomor(item)} disabled={simpanNomor} className="px-2 py-1 rounded bg-accent text-white text-xs disabled:opacity-50">Simpan</button>
+                              <button onClick={() => setEditNomor(null)} className="px-2 py-1 rounded border border-border text-xs">Batal</button>
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1">
+                              <Phone size={12} />
+                              {item.phone_valid
+                                ? item.phone
+                                : <span className="text-danger-600">{item.nomor_tersimpan || '(kosong)'}</span>}
+                              <button
+                                onClick={() => setEditNomor({ key: `${item.kind}:${item.key}`, draft: item.nomor_tersimpan || '' })}
+                                title="Perbaiki nomor HP konsumen"
+                                className="p-0.5 text-faint hover:text-accent"
+                              >
+                                <Pencil size={11} />
+                              </button>
+                            </span>
+                          )}
                           {item.model && <span className="flex items-center gap-1"><Bike size={12} />{item.model}</span>}
                           {item.area && <span className="flex items-center gap-1"><MapPin size={12} />{item.area}</span>}
                           {item.kind === 'KPB' && item.kpb_label && (
@@ -358,7 +400,7 @@ export default function FollowupCenter() {
                         {!item.phone_valid && (
                           <p className="text-xs text-danger-600 flex items-center gap-1">
                             <AlertTriangle size={12} className="shrink-0" />
-                            {alasanLabel[item.alasan_nomor] || 'Nomor HP tidak bisa dihubungi'} — perbaiki nomornya dulu
+                            {alasanLabel[item.alasan_nomor] || 'Nomor HP tidak bisa dihubungi'} — klik ikon pensil untuk memperbaiki
                           </p>
                         )}
                         {item.tertunda_lain?.length > 0 && (

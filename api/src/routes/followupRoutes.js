@@ -6,6 +6,7 @@ import {
   scheduleFollowup,
   getFollowupHistory,
   recordFollowupContact,
+  updateFollowupPhone,
 } from '../controllers/followupController.js'
 
 const router = Router()
@@ -23,5 +24,7 @@ router.post('/schedule/:kind/:key', authenticate, followupCenterAccess, schedule
 // Bukan pengiriman: pesan dikirim manual oleh staf lewat WhatsApp Web, endpoint
 // ini hanya mencatat kontaknya dan memotong jatah harian.
 router.post('/contact/:kind/:key', authenticate, followupCenterAccess, recordFollowupContact)
+// Koreksi nomor HP konsumen dari layar antrean.
+router.patch('/phone/:kind/:key', authenticate, followupCenterAccess, updateFollowupPhone)
 
 export default router

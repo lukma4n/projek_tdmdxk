@@ -21,3 +21,8 @@ export const recordFollowupContact = (kind, key, body = {}) =>
 
 export const scheduleFollowup = (kind, key, body) =>
   fetchWithAuth(`/followup/schedule/${kind}/${encodeURIComponent(key)}`, { method: 'POST', body })
+
+// Koreksi nomor HP konsumen dari layar antrean. Divalidasi server dengan aturan
+// yang sama seperti antrean, jadi nomor rusak tidak bisa diganti nomor rusak lain.
+export const updateFollowupPhone = (kind, key, mobile) =>
+  fetchWithAuth(`/followup/phone/${kind}/${encodeURIComponent(key)}`, { method: 'PATCH', body: { mobile } })

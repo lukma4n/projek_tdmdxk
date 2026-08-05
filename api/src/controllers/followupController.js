@@ -4,7 +4,8 @@ import { buildFollowupQueue } from '../services/followupQueueService.js'
 import { getDailyUsage, pastikanJatahHarianCukup, catatPengiriman, BatasHarianError } from '../services/whatsappLimitService.js'
 import { muatPerenderMassal } from '../services/templateService.js'
 import { documentTemplateKey } from '../services/followupMessages.js'
-import { waMeUrl, normalizePhone, ALASAN_NOMOR } from '../utils/phone.js'
+import { waMeUrl, normalizePhone, periksaNomor, ALASAN_NOMOR } from '../utils/phone.js'
+import { createAuditLog } from '../services/auditService.js'
 import { KPB_LEVELS } from './customerController.js'
 
 const JENIS_VALID = ['KPB', 'STNK', 'BPKB']
@@ -250,6 +251,65 @@ export async function recordFollowupContact(req, res, next) {
     if (error instanceof BatasHarianError) {
       return res.status(error.status).json({ error: error.message })
     }
+    next(error)
+  }
+}
+
+/**
+ * Perbaiki nomor HP konsumen langsung dari antrean.
+ *
+ * Satu pintu untuk KPB (customers.customer_mobile) dan dokumen
+ * (showroom_stnk_bpkb_tracks.mobile), supaya admin yang menemukan nomor rusak
+ * bisa langsung membetulkannya di tempat ia melihatnya.
+ *
+ * Nomor baru diperiksa dengan aturan yang SAMA seperti antrean — kalau tidak,
+ * perbaikan hanya mengganti satu nomor tak bisa dihubungi dengan yang lain.
+ */
+export async function updateFollowupPhone(req, res, next) {
+  try {
+    const kind = String(req.params.kind || '').toUpperCase()
+    if (!JENIS_VALID.includes(kind)) return res.status(400).json({ error: 'Jenis follow-up tidak valid' })
+
+    const nomor = periksaNomor(req.body?.mobile)
+    if (!nomor.valid) {
+      return res.status(400).json({ error: `Nomor HP tidak bisa dipakai: ${ALASAN_NOMOR[nomor.alasan]}` })
+    }
+
+    const { key } = req.params
+    let sebelum = null
+    let label = ''
+
+    if (kind === 'KPB') {
+      const customerId = parseInt(key)
+      const customer = await prisma.customers.findUnique({ where: { id: customerId } })
+      if (!customer) return res.status(404).json({ error: 'Konsumen tidak ditemukan' })
+      sebelum = customer.customer_mobile
+      label = customer.customer_name
+      await prisma.customers.update({ where: { id: customerId }, data: { customer_mobile: nomor.phone } })
+    } else {
+      const engineNumber = String(key).trim()
+      const track = await prisma.showroom_stnk_bpkb_tracks.findUnique({ where: { engine_number: engineNumber } })
+      if (!track) return res.status(404).json({ error: 'Dokumen tidak ditemukan' })
+      sebelum = track.mobile
+      label = track.stnk_name
+      await prisma.showroom_stnk_bpkb_tracks.update({
+        where: { engine_number: track.engine_number }, data: { mobile: nomor.phone },
+      })
+    }
+
+    // Nomor konsumen adalah data master yang dipakai lintas modul, dan koreksinya
+    // dilakukan dari layar operasional — jadi perubahannya perlu berjejak.
+    await createAuditLog({
+      userId: req.user.userId,
+      tableName: kind === 'KPB' ? 'customers' : 'showroom_stnk_bpkb_tracks',
+      recordId: key,
+      fieldName: kind === 'KPB' ? 'customer_mobile' : 'mobile',
+      oldValue: sebelum,
+      newValue: nomor.phone,
+    }).catch(() => {})
+
+    res.json({ message: `Nomor ${label || 'konsumen'} diperbarui`, mobile: nomor.phone, sebelum })
+  } catch (error) {
     next(error)
   }
 }

@@ -212,3 +212,37 @@ test('alasan tersaring dirinci per jenis masalah', async () => {
   assert.ok(body.tersaring.per_alasan, 'rincian alasan wajib ada')
   assert.equal(typeof body.alasan_nomor_label.dobel, 'string', 'kamus alasan datang dari server')
 })
+
+test('nomor HP konsumen bisa diperbaiki dari antrean', async () => {
+  const res = await callAuthenticated('patch', `/api/followup/phone/STNK/${PREFIX}ENGD`, cookie, {
+    mobile: '0812-9999-8888',
+  })
+  assert.equal(res.status, 200)
+  assert.equal(res.body.mobile, '6281299998888', 'disimpan dalam bentuk baku 62')
+
+  const track = await prismaTest.showroom_stnk_bpkb_tracks.findUnique({ where: { engine_number: `${PREFIX}ENGD` } })
+  assert.equal(track.mobile, '6281299998888')
+
+  // Setelah diperbaiki, target keluar dari daftar bermasalah dan masuk antrean.
+  const bermasalah = await ambilAntrean('&nomor=bermasalah')
+  assert.equal(bermasalah.data.find((r) => r.key === `${PREFIX}ENGD`), undefined)
+  const antrean = await ambilAntrean()
+  assert.ok(antrean.data.find((r) => r.key === `${PREFIX}ENGD`), 'sekarang layak dihubungi')
+
+  await prismaTest.showroom_stnk_bpkb_tracks.update({
+    where: { engine_number: `${PREFIX}ENGD` }, data: { mobile: '01234' },
+  })
+})
+
+test('perbaikan ditolak kalau nomor barunya juga tidak layak', async () => {
+  // Tanpa ini, "memperbaiki" hanya menukar satu nomor tak bisa dihubungi
+  // dengan yang lain, dan masalahnya baru ketahuan lagi di WhatsApp.
+  const res = await callAuthenticated('patch', `/api/followup/phone/STNK/${PREFIX}ENGD`, cookie, {
+    mobile: '0895704855474' + '0895701856269',
+  })
+  assert.equal(res.status, 400)
+  assert.match(res.body.error, /dua nomor/i)
+
+  const track = await prismaTest.showroom_stnk_bpkb_tracks.findUnique({ where: { engine_number: `${PREFIX}ENGD` } })
+  assert.equal(track.mobile, '01234', 'nomor lama tidak boleh tersentuh saat ditolak')
+})

@@ -3,6 +3,7 @@ import { rmSync } from 'fs'
 import path from 'path'
 import os from 'os'
 import { prisma } from '../config/db.js'
+import { periksaNomor, ALASAN_NOMOR } from '../utils/phone.js'
 import { withImportLock } from '../services/importLockService.js'
 import { unlink } from 'fs/promises'
 import { parseStnkBpkbTrackFile, mergeStnkBpkbTrackByEngine } from '../services/importParsers.js'
@@ -611,12 +612,13 @@ export async function exportStnkBpkbTrackExcel(req, res, next) {
 export async function updateStnkBpkbTrackMobile(req, res, next) {
   try {
     const engineNumber = String(req.params.engineNumber || '').trim().toUpperCase()
-    const raw = String(req.body?.mobile ?? '').trim()
-    const clean = raw.replace(/[^\d+]/g, '')
-
-    if (clean.replace(/\D/g, '').length < 8) {
-      return res.status(400).json({ error: 'Nomor HP tidak valid' })
+    // Aturan yang sama dengan antrean follow-up. Sebelumnya cukup 8 digit apa
+    // saja — itu justru pintu masuk nomor yang nanti ditolak WhatsApp.
+    const nomor = periksaNomor(req.body?.mobile)
+    if (!nomor.valid) {
+      return res.status(400).json({ error: `Nomor HP tidak bisa dipakai: ${ALASAN_NOMOR[nomor.alasan]}` })
     }
+    const clean = nomor.phone
 
     const track = await prisma.showroom_stnk_bpkb_tracks.findUnique({
       where: { engine_number: engineNumber },
