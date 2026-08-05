@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { API_BASE, api } from '../services/api'
-import { Bike, Check, CheckCircle2, Download, FileBadge, FileText, Loader2, MapPin, MessageCircle, Pencil, Phone, QrCode, RefreshCw, Search, User, XCircle } from 'lucide-react'
-import { selfCheckUrl } from '../config/selfCheck'
-import SelfCheckCard from '../components/common/SelfCheckCard'
+import { Bike, Check, CheckCircle2, Download, FileBadge, FileText, Loader2, MapPin, MessageCircle, Pencil, Phone, RefreshCw, Search, User, XCircle } from 'lucide-react'
 
 const statuses = [
   { value: 'all', label: 'Semua' },
@@ -34,64 +32,9 @@ function normalizePhone(phone) {
   return digits
 }
 
-function buildStnkMessage(item) {
-  return [
-    'Salam Satu Hati Pelanggan Setia Honda',
-    '',
-    'Kami Mau menginformasikan Bahwa STNK motor Honda anda Sudah Jadi',
-    'Diharapkan untuk segera mengambil STNK di Dealer Honda TDM Motor.',
-    'ALAMAT : JL Ahmad Yani no 133,kel Mulia Baru, Delta Pawan',
-    '',
-    'DENGAN PERSYARATAN :',
-    '# Jika yang mengambil konsumen sendiri (konsumen an. Stnk)',
-    'konsumen wajib membawa STNK Sementara dan KTP asli',
-    '',
-    'Jam buka',
-    'Senin-Jumat   : 09.00-16.00',
-    'Sabtu               : 09.00-14.00',
-    'Istirahat          : 12.00-13.30',
-    '',
-    'Cek status dokumen Anda kapan saja:',
-    selfCheckUrl(item?.engine_number),
-    '',
-    'Terimakasih',
-  ].join('\n')
-}
+// Template pesan kini disusun backend (api/src/services/followupMessages.js)
+// karena pengiriman dilakukan server lewat gateway WhatsApp.
 
-function buildBpkbMessage(item) {
-  return [
-    'Salam Satu Hati Pelanggan Setia Honda',
-    '',
-    'kami Mau menginformasikan Bahwa BPKB motor Honda anda Sudah Jadi',
-    'Diharapkan untuk segera mengambil BPKB di Dealer Honda TDM Motor.',
-    'ALAMAT : JL Ahmad Yani no 133,kel Mulia Baru, Delta Pawan',
-    '',
-    'DENGAN PERSYARATAN :',
-    '# Jika yang mengambil konsumen sendiri (konsumen an. Stnk)',
-    'konsumen wajib membawa STNK dan KTP asli',
-    '',
-    '# Jika Pengambilan BPKB diwakili',
-    'konsumen wajib : membawa surat kuasa dr pemilik kendaraan yg bertanda tangan diatas materai 10.000',
-    'dan ktp Asli pembeli dan yg mewakili 1 lembar STNK dan KTP Asli',
-    '',
-    'Jam buka',
-    'Senin-Jumat : 09.00-16.00',
-    'Sabtu                : 09.00-14.00',
-    'Istirahat          : 12.00-13.30',
-    '',
-    'Cek status dokumen Anda kapan saja:',
-    selfCheckUrl(item?.engine_number),
-    '',
-    'Terimakasih',
-  ].join('\n')
-}
-
-function buildWhatsappUrl(type, item) {
-  const phone = normalizePhone(item.mobile || item.customer_phone)
-  if (!phone) return ''
-  const message = type === 'stnk' ? buildStnkMessage(item) : buildBpkbMessage(item)
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
-}
 
 function getStatus(item) {
   return item.followup?.status || 'belum_dihubungi'
@@ -102,15 +45,16 @@ export default function ShowroomDocumentFollowup({ type }) {
   const title = isStnk ? 'Follow-up STNK' : 'Follow-up BPKB'
   const Icon = isStnk ? FileText : FileBadge
   const [items, setItems] = useState([])
+  const [daily, setDaily] = useState(null)
   const [summary, setSummary] = useState({ total: 0, byStatus: {} })
   const [status, setStatus] = useState('all')
   const [search, setSearch] = useState('')
-  const [overdueMin, setOverdueMin] = useState('all')
+  const [aging, setAging] = useState('all')
+  const [agingBuckets, setAgingBuckets] = useState([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [savingKey, setSavingKey] = useState('')
   const [error, setError] = useState('')
-  const [cardItems, setCardItems] = useState(null)
   const [editMobileFor, setEditMobileFor] = useState(null)
   const [mobileDraft, setMobileDraft] = useState('')
   const [savingMobile, setSavingMobile] = useState(false)
@@ -136,10 +80,12 @@ export default function ShowroomDocumentFollowup({ type }) {
       const response = await api.getShowroomDocumentFollowups(type, {
         limit: 150,
         ...(search && { search }),
-        ...(!isStnk && overdueMin !== 'all' && { overdue_min: overdueMin }),
+        ...(aging !== 'all' && { aging }),
       })
       setItems(response.data || [])
       setSummary(response.summary || { total: 0, byStatus: {} })
+      if (response.daily) setDaily(response.daily)
+      setAgingBuckets(response.agingBuckets || [])
     } catch (err) {
       setError(err.message || `Gagal memuat ${title}`)
     } finally {
@@ -150,7 +96,7 @@ export default function ShowroomDocumentFollowup({ type }) {
   useEffect(() => {
     void Promise.resolve().then(loadData)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, search, overdueMin])
+  }, [type, search, aging])
 
   const counts = useMemo(() => ({ all: summary.total || 0, ...(summary.byStatus || {}) }), [summary])
   const filteredItems = useMemo(() => {
@@ -171,11 +117,29 @@ export default function ShowroomDocumentFollowup({ type }) {
     }
   }
 
+  // Dikirim server via gateway WhatsApp; isi pesan disusun backend.
   const openWhatsapp = async (item) => {
-    const url = buildWhatsappUrl(type, item)
-    if (!url) return
-    window.open(url, '_blank', 'noopener,noreferrer')
-    await saveStatus(item, 'sudah_dihubungi', `Dibuka via tombol WhatsApp Follow-up ${isStnk ? 'STNK' : 'BPKB'}`)
+    const phone = normalizePhone(item.mobile || item.customer_phone)
+    if (!phone) return
+
+    // Dulu tombol ini hanya membuka draf wa.me — staf masih bisa membaca dan
+    // membatalkan sebelum menekan kirim. Sekarang pesannya langsung terkirim dan
+    // tidak bisa ditarik kembali, jadi salah klik harus punya satu pintu tolak.
+    const nama = item.stnk_name || item.applicant_name || 'konsumen ini'
+    if (!window.confirm(`Kirim WhatsApp pemberitahuan ${isStnk ? 'STNK' : 'BPKB'} ke ${nama} (${phone})?`)) return
+
+    const key = `${item.engine_number}:sudah_dihubungi`
+    setSavingKey(key)
+    try {
+      const res = await api.sendShowroomDocumentFollowupWhatsapp(type, item.engine_number)
+      if (res.daily) setDaily(res.daily)
+      await loadData()
+      alert(`${res.message || 'WhatsApp terkirim.'}\nSisa jatah hari ini: ${res.daily?.sisa ?? '-'} dari ${res.daily?.limit ?? '-'} konsumen.`)
+    } catch (err) {
+      alert(`Gagal mengirim WhatsApp ${isStnk ? 'STNK' : 'BPKB'}: ` + err.message)
+    } finally {
+      setSavingKey('')
+    }
   }
 
   const handleExport = async () => {
@@ -184,7 +148,7 @@ export default function ShowroomDocumentFollowup({ type }) {
       const params = new URLSearchParams({
         ...(search && { search }),
         ...(status !== 'all' && { status }),
-        ...(!isStnk && overdueMin !== 'all' && { overdue_min: overdueMin }),
+        ...(aging !== 'all' && { aging }),
       }).toString()
       const response = await fetch(`${API_BASE}/showroom/document-followups/${type}/export${params ? '?' + params : ''}`, {
         credentials: 'include',
@@ -219,11 +183,23 @@ export default function ShowroomDocumentFollowup({ type }) {
           {!isStnk && <p className="text-xs text-warning-600 mt-1">Hanya BPKB pembelian cash. BPKB leasing tidak ditampilkan karena diserahkan ke leasing.</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {daily && (
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium ${
+                daily.sisa === 0
+                  ? 'bg-danger-50 text-danger-600 border-danger-200'
+                  : daily.sisa <= 5
+                    ? 'bg-warning-50 text-warning-600 border-warning-200'
+                    : 'bg-hover text-muted border-border'
+              }`}
+              title="Batas harian melindungi nomor WhatsApp dealer dari pemblokiran WhatsApp"
+            >
+              <MessageCircle size={15} />
+              Jatah WA hari ini: {daily.sisa}/{daily.limit}
+            </span>
+          )}
           <button onClick={loadData} className="flex items-center gap-2 px-3 py-2 bg-panel border border-border rounded-lg text-sm font-medium text-muted hover:bg-hover">
             <RefreshCw size={15} /> Refresh
-          </button>
-          <button onClick={() => setCardItems(filteredItems)} disabled={filteredItems.length === 0} className="flex items-center gap-2 px-3 py-2 bg-accent hover:brightness-110 disabled:opacity-50 text-white rounded-lg text-sm font-medium shadow-lg shadow-accent/20">
-            <QrCode size={15} /> Cetak Kartu ({filteredItems.length})
           </button>
           <button onClick={handleExport} disabled={exporting || filteredItems.length === 0} className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-lg text-sm font-medium shadow-lg shadow-green-600/20">
             {exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} Export
@@ -255,14 +231,46 @@ export default function ShowroomDocumentFollowup({ type }) {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={isStnk ? 'Cari nama, no mesin, no polisi...' : 'Cari nama, no mesin, no BPKB...'} className="w-full pl-9 pr-4 py-2 bg-hover border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
         </div>
-        {!isStnk && (
-          <select value={overdueMin} onChange={(e) => setOverdueMin(e.target.value)} className="px-3 py-2 bg-hover border border-border rounded-lg text-sm">
-            <option value="all">Semua Overdue</option>
-            <option value="180">Overdue &gt;= 180 Hari</option>
-            <option value="365">Overdue &gt;= 365 Hari</option>
-          </select>
-        )}
       </div>
+
+      {agingBuckets.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted">
+            Usia dokumen — sudah berapa lama {isStnk ? 'STNK' : 'BPKB'} jadi tapi belum diambil konsumen
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setAging('all')}
+              className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${aging === 'all' ? 'bg-accent border-accent text-white' : 'bg-panel border-border text-muted hover:bg-hover'}`}
+            >
+              Semua ({counts.all || 0})
+            </button>
+            {agingBuckets.map((b) => {
+              const jml = summary.byAging?.[b.value] || 0
+              // Rentang tua diberi warna peringatan supaya yang paling berisiko
+              // langsung terlihat tanpa harus membaca angkanya satu per satu.
+              const tua = b.value === '181-365' || b.value === '365+'
+              const aktif = aging === b.value
+              return (
+                <button
+                  key={b.value}
+                  onClick={() => setAging(b.value)}
+                  disabled={jml === 0}
+                  className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-40 ${
+                    aktif
+                      ? 'bg-accent border-accent text-white'
+                      : tua && jml > 0
+                        ? 'bg-warning-50 border-warning-200 text-warning-600 hover:bg-warning-100'
+                        : 'bg-panel border-border text-muted hover:bg-hover'
+                  }`}
+                >
+                  {b.label} ({jml})
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {statuses.map((item) => (
@@ -283,7 +291,7 @@ export default function ShowroomDocumentFollowup({ type }) {
           <div className="divide-y divide-slate-100">
             {filteredItems.map((item) => {
               const currentStatus = getStatus(item)
-              const waUrl = buildWhatsappUrl(type, item)
+              const waUrl = normalizePhone(item.mobile || item.customer_phone)
               return (
                 <div key={item.engine_number} className="p-4 hover:bg-hover/60 transition-colors">
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -291,7 +299,18 @@ export default function ShowroomDocumentFollowup({ type }) {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-accent-soft text-accent border-accent-soft"><Icon size={11} />{isStnk ? 'STNK' : 'BPKB'}</span>
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${statusColors[currentStatus] || statusColors.belum_dihubungi}`}>{statuses.find((s) => s.value === currentStatus)?.label || currentStatus}</span>
-                        {!isStnk && <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium border bg-warning-50 text-warning-600 border-warning-200">{item.overdue_days || 0} hari</span>}
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium border ${
+                            item.waiting_days > 180
+                              ? 'bg-danger-50 text-danger-600 border-danger-200'
+                              : item.waiting_days > 90
+                                ? 'bg-warning-50 text-warning-600 border-warning-200'
+                                : 'bg-hover text-muted border-border'
+                          }`}
+                          title={`Sudah ${item.waiting_days || 0} hari sejak ${isStnk ? 'STNK' : 'BPKB'} jadi`}
+                        >
+                          {item.waiting_days || 0} hari
+                        </span>
                       </div>
                       <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
                         <div className="flex items-center gap-2 min-w-0"><User size={15} className="text-faint shrink-0" /><div className="min-w-0"><p className="text-sm font-semibold text-text truncate">{item.stnk_name || '-'}</p><p className="text-xs text-faint truncate">Pemohon: {item.applicant_name || item.requestor_name || '-'}</p></div></div>
@@ -318,7 +337,6 @@ export default function ShowroomDocumentFollowup({ type }) {
                     </div>
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <button onClick={() => openWhatsapp(item)} disabled={!waUrl || savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-lg text-xs font-medium transition-colors">{savingKey === `${item.engine_number}:sudah_dihubungi` ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />} WhatsApp</button>
-                      <button onClick={() => setCardItems([item])} disabled={!item.engine_number} className="inline-flex items-center gap-1.5 px-3 py-2 bg-accent-soft border border-accent-soft text-accent rounded-lg text-xs font-medium hover:bg-accent-soft disabled:opacity-50" title="Cetak kartu self-check"><QrCode size={14} /> Kartu</button>
                       <button onClick={() => saveStatus(item, 'diambil', `Ditandai diambil dari halaman ${title}`)} disabled={savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-success-50 border border-success-200 text-success-700 rounded-lg text-xs font-medium hover:bg-success-100 disabled:opacity-50">Diambil</button>
                       <button onClick={() => saveStatus(item, 'pending', `Ditandai pending dari halaman ${title}`)} disabled={savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-warning-50 border border-warning-200 text-warning-700 rounded-lg text-xs font-medium hover:bg-warning-100 disabled:opacity-50">Pending</button>
                       <button onClick={() => saveStatus(item, 'batal', `Ditandai batal dari halaman ${title}`)} disabled={savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-danger-50 border border-danger-200 text-danger-700 rounded-lg text-xs font-medium hover:bg-danger-100 disabled:opacity-50"><XCircle size={14} /> Batal</button>
@@ -330,7 +348,6 @@ export default function ShowroomDocumentFollowup({ type }) {
           </div>
         )}
       </div>
-      {cardItems && <SelfCheckCard items={cardItems} onClose={() => setCardItems(null)} />}
     </div>
   )
 }

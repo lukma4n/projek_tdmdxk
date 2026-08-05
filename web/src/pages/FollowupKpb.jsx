@@ -55,35 +55,8 @@ function normalizePhone(phone) {
   return digits
 }
 
-function buildWhatsappUrl(item) {
-  const phone = normalizePhone(item.customer_mobile)
-  if (!phone) return ''
-
-  const message = [
-    'Salam Satu Hati Pelanggan Setia Honda',
-    '',
-    `Kami Mau menginformasikan Bahwa motor Honda Bapak/Ibu ${item.customer || ''} dengan tipe ${item.model || 'Honda'} sudah waktunya melakukan ${item.kpb_label} di AHASS Honda TDM Motor.`,
-    'Diharapkan untuk segera melakukan service agar kondisi motor tetap prima dan garansi service tetap terjaga.',
-    '',
-    'ALAMAT : JL Ahmad Yani no 133,kel Mulia Baru, Delta Pawan',
-    '',
-    'DENGAN PERSYARATAN :',
-    '# Membawa buku service/KPB',
-    '# Membawa STNK kendaraan',
-    '# Membawa motor yang akan diservice',
-    '',
-    `Tenggat: ${formatDate(item.kpb_due_date)} (${formatDays(item.days_remaining)}).`,
-    '',
-    'Jam buka',
-    'Senin-Jumat : 09.00-16.00',
-    'Sabtu                : 09.00-14.00',
-    'Istirahat          : 12.00-13.30',
-    '',
-    'Terimakasih',
-  ].join('\n')
-
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
-}
+// Template pesan kini disusun backend (api/src/services/followupMessages.js)
+// karena pengiriman dilakukan server lewat gateway WhatsApp.
 
 function getFollowupStatus(item) {
   return item.followup?.status || 'belum_dihubungi'
@@ -91,6 +64,7 @@ function getFollowupStatus(item) {
 
 export default function FollowupKpb() {
   const [alerts, setAlerts] = useState([])
+  const [daily, setDaily] = useState(null)
   const [summary, setSummary] = useState({ overdue: 0, warning: 0 })
   const [days, setDays] = useState('7')
   const [status, setStatus] = useState('all')
@@ -107,6 +81,7 @@ export default function FollowupKpb() {
       const response = await api.getCustomerAlerts({ days })
       setAlerts(response.data || [])
       setSummary(response.summary || { overdue: 0, warning: 0 })
+      if (response.daily) setDaily(response.daily)
     } catch (err) {
       setError(err.message || 'Gagal memuat follow-up KPB')
     } finally {
@@ -155,12 +130,31 @@ export default function FollowupKpb() {
     }
   }
 
+  // Dikirim server via gateway WhatsApp. Isi pesan disusun backend, jadi tidak
+  // ada lagi tab wa.me yang harus ditekan kirim manual.
   const openWhatsapp = async (item) => {
-    const url = buildWhatsappUrl(item)
-    if (!url) return
+    if (!item.id) return
+    const phone = normalizePhone(item.customer_mobile)
+    if (!phone) return
 
-    window.open(url, '_blank', 'noopener,noreferrer')
-    await saveStatus(item, 'sudah_dihubungi', 'Dibuka via tombol WhatsApp')
+    // Dulu tombol ini hanya membuka draf wa.me — staf masih bisa membaca dan
+    // membatalkan sebelum menekan kirim. Sekarang pesannya langsung terkirim dan
+    // tidak bisa ditarik kembali, jadi salah klik harus punya satu pintu tolak.
+    if (!window.confirm(`Kirim WhatsApp pengingat ${item.kpb_label} ke ${item.customer || 'konsumen ini'} (${phone})?`)) return
+
+    const key = `${item.id}:${item.kpb_label}:sudah_dihubungi`
+    setSavingKey(key)
+
+    try {
+      const res = await api.sendCustomerFollowupWhatsapp(item.id, { kpb_level: item.kpb_label })
+      if (res.daily) setDaily(res.daily)
+      await loadData()
+      alert(`${res.message || 'WhatsApp terkirim.'}\nSisa jatah hari ini: ${res.daily?.sisa ?? '-'} dari ${res.daily?.limit ?? '-'} konsumen.`)
+    } catch (err) {
+      alert('Gagal mengirim WhatsApp: ' + err.message)
+    } finally {
+      setSavingKey('')
+    }
   }
 
   const handleExport = async () => {
@@ -226,6 +220,21 @@ export default function FollowupKpb() {
             <option value="KPB3">KPB3</option>
             <option value="KPB4">KPB4</option>
           </select>
+          {daily && (
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium ${
+                daily.sisa === 0
+                  ? 'bg-danger-50 text-danger-600 border-danger-200'
+                  : daily.sisa <= 5
+                    ? 'bg-warning-50 text-warning-600 border-warning-200'
+                    : 'bg-hover text-muted border-border'
+              }`}
+              title="Batas harian melindungi nomor WhatsApp dealer dari pemblokiran WhatsApp"
+            >
+              <MessageCircle size={15} />
+              Jatah WA hari ini: {daily.sisa}/{daily.limit}
+            </span>
+          )}
           <button
             onClick={loadData}
             className="flex items-center gap-2 px-3 py-2 bg-panel border border-border rounded-lg text-sm font-medium text-muted hover:bg-hover"
@@ -297,7 +306,7 @@ export default function FollowupKpb() {
           <div className="divide-y divide-slate-100">
             {filtered.map((item) => {
               const currentStatus = getFollowupStatus(item)
-              const waUrl = buildWhatsappUrl(item)
+              const waUrl = normalizePhone(item.customer_mobile)
               return (
                 <div key={`${item.id}-${item.kpb_label}`} className="p-4 hover:bg-hover/60 transition-colors">
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">

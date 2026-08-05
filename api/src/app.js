@@ -25,6 +25,8 @@ import workshopReportRoutes from './routes/workshopReportRoutes.js'
 import opnameRoutes from './routes/opnameRoutes.js'
 import syncRoutes from './routes/syncRoutes.js'
 import customerRoutes from './routes/customerRoutes.js'
+import followupRoutes from './routes/followupRoutes.js'
+import whatsappTemplateRoutes from './routes/whatsappTemplateRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import showroomRoutes from './routes/showroomRoutes.js'
 import notificationRoutes from './routes/notificationRoutes.js'
@@ -147,6 +149,8 @@ app.use('/api/opname', opnameRoutes)
 app.use('/api/sync', syncRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/customers', customerRoutes)
+app.use('/api/followup', followupRoutes)
+app.use('/api/whatsapp-templates', whatsappTemplateRoutes)
 app.use('/api/showroom', showroomRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/permissions', rolePermissionRoutes)

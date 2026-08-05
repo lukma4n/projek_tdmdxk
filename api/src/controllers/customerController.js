@@ -12,6 +12,9 @@ import { createAuditLog } from '../services/auditService.js'
 import { withImportLock } from '../services/importLockService.js'
 import { bulkUpsert } from '../services/bulkUpsertService.js'
 import { excelDateToJSDate, formatForExcel } from '../utils/excelUtils.js'
+import { sendWhatsappText, WablasError } from '../services/wablasService.js'
+import { renderKpbMessage } from '../services/templateService.js'
+import { pastikanJatahHarianCukup, catatPengiriman, getDailyUsage } from '../services/whatsappLimitService.js'
 
 // ─── KPB Configuration ────────────────────────────────────────────────────
 export const KPB_LEVELS = [
@@ -21,11 +24,25 @@ export const KPB_LEVELS = [
   { key: 'kpb4', label: 'KPB4', months: 8 },
 ]
 
+// Rentang alert: jatuh tempo terlewat maksimal 90 hari masih ditagih.
+const OVERDUE_WINDOW_DAYS = 90
+
+// Tambah bulan tanpa overflow. `setMonth` polos melempar SO tanggal 29-31 ke
+// bulan berikutnya (SO 2022-01-31 + 8 bulan jadi 2022-10-01, bukan 2022-09-30),
+// sehingga due date masuk kolom bulan yang salah saat difilter.
+export function addMonths(date, months) {
+  const d = new Date(date)
+  const targetDay = d.getDate()
+  d.setDate(1)
+  d.setMonth(d.getMonth() + months)
+  const lastDayOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+  d.setDate(Math.min(targetDay, lastDayOfMonth))
+  return d
+}
+
 function getKpbDueDate(soDate, months) {
   if (!soDate) return null
-  const d = new Date(soDate)
-  d.setMonth(d.getMonth() + months)
-  return d
+  return addMonths(soDate, months)
 }
 
 function getOverallKpbStatus(customerWos, soDate) {
@@ -123,12 +140,36 @@ async function getLatestFollowupsForCustomers(customerIds) {
   return latest
 }
 
+// Batas so_date yang mungkin menghasilkan alert, supaya tidak perlu memuat
+// seluruh tabel customers. due = so_date + months, dan alert hanya untuk due di
+// rentang [today - 90 hari, today + days]:
+//   so_date paling tua  = today - 90 hari - bulan KPB terbesar
+//   so_date paling muda = today + days    - bulan KPB terkecil
+// Diberi bantalan 1 bulan di kedua sisi agar tidak ada yang terpotong di batas.
+function getAlertSoDateRange(today, days) {
+  const maxMonths = Math.max(...KPB_LEVELS.map((l) => l.months))
+  const minMonths = Math.min(...KPB_LEVELS.map((l) => l.months))
+
+  const oldest = new Date(today)
+  oldest.setDate(oldest.getDate() - OVERDUE_WINDOW_DAYS)
+
+  const newest = new Date(today)
+  newest.setDate(newest.getDate() + days)
+
+  return {
+    gte: addMonths(oldest, -(maxMonths + 1)),
+    lte: addMonths(newest, -(minMonths - 1)),
+  }
+}
+
 async function buildKpbFollowupAlerts(days = 7) {
   const today = new Date()
   const customers = await prisma.customers.findMany({
-    where: { branch_code: 'DXK' },
+    where: {
+      branch_code: 'DXK',
+      so_date: getAlertSoDateRange(today, parseInt(days)),
+    },
     orderBy: { so_date: 'desc' },
-    take: 500,
   })
 
   const woMap = await getAllKpbWos()
@@ -142,7 +183,7 @@ async function buildKpbFollowupAlerts(days = 7) {
       const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24))
       if (wos[level.label]) continue
 
-      if (diffDays < 0 && diffDays >= -90) {
+      if (diffDays < 0 && diffDays >= -OVERDUE_WINDOW_DAYS) {
         alerts.push({ ...makeAlert(c, level, due, diffDays), alert_type: 'overdue' })
       } else if (diffDays >= 0 && diffDays <= parseInt(days)) {
         alerts.push({ ...makeAlert(c, level, due, diffDays), alert_type: 'warning' })
@@ -457,6 +498,7 @@ export async function getCustomerAlerts(req, res, next) {
     res.json({
       data: data.slice(0, 100),
       summary,
+      daily: await getDailyUsage(),
     })
   } catch (error) {
     next(error)
@@ -549,6 +591,75 @@ export async function getCustomerFollowups(req, res, next) {
 
     res.json({ data })
   } catch (error) {
+    next(error)
+  }
+}
+
+// Kirim pengingat KPB via WhatsApp gateway, lalu catat follow-up-nya.
+// Pesan disusun di server (bukan dikirim client) supaya isinya tidak bisa
+// diubah sembarangan atas nama dealer.
+export async function sendCustomerFollowupWhatsapp(req, res, next) {
+  try {
+    const customerId = parseInt(req.params.id)
+    const { kpb_level } = req.body
+    const level = KPB_LEVELS.find((l) => l.label === kpb_level)
+    if (!level) return res.status(400).json({ error: 'Level KPB tidak valid' })
+
+    const customer = await prisma.customers.findUnique({ where: { id: customerId } })
+    if (!customer) return res.status(404).json({ error: 'Konsumen tidak ditemukan' })
+
+    const dueDate = getKpbDueDate(customer.so_date, level.months)
+    const daysRemaining = dueDate
+      ? Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24))
+      : null
+
+    const message = await renderKpbMessage({
+      customerName: customer.customer_name,
+      model: customer.model,
+      kpbLabel: level.label,
+      dueDate,
+      daysRemaining,
+    })
+
+    // Dicek sebelum kirim supaya jatah gateway tidak terpakai saat batas tercapai.
+    await pastikanJatahHarianCukup()
+
+    const hasil = await sendWhatsappText({
+      phone: customer.customer_mobile,
+      message,
+      refId: `kpb-${customerId}-${level.label}`,
+    })
+
+    await catatPengiriman({
+      module: 'KPB',
+      targetKey: customerId,
+      phone: hasil.phone,
+      messageId: hasil.messageId,
+      quotaLeft: hasil.quota,
+      sentBy: req.user.userId,
+    })
+
+    const data = await prisma.kpb_followups.create({
+      data: {
+        customer_id: customerId,
+        kpb_level: level.label,
+        status: 'sudah_dihubungi',
+        note: `Pengingat ${level.label} dikirim via WhatsApp ke ${hasil.phone}`,
+        created_by: req.user.userId,
+      },
+      include: { creator: { select: { id: true, username: true, name: true, role: true } } },
+    })
+
+    res.status(201).json({
+      message: `WhatsApp terkirim ke ${hasil.phone}`,
+      data,
+      whatsapp: hasil,
+      daily: await getDailyUsage(),
+    })
+  } catch (error) {
+    if (error instanceof WablasError) {
+      return res.status(error.status).json({ error: error.message })
+    }
     next(error)
   }
 }

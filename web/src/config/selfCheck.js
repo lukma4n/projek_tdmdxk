@@ -9,13 +9,18 @@ export function selfCheckUrl(engine) {
   return `${PUBLIC_URL}/cek?engine_number=${encodeURIComponent((engine || '').trim())}`
 }
 
-// QR (data URL PNG) berisi selfCheckUrl, untuk disisipkan di kartu cetak.
-// qrcode di-lazy-import agar tidak ikut bundle utama (hanya dimuat saat cetak kartu).
-export async function selfCheckQrDataUrl(engine) {
+// Link halaman cek TANPA prefill — untuk kartu generik yang dibagikan ke siapa
+// saja. Konsumen mengetik sendiri Nomor Mesin dan Nomor HP-nya di halaman itu.
+export function selfCheckGenericUrl() {
+  return `${PUBLIC_URL}/cek`
+}
+
+// QR untuk kartu generik. Isinya sama untuk semua kartu, jadi cukup dibuat sekali.
+export async function selfCheckGenericQrDataUrl() {
   const { default: QRCode } = await import('qrcode')
-  return QRCode.toDataURL(selfCheckUrl(engine), {
+  return QRCode.toDataURL(selfCheckGenericUrl(), {
     margin: 1,
-    width: 160,
+    width: 200,
     errorCorrectionLevel: 'M',
   })
 }

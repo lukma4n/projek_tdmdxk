@@ -72,6 +72,7 @@ import {
 } from '../controllers/showroomPriceController.js'
 import {
   getDocumentFollowups, createDocumentFollowup, exportDocumentFollowupsExcel,
+  sendDocumentFollowupWhatsapp,
 } from '../controllers/showroomFollowupController.js'
 import {
   getShowroomOpnameSessions, createShowroomOpnameSession, getShowroomOpnameItems, getShowroomOpnameReport,
@@ -209,6 +210,8 @@ router.post('/opname/:id/assignments', authenticate, showroomOpnameWriteAccess, 
 
 router.get('/document-followups/:type', authenticate, documentFollowupAccess, getDocumentFollowups)
 router.get('/document-followups/:type/export', authenticate, documentFollowupAccess, exportDocumentFollowupsExcel)
+// Route lebih spesifik didaftarkan lebih dulu (Express 5 strict routing).
+router.post('/document-followups/:type/:engineNumber/whatsapp', authenticate, documentFollowupAccess, sendDocumentFollowupWhatsapp)
 router.post('/document-followups/:type/:engineNumber', authenticate, documentFollowupAccess, createDocumentFollowup)
 
 // Dealer Burdens

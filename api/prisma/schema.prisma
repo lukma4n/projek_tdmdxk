@@ -43,6 +43,8 @@ model users {
   service_labels_printed customers[]
   unit_bookings_cancelled showroom_unit_bookings[]
   ekspedisi_assignments document_handovers[] @relation("EkspedisiAssignee")
+  whatsapp_sends   whatsapp_send_logs[]
+  whatsapp_templates whatsapp_templates[]
 }
 
 // Audit login & deteksi penyalahgunaan akun (sharing, login ditolak, dsb).
@@ -373,6 +375,9 @@ model kpb_followups {
   status      String
   note        String?
   followup_at DateTime @default(now())
+  // Janji konsumen / jadwal hubungi ulang. Selama tanggal ini belum tiba,
+  // konsumen disembunyikan dari antrean supaya tidak dihubungi berulang.
+  next_followup_at DateTime?
   created_by  Int
   created_at  DateTime @default(now())
 
@@ -380,6 +385,7 @@ model kpb_followups {
   creator  users     @relation(fields: [created_by], references: [id])
 
   @@index([customer_id, kpb_level, followup_at])
+  @@index([next_followup_at])
   @@index([status, followup_at])
 }
 
@@ -390,12 +396,15 @@ model showroom_document_followups {
   status        String
   note          String?
   followup_at   DateTime @default(now())
+  // Sama seperti kpb_followups.next_followup_at.
+  next_followup_at DateTime?
   created_by    Int
   created_at    DateTime @default(now())
 
   creator users @relation(fields: [created_by], references: [id])
 
   @@index([document_type, engine_number, followup_at])
+  @@index([next_followup_at])
   @@index([document_type, status, followup_at])
 }
 
@@ -1064,4 +1073,57 @@ model showroom_pickup_requests {
   @@index([branch_code, status])
   @@index([engine_number])
   @@index([created_at])
+}
+
+// Catatan setiap pesan WhatsApp yang BERHASIL dikirim gateway.
+//
+// Dipakai sebagai sumber kebenaran batas harian. Sengaja tidak menghitung dari
+// kpb_followups/showroom_document_followups: kedua tabel itu juga menampung
+// perubahan status manual, jadi menghitungnya berarti mencocokkan teks catatan —
+// rapuh dan mudah salah hitung.
+//
+// Batas berlaku GLOBAL lintas modul (KPB + STNK + BPKB), bukan per modul, karena
+// yang dilindungi adalah satu nomor WhatsApp gateway. WhatsApp menilai perilaku
+// nomor pengirim secara keseluruhan, bukan per fitur di sistem kita.
+model whatsapp_send_logs {
+  id          Int      @id @default(autoincrement())
+  // 'KPB' | 'STNK' | 'BPKB' | 'STNK_BPKB'. Nilai gabungan dipakai saat STNK dan
+  // BPKB satu unit dikirim dalam SATU pesan: satu baris di sini, satu jatah
+  // harian. Penelusuran riwayat per dokumen harus ikut mencari 'STNK_BPKB'.
+  module      String
+  target_key  String   // customer_id (KPB) atau engine_number (dokumen)
+  phone       String
+  message_id  String?  // id pesan dari gateway, untuk penelusuran
+  quota_left  Int?     // sisa kuota gateway saat itu
+  sent_by     Int
+  sent_at     DateTime @default(now())
+
+  sender users @relation(fields: [sent_by], references: [id])
+
+  @@index([sent_at])
+  @@index([module, target_key])
+}
+
+// Template pesan WhatsApp yang bisa diubah dari UI.
+//
+// Setiap penyimpanan membuat BARIS BARU dan menonaktifkan yang lama, bukan
+// menimpa. Riwayat jadi ada dengan sendirinya, dan mengembalikan versi lama
+// cukup menyalin isinya jadi baris aktif baru. Ini penting karena hak ubah
+// diberikan ke semua role follow-up — makin banyak yang bisa mengubah, makin
+// perlu jelas siapa mengubah apa.
+//
+// Kalau sebuah key belum pernah diubah, tidak ada barisnya sama sekali dan
+// sistem memakai template bawaan di services/followupMessages.js.
+model whatsapp_templates {
+  id           Int      @id @default(autoincrement())
+  template_key String   // KPB | STNK | BPKB | STNK_BPKB
+  content      String
+  is_active    Boolean  @default(true)
+  created_by   Int
+  created_at   DateTime @default(now())
+
+  author users @relation(fields: [created_by], references: [id])
+
+  @@index([template_key, is_active])
+  @@index([template_key, created_at])
 }

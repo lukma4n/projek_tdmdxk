@@ -1,69 +1,65 @@
 import { useEffect, useState } from 'react'
 import { Printer, X, QrCode } from 'lucide-react'
-import { selfCheckQrDataUrl, PUBLIC_URL } from '../../config/selfCheck'
+import { selfCheckGenericQrDataUrl, PUBLIC_URL } from '../../config/selfCheck'
 
-function escapeHtml(value) {
-  return String(value ?? '-')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-// URL pendek untuk teks di kartu (tanpa protokol), mis. "tdmketapang.co.id/cek".
+// URL pendek untuk teks di kartu (tanpa protokol), mis. "tdmketapang.net/cek".
 const urlText = `${PUBLIC_URL.replace(/^https?:\/\//, '').replace(/\/$/, '')}/cek`
 
 /**
  * Kartu self-check ukuran kartu nama (85×55mm) untuk dibawa pulang konsumen.
- * `items` boleh 1 objek atau array (cetak massal). Tiap item butuh engine_number.
+ *
+ * Kartunya GENERIK: isinya sama semua, tanpa nomor mesin. Dulu tiap kartu
+ * dicetak per unit dengan No. Mesin tercetak, yang berarti staf harus memilih
+ * unit dulu dan kartunya hanya berlaku untuk satu konsumen. Sekarang seperti
+ * kartu nama biasa — cetak setumpuk, bagikan ke siapa saja, konsumen memindai
+ * lalu mengetik sendiri Nomor Mesin dan Nomor HP-nya di halaman /cek.
  */
-export default function SelfCheckCard({ items, onClose }) {
-  const list = (Array.isArray(items) ? items : items ? [items] : []).filter((i) => i?.engine_number)
-  const engineKey = list.map((i) => i.engine_number).join(',')
-  const [qrMap, setQrMap] = useState({})
+export default function SelfCheckCard({ jumlah = 8, onClose }) {
+  const [qr, setQr] = useState('')
 
   useEffect(() => {
-    let cancelled = false
-    const engines = [...new Set(list.map((i) => i.engine_number))]
-    Promise.all(engines.map(async (e) => [e, await selfCheckQrDataUrl(e).catch(() => '')]))
-      .then((entries) => { if (!cancelled) setQrMap(Object.fromEntries(entries)) })
-    return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engineKey])
+    let batal = false
+    selfCheckGenericQrDataUrl()
+      .then((url) => { if (!batal) setQr(url) })
+      .catch(() => { if (!batal) setQr('') })
+    return () => { batal = true }
+  }, [])
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const card = (item) => `
+    const card = `
       <div class="card">
         <div class="card-info">
           <div class="card-title">TDM Ketapang</div>
           <div class="card-sub">Cek Dokumen STNK &amp; BPKB Anda</div>
           <div class="card-sub">Scan QR atau buka link di bawah</div>
           <div class="card-bottom">
-            <div class="card-engine">No. Mesin: <b>${escapeHtml(item.engine_number)}</b></div>
-            <div class="card-url">${escapeHtml(urlText)}</div>
-            <div class="card-foot">Siap diambil? Hubungi frontdesk dealer.</div>
+            <div class="card-need">Siapkan: <b>No. Mesin</b> &amp; <b>No. HP</b></div>
+            <div class="card-url">${urlText}</div>
+            <div class="card-foot">Sudah jadi? Hubungi frontdesk dealer untuk mengambil.</div>
           </div>
         </div>
         <div class="card-qr">
-          ${qrMap[item.engine_number] ? `<img src="${qrMap[item.engine_number]}" alt="QR" />` : ''}
+          ${qr ? `<img src="${qr}" alt="QR" />` : ''}
           <span>Scan saya</span>
         </div>
       </div>
     `
 
     const perPage = 8 // 2 kolom x 4 baris
+    const total = Math.max(1, Number(jumlah) || 1)
     const pages = []
-    for (let i = 0; i < list.length; i += perPage) pages.push(list.slice(i, i + perPage))
+    for (let sisa = total; sisa > 0; sisa -= perPage) {
+      pages.push(card.repeat(Math.min(perPage, sisa)))
+    }
 
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Kartu Self-Check (${list.length})</title>
+        <title>Kartu Cek Dokumen (${total})</title>
         <style>
           @page { size: A4 portrait; margin: 10mm; }
           body { margin: 0; font-family: Arial, sans-serif; }
@@ -74,17 +70,17 @@ export default function SelfCheckCard({ items, onClose }) {
           .card-title { font-size: 12px; font-weight: bold; color: #1e3a8a; }
           .card-sub { font-size: 8px; color: #475569; margin-top: 0.6mm; }
           .card-bottom { margin-top: auto; }
-          .card-engine { font-size: 9px; color: #111827; }
+          .card-need { font-size: 8px; color: #111827; }
           .card-url { font-size: 10px; font-weight: bold; color: #1d4ed8; margin-top: 0.6mm; }
           .card-foot { font-size: 7px; color: #64748b; margin-top: 1.4mm; }
           .card-qr { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-          .card-qr img { width: 30mm; height: 30mm; display: block; }
+          .card-qr img { width: 32mm; height: 32mm; display: block; }
           .card-qr span { font-size: 6px; color: #64748b; margin-top: 1mm; }
           @media print { body { -webkit-print-color-adjust: exact; } }
         </style>
       </head>
       <body>
-        ${pages.map((p) => `<div class="page">${p.map(card).join('')}</div>`).join('')}
+        ${pages.map((isi) => `<div class="page">${isi}</div>`).join('')}
         <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 250); };</script>
       </body>
       </html>
@@ -93,8 +89,7 @@ export default function SelfCheckCard({ items, onClose }) {
     printWindow.document.close()
   }
 
-  if (list.length === 0) return null
-  const first = list[0]
+  const total = Math.max(1, Number(jumlah) || 1)
 
   return (
     <div
@@ -104,7 +99,7 @@ export default function SelfCheckCard({ items, onClose }) {
       <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
           <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800">
-            <QrCode size={20} className="text-blue-600" /> Kartu Self-Check
+            <QrCode size={20} className="text-blue-600" /> Kartu Cek Dokumen
           </h2>
           <button onClick={onClose} className="rounded-lg p-1 hover:bg-slate-100">
             <X size={20} className="text-slate-400" />
@@ -112,36 +107,35 @@ export default function SelfCheckCard({ items, onClose }) {
         </div>
 
         <div className="space-y-4 p-6">
-          {/* Preview kartu pertama (85×55mm proporsional) */}
           <div className="mx-auto flex aspect-[85/55] w-[320px] gap-3 rounded-xl border border-dashed border-slate-400 bg-white p-4">
             <div className="flex min-w-0 flex-1 flex-col">
               <div className="text-sm font-bold text-blue-900">TDM Ketapang</div>
               <div className="text-[10px] text-slate-600">Cek Dokumen STNK &amp; BPKB Anda</div>
               <div className="text-[10px] text-slate-600">Scan QR atau buka link di bawah</div>
               <div className="mt-auto">
-                <div className="text-[11px] text-slate-900">No. Mesin: <b>{first.engine_number}</b></div>
+                <div className="text-[10px] text-slate-900">Siapkan: <b>No. Mesin</b> &amp; <b>No. HP</b></div>
                 <div className="text-xs font-bold text-blue-700">{urlText}</div>
-                <div className="mt-1 text-[9px] text-slate-500">Siap diambil? Hubungi frontdesk dealer.</div>
+                <div className="mt-1 text-[9px] text-slate-500">Sudah jadi? Hubungi frontdesk dealer untuk mengambil.</div>
               </div>
             </div>
             <div className="flex flex-col items-center justify-center">
-              {qrMap[first.engine_number]
-                ? <img src={qrMap[first.engine_number]} alt="QR cek dokumen" className="h-[110px] w-[110px]" />
-                : <div className="h-[110px] w-[110px] animate-pulse rounded bg-slate-100" />}
+              {qr
+                ? <img src={qr} alt="QR cek dokumen" className="h-[118px] w-[118px]" />
+                : <div className="h-[118px] w-[118px] animate-pulse rounded bg-slate-100" />}
               <span className="mt-1 text-[8px] text-slate-500">Scan saya</span>
             </div>
           </div>
 
           <div className="text-center text-xs text-slate-400">
-            {list.length > 1 ? `${list.length} kartu akan dicetak (2 kolom / halaman)` : 'Ukuran kartu nama 85×55mm — bisa dibawa pulang konsumen'}
+            Ukuran kartu nama 85×55mm — {total} kartu, 8 per halaman A4
           </div>
 
           <button
             onClick={handlePrint}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700"
+            disabled={!qr}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 disabled:bg-blue-300"
           >
-            <Printer size={16} />
-            {list.length > 1 ? `Cetak ${list.length} Kartu` : 'Cetak Kartu Self-Check'}
+            <Printer size={16} /> Cetak {total} Kartu
           </button>
         </div>
       </div>

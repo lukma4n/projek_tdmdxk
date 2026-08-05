@@ -14,6 +14,8 @@ export const getCustomerAlerts = (params = {}) => {
 export const getCustomerModels = () => fetchWithAuth('/customers/models')
 export const getCustomerFollowups = (id) => fetchWithAuth(`/customers/${id}/followups`)
 export const createCustomerFollowup = (id, data) => fetchWithAuth(`/customers/${id}/followups`, { method: 'POST', body: data })
+// Kirim pengingat KPB via gateway WhatsApp; pesan disusun server.
+export const sendCustomerFollowupWhatsapp = (id, data) => fetchWithAuth(`/customers/${id}/followups/whatsapp`, { method: 'POST', body: data })
 
 export const uploadSales = (file) => {
   const formData = new FormData()

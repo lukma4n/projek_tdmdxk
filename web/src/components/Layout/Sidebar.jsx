@@ -21,6 +21,8 @@ import {
   Activity,
   Search,
   ScanFace,
+  Target,
+  MessageSquare,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { displayRole as displayRoleImpl, ROLES } from '../../config/roles'
@@ -69,10 +71,13 @@ const navStructure = [
   {
     type: 'group', id: 'crm', label: 'CRM & Layanan',
     items: [
+      { path: '/follow-up', label: 'Pusat Follow-up', icon: Target, menuKey: 'FOLLOWUP_CENTER' },
       { path: '/customers', label: 'Data Konsumen', icon: Contact, menuKey: 'CUSTOMER' },
       { path: '/follow-up-kpb', label: 'Follow-up KPB', icon: MessageCircle, menuKey: 'FOLLOWUP' },
       { path: '/follow-up-stnk', label: 'Follow-up STNK', icon: FileText, menuKey: 'DOCUMENT_FOLLOWUP' },
       { path: '/follow-up-bpkb', label: 'Follow-up BPKB', icon: FileBadge, menuKey: 'DOCUMENT_FOLLOWUP' },
+      { path: '/kartu-cek-dokumen', label: 'Kartu Cek Dokumen', icon: QrCode, menuKey: 'SELF_CHECK_CARD' },
+      { path: '/template-wa', label: 'Template Pesan WA', icon: MessageSquare, menuKey: 'WHATSAPP_TEMPLATE' },
     ],
   },
 

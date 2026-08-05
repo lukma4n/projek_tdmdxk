@@ -31,8 +31,17 @@ const seedData = [
   // Data Konsumen
   { menu_key: 'CUSTOMER', roles: [ROLES.KEPALA_BENGKEL, ROLES.ADMIN_CRM, ROLES.SERVICE_ADVISOR] },
   // Follow-up KPB
+  // Pusat Follow-up terpadu (KPB + STNK + BPKB): rolenya gabungan FOLLOWUP
+  // (bengkel) dan DOCUMENT_FOLLOWUP (showroom).
+  { menu_key: 'FOLLOWUP_CENTER', roles: [ROLES.ADMIN_CRM, ROLES.FRONDESK, ROLES.SERVICE_ADVISOR, ROLES.KEPALA_BENGKEL, ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM] },
   { menu_key: 'FOLLOWUP', roles: [ROLES.KEPALA_BENGKEL, ROLES.ADMIN_CRM, ROLES.SERVICE_ADVISOR, ROLES.FRONDESK] },
   // Follow-up STNK/BPKB
+  // Kartu Cek Dokumen (QR self-check) — dipisah dari Follow-up STNK/BPKB karena
+  // pekerjaannya berbeda: ini membagikan alat cek mandiri ke konsumen.
+  // Template pesan WhatsApp — hak ubah sengaja seluas akses follow-up
+  // (keputusan pemilik sistem); pengamannya lewat audit log + riwayat versi.
+  { menu_key: 'WHATSAPP_TEMPLATE', roles: [ROLES.ADMIN_CRM, ROLES.FRONDESK, ROLES.SERVICE_ADVISOR, ROLES.KEPALA_BENGKEL, ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM] },
+  { menu_key: 'SELF_CHECK_CARD', roles: [ROLES.ADMIN_SHOWROOM, ROLES.ADMIN_CRM, ROLES.KEPALA_CABANG] },
   { menu_key: 'DOCUMENT_FOLLOWUP', roles: [ROLES.ADMIN_CRM] },
   // Opname Sparepart
   { menu_key: 'OPNAME', roles: [ROLES.KEPALA_CABANG, ROLES.KEPALA_BENGKEL, ROLES.PARTMAN] },

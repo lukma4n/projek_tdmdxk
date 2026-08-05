@@ -6,6 +6,9 @@ import { clampLimit } from '../utils/pagination.js'
 import { prisma } from '../config/db.js'
 import { DOCUMENT_FOLLOWUP_STATUSES, applyCustomerTypeFilter, getCustomerType, getFinanceCompanyShort } from './showroomUtils.js'
 import { formatForExcel } from '../utils/excelUtils.js'
+import { sendWhatsappText, WablasError } from '../services/wablasService.js'
+import { renderDocumentMessage } from '../services/templateService.js'
+import { pastikanJatahHarianCukup, catatPengiriman, getDailyUsage } from '../services/whatsappLimitService.js'
 
 function documentFollowupStatusLabel(status) {
   const labels = {
@@ -18,11 +21,31 @@ function documentFollowupStatusLabel(status) {
   return labels[status] || 'Belum Dihubungi'
 }
 
+// Rentang umur dokumen — berapa lama sudah jadi tapi belum diambil konsumen.
+// Ini penentu utama urutan kerja: dokumen yang menunggu 6 bulan punya risiko
+// berbeda dari yang baru 2 minggu, dan sebelumnya STNK sama sekali tidak punya
+// filter ini sementara BPKB hanya punya dua ambang kasar (>=180, >=365).
+export const AGING_BUCKETS = [
+  { value: '1-30', label: '1-30 hari', min: 0, max: 30 },
+  { value: '31-60', label: '31-60 hari', min: 31, max: 60 },
+  { value: '61-90', label: '61-90 hari', min: 61, max: 90 },
+  { value: '91-180', label: '91-180 hari', min: 91, max: 180 },
+  { value: '181-365', label: '181-365 hari', min: 181, max: 365 },
+  { value: '365+', label: '> 1 tahun', min: 366, max: Infinity },
+]
+
+function bucketUntuk(hari) {
+  return AGING_BUCKETS.find((b) => hari >= b.min && hari <= b.max)?.value || null
+}
+
 function buildDocumentTrackWhere(documentType, query) {
   const where = { branch_code: 'DXK' }
   if (documentType === 'STNK') {
-    // STNK follow-up: STNK sudah jadi (ada tgl_terima_stnk) — bisa BELUM_DIAMBIL atau SUDAH_DIAMBIL
-    where.stnk_status = { in: ['BELUM_DIAMBIL', 'SUDAH_DIAMBIL'] }
+    // STNK follow-up: hanya yang sudah jadi TAPI belum diserahkan ke konsumen.
+    // SUDAH_DIAMBIL sengaja dikecualikan — dokumennya sudah dibawa pulang, tidak
+    // ada yang perlu ditagih, dan template WhatsApp-nya menyuruh konsumen datang
+    // mengambil. Sejalan dengan slaAnalysis.js yang juga memakai != SUDAH_DIAMBIL.
+    where.stnk_status = 'BELUM_DIAMBIL'
     where.lokasi_stnk = { not: null }
   } else {
     // BPKB follow-up: BPKB yang sudah jadi (BELUM_DIAMBIL) — finance_company kosong = cash customer
@@ -68,11 +91,17 @@ async function getLatestDocumentFollowups(documentType, engineNumbers) {
 
 function trackToFollowupRow(documentType, item) {
   const today = new Date()
-  const overdueDays = item.tgl_jadi_bpkb
-    ? Math.floor((today - new Date(item.tgl_jadi_bpkb)) / (24 * 60 * 60 * 1000))
-    : 0
+  const hariSejak = (tanggal) =>
+    tanggal ? Math.max(0, Math.floor((today - new Date(tanggal)) / (24 * 60 * 60 * 1000))) : 0
+  const overdueDays = hariSejak(item.tgl_jadi_bpkb)
+  // Umur dihitung dari tanggal dokumen JADI, bukan tanggal SO — yang relevan
+  // adalah sudah berapa lama menganggur di dealer menunggu diambil.
+  const waitingDays = documentType === 'STNK' ? hariSejak(item.tgl_terima_stnk) : overdueDays
+
   if (documentType === 'STNK') {
     return {
+      waiting_days: waitingDays,
+      aging_bucket: bucketUntuk(waitingDays),
       engine_number: item.engine_number,
       stnk_name: item.stnk_name,
       applicant_name: item.stnk_name,
@@ -88,6 +117,8 @@ function trackToFollowupRow(documentType, item) {
     }
   }
   return {
+    waiting_days: waitingDays,
+    aging_bucket: bucketUntuk(waitingDays),
     engine_number: item.engine_number,
     stnk_name: item.stnk_name,
     applicant_name: item.stnk_name,
@@ -125,21 +156,36 @@ async function buildDocumentFollowupData(documentType, query) {
   const latest = await getLatestDocumentFollowups(documentType, rows.map((item) => item.engine_number))
   const data = attachDocumentFollowups(documentType, rows, latest)
 
-  return data.filter((item) => {
+  const setelahStatus = data.filter((item) => {
     const currentStatus = item.followup?.status || 'belum_dihubungi'
     if (query.status && query.status !== 'all' && currentStatus !== query.status) return false
+    // Ambang lama BPKB (>=180 / >=365) tetap dihormati agar tautan/bookmark
+    // yang sudah beredar tidak mendadak berubah artinya.
     if (documentType === 'BPKB' && query.overdue_min && query.overdue_min !== 'all' && (item.overdue_days || 0) < parseInt(query.overdue_min)) return false
     return true
   })
+
+  // Hitungan per rentang umur SENGAJA dihitung sebelum filter umur diterapkan.
+  // Kalau dihitung sesudah, angka di setiap chip akan runtuh jadi 0 begitu satu
+  // rentang dipilih, sehingga admin tidak bisa berpindah rentang.
+  const byAging = Object.fromEntries(AGING_BUCKETS.map((b) => [b.value, 0]))
+  for (const item of setelahStatus) {
+    if (item.aging_bucket) byAging[item.aging_bucket] = (byAging[item.aging_bucket] || 0) + 1
+  }
+
+  const aging = query.aging && query.aging !== 'all' ? String(query.aging) : null
+  const hasil = aging ? setelahStatus.filter((item) => item.aging_bucket === aging) : setelahStatus
+
+  return { data: hasil, byAging }
 }
 
-function summarizeDocumentFollowups(data) {
+function summarizeDocumentFollowups(data, byAging) {
   const byStatus = Object.fromEntries(DOCUMENT_FOLLOWUP_STATUSES.map((status) => [status, 0]))
   for (const item of data) {
     const status = item.followup?.status || 'belum_dihubungi'
     byStatus[status] = (byStatus[status] || 0) + 1
   }
-  return { total: data.length, byStatus }
+  return { total: data.length, byStatus, byAging }
 }
 
 export async function getDocumentFollowups(req, res, next) {
@@ -150,16 +196,76 @@ export async function getDocumentFollowups(req, res, next) {
     const { page = 1, limit = 100 } = req.query
     const pageInt = parseInt(page)
     const limitInt = clampLimit(limit, 100)
-    const data = await buildDocumentFollowupData(documentType, req.query)
+    const { data, byAging } = await buildDocumentFollowupData(documentType, req.query)
     const skip = (pageInt - 1) * limitInt
     const paginated = data.slice(skip, skip + limitInt)
 
     res.json({
       data: paginated,
-      summary: summarizeDocumentFollowups(data),
+      summary: summarizeDocumentFollowups(data, byAging),
+      agingBuckets: AGING_BUCKETS.map(({ value, label }) => ({ value, label })),
       pagination: { page: pageInt, limit: limitInt, total: data.length, totalPages: Math.ceil(data.length / limitInt) },
+      daily: await getDailyUsage(),
     })
   } catch (error) {
+    next(error)
+  }
+}
+
+// Kirim pemberitahuan dokumen siap diambil via WhatsApp gateway, lalu catat
+// follow-up-nya. Pesan disusun di server, sama seperti follow-up KPB.
+export async function sendDocumentFollowupWhatsapp(req, res, next) {
+  try {
+    const documentType = String(req.params.type || '').toUpperCase()
+    if (!['STNK', 'BPKB'].includes(documentType)) return res.status(400).json({ error: 'Tipe dokumen tidak valid' })
+
+    const engineNumber = String(req.params.engineNumber || '').trim()
+    if (!engineNumber) return res.status(400).json({ error: 'Nomor mesin wajib diisi' })
+
+    const track = await prisma.showroom_stnk_bpkb_tracks.findUnique({ where: { engine_number: engineNumber } })
+    if (!track) return res.status(404).json({ error: 'Dokumen tidak ditemukan' })
+
+    const message = await renderDocumentMessage([documentType], { engineNumber })
+
+    // Dicek sebelum kirim supaya jatah gateway tidak terpakai saat batas tercapai.
+    await pastikanJatahHarianCukup()
+
+    const hasil = await sendWhatsappText({
+      phone: track.mobile,
+      message,
+      refId: `${documentType.toLowerCase()}-${engineNumber}`,
+    })
+
+    await catatPengiriman({
+      module: documentType,
+      targetKey: engineNumber,
+      phone: hasil.phone,
+      messageId: hasil.messageId,
+      quotaLeft: hasil.quota,
+      sentBy: req.user.userId,
+    })
+
+    const followup = await prisma.showroom_document_followups.create({
+      data: {
+        document_type: documentType,
+        engine_number: engineNumber,
+        status: 'sudah_dihubungi',
+        note: `Pemberitahuan ${documentType} dikirim via WhatsApp ke ${hasil.phone}`,
+        created_by: req.user.userId,
+      },
+      include: { creator: { select: { id: true, username: true, name: true, role: true } } },
+    })
+
+    res.status(201).json({
+      message: `WhatsApp terkirim ke ${hasil.phone}`,
+      data: followup,
+      whatsapp: hasil,
+      daily: await getDailyUsage(),
+    })
+  } catch (error) {
+    if (error instanceof WablasError) {
+      return res.status(error.status).json({ error: error.message })
+    }
     next(error)
   }
 }
@@ -178,6 +284,8 @@ export async function createDocumentFollowup(req, res, next) {
     const exists = await prisma.showroom_stnk_bpkb_tracks.findUnique({ where: { engine_number: engineNumber } })
     if (!exists) return res.status(404).json({ error: 'Dokumen tidak ditemukan' })
 
+    // Endpoint ini hanya mengubah status manual — tidak mengirim WhatsApp, jadi
+    // tidak memotong jatah harian dan tidak dicatat di whatsapp_send_logs.
     const followup = await prisma.showroom_document_followups.create({
       data: {
         document_type: documentType,
@@ -200,7 +308,7 @@ export async function exportDocumentFollowupsExcel(req, res, next) {
     const documentType = String(req.params.type || '').toUpperCase()
     if (!['STNK', 'BPKB'].includes(documentType)) return res.status(400).json({ error: 'Tipe dokumen tidak valid' })
 
-    const data = await buildDocumentFollowupData(documentType, req.query)
+    const { data } = await buildDocumentFollowupData(documentType, req.query)
     const exportData = data.map((item, index) => {
       const followup = item.followup
       const base = {

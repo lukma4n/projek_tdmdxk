@@ -10,6 +10,7 @@ import {
   exportFollowupKpbExcel,
   getCustomerFollowups,
   createCustomerFollowup,
+  sendCustomerFollowupWhatsapp,
 } from '../controllers/customerController.js'
 
 const router = Router()
@@ -24,5 +25,7 @@ router.get('/models', authenticate, customerAccess, getCustomerModels)
 router.get('/export', authenticate, customerAccess, exportCustomersExcel)
 router.get('/:id/followups', authenticate, followupAccess, getCustomerFollowups)
 router.post('/:id/followups', authenticate, followupAccess, validate(schemas.createFollowup), createCustomerFollowup)
+// Deklarasikan sebelum route :id lain yang lebih longgar — Express 5 strict routing.
+router.post('/:id/followups/whatsapp', authenticate, followupAccess, sendCustomerFollowupWhatsapp)
 
 export default router

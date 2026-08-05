@@ -18,6 +18,9 @@ const WorkshopClosingDaily = lazy(() => import('./pages/WorkshopClosingDaily'))
 const KpbLcrMonitor = lazy(() => import('./pages/KpbLcrMonitor'))
 const Customers = lazy(() => import('./pages/Customers'))
 const FollowupKpb = lazy(() => import('./pages/FollowupKpb'))
+const FollowupCenter = lazy(() => import('./pages/FollowupCenter'))
+const KartuCekDokumen = lazy(() => import('./pages/KartuCekDokumen'))
+const WhatsappTemplates = lazy(() => import('./pages/WhatsappTemplates'))
 const MechanicPerformance = lazy(() => import('./pages/MechanicPerformance'))
 const Users = lazy(() => import('./pages/Users'))
 const Opname = lazy(() => import('./pages/Opname'))
@@ -251,6 +254,30 @@ function App() {
           element={
             <RoleGuard menuKey="CUSTOMER">
               <LazyPage><Customers /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="follow-up"
+          element={
+            <RoleGuard menuKey="FOLLOWUP_CENTER">
+              <LazyPage><FollowupCenter /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="template-wa"
+          element={
+            <RoleGuard menuKey="WHATSAPP_TEMPLATE">
+              <LazyPage><WhatsappTemplates /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="kartu-cek-dokumen"
+          element={
+            <RoleGuard menuKey="SELF_CHECK_CARD">
+              <LazyPage><KartuCekDokumen /></LazyPage>
             </RoleGuard>
           }
         />
