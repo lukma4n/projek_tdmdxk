@@ -1,142 +1,99 @@
 # Catatan Sesi Terakhir — DXK Operation System
 
-Tanggal: **2026-06-24**
-Branch: **`main`** (FASE 2 sudah di-merge & branch `feat/fase2-pickup-request` dihapus). Semua perubahan **sudah di-commit & di-push** ke `origin/main`.
-Status: **lint 0 error** (1 warning pre-existing), **build sukses**, **API test 61 pass / 0 fail**.
-Produksi: VPS tdmketapang.net (PM2 + Nginx), deploy dari `main` via `git pull → prisma db push → prisma generate → web build → pm2 restart`.
+Tanggal: **2026-08-05**
+Branch: **`feat/followup-center-whatsapp`** (commit `f1aa001`, bercabang dari `d8a6eee` di `main`).
+Status: **belum di-push, belum di-merge ke `main`, belum di-deploy.**
+Verifikasi: **API test 189 pass / 0 fail**, lint 0 error (1 warning pre-existing), build sukses, `prisma validate` valid.
 
-> Untuk melanjutkan: `claude --resume` / `--continue` sudah cukup. Konteks ringkas juga ada di memory (MEMORY.md).
-
----
-
-## 0. Yang dikerjakan sesi 2026-06-24 (terbaru)
-
-1. **Kesegaran Data Import** dipisah ke halaman `/data-freshness` + menu (menuKey `DATA_FRESHNESS`).
-2. **FASE 2 merged ke `main`** (fast-forward), branch fitur dihapus, server kembali deploy dari `main`.
-3. **Cek Ketersediaan Unit publik `/cek-unit`** — `GET /api/public/stock-units`. Browse per model/warna, status RFS/Reserved/NRFS, no.mesin/rangka + OTR (sengaja publik), umur FIFO + Tag aging + kode unit, filter lokasi. cost/HPP tak pernah bocor.
-4. **Fix font** — self-host `@fontsource` (ganti Google Fonts CDN) → ekspor screenshot Closing Daily konsisten live vs lokal.
-5. **Idle auto-logout 60 menit** (`web/src/components/IdleLogout.jsx`) + peringatan 1 menit.
-6. **Single-session anti-sharing + audit login** — login ke-2 ditolak (409), halaman `/security-audit` (IT Master): sesi aktif + riwayat login + reset sesi. Kolom `users.session_id`/`session_last_active`, tabel `login_logs`. Env `ENFORCE_SINGLE_SESSION`.
-7. **Backup terjadwal** cron 02:00 WIB (`api/scripts/backup-db.js`, keep 14) + bersih-bersih backup pre-import lama.
-8. **Backlog keamanan** S1-S4 dicatat di `docs/rencana_perbaikan.md`; prioritas tinggi (VIN publik, password policy/lockout, 2FA) ditunda atas keputusan pemilik.
-
-> ⚠️ **Pending deploy ke server**: perubahan #6 butuh `prisma db push` di VPS (kolom sesi + tabel `login_logs`). Setelah deploy, idealnya semua staf logout→login ulang agar token ber-`sid`.
+> Catatan sesi-sesi sebelumnya (FASE 2 pickup request, self-check publik, single-session, cek-unit) sudah selesai & ter-merge — ringkasannya ada di `CLAUDE.md` dan histori `git log`.
 
 ---
 
-## 1. Ringkasan commit sesi FASE 2 (lama → baru, branch `feat/fase2-pickup-request`)
+## 0. Yang dikerjakan sesi ini
 
-| Commit | Isi |
+**Pusat Follow-up terpadu + kirim WhatsApp lewat gateway Wablas.**
+
+Latar belakang: KPB, STNK, dan BPKB sebelumnya tiga daftar terpisah yang tidak saling tahu padahal berbagi satu nomor WhatsApp. Nomor gateway dealer dibatasi WhatsApp pada **2026-08-04** dengan alasan "pengiriman pesan otomatis atau massal". Jadi masalahnya bukan "bagaimana menghubungi semua" tapi "siapa 30 orang hari ini".
+
+| Bagian | File utama |
 |---|---|
-| `eeb5ce7` | feat(public): **FASE 2 self-check** — pickup request via token + manajemen staf + notifikasi |
-| `3c9022e` | fix(notifications): IT Master ikut feed notifikasi pickup request |
-| `62def67` | fix(pickup): halaman staf tak menampilkan data — salah baca shape response (baca `res` langsung, bukan `res.data`) |
-| `4bd2321` | feat(public): **wajib lampirkan foto KTP** saat ajukan ambil dokumen |
-| `bca9683` | feat(public): pemilih tanggal & jam untuk waktu preferensi pengambilan |
-| `87271f8` | feat(public): opsi terpisah **Ambil Foto & Pilih File** untuk KTP |
-| `5d45769` | feat(public): **kamera in-app (getUserMedia)** untuk foto KTP langsung |
+| Skor prioritas antrean | `api/src/services/followupPriority.js` |
+| Antrean terpadu (3 sumber) | `api/src/services/followupQueueService.js` |
+| Endpoint queue/areas/history/schedule/send | `api/src/controllers/followupController.js`, `routes/followupRoutes.js` |
+| Gateway Wablas | `api/src/services/wablasService.js` |
+| Batas kirim harian | `api/src/services/whatsappLimitService.js` |
+| Template pesan (bawaan + override DB) | `api/src/services/followupMessages.js`, `templateService.js` |
+| CRUD template + audit | `api/src/controllers/whatsappTemplateController.js`, `routes/whatsappTemplateRoutes.js` |
+| Halaman baru | `web/src/pages/FollowupCenter.jsx`, `WhatsappTemplates.jsx`, `KartuCekDokumen.jsx` |
 
-Commit sesi-sesi sebelumnya (design-system, rotasi JWT, landing 2-pintu, kartu self-check, fallback rangka, WA dinamis, dsb.) ada di histori `main` — lihat `git log --oneline`. Histori git pernah ditulis ulang (force-push) untuk menghapus JWT secret lama; backup bundle lokal di `/tmp/dxk-backup-*.bundle` (sementara).
+### Keputusan yang perlu diingat
 
----
+- **Batas 30 pesan/hari bersifat GLOBAL lintas modul**, bukan per modul. Yang dilindungi satu nomor pengirim, dan WhatsApp menilai perilaku nomor itu secara keseluruhan. Dibagi per modul = 90 pesan/hari dari nomor yang sama. Sumber kebenaran = tabel `whatsapp_send_logs` (bukan menghitung dari tabel followup, yang juga menampung perubahan status manual).
+- **KPB dan dokumen memakai kurva skor berbeda** karena perilaku konsumennya berbeda: KPB memuncak di sekitar jatuh tempo (yang lewat >90 hari kemungkinan sudah servis di tempat lain); dokumen memuncak di 3-6 bulan menunggu (yang baru jadi <7 hari sengaja ditekan — mereka biasanya datang sendiri). Skala akhir 30-95, semua angka dikumpulkan di `followupPriority.js` supaya bisa disetel tanpa menyentuh logika antrean.
+- **STNK+BPKB satu unit = satu pesan, satu jatah.** Dicatat satu baris log ber-`module: 'STNK_BPKB'`.
+- **Auth Wablas berbeda per endpoint** — `/api/send-message` pakai header `Authorization: {token}.{secret}`, `/api/device/info` pakai query `?token=`. Jangan diseragamkan; menyalin pola satu ke yang lain gagal dengan pesan menyesatkan seolah token salah.
+- **Device putus tetap dibalas `status:true` dan kuota tetap terpotong.** Karena itu status device dicek sebelum kirim (cache 60 detik) — tanpa itu sistem mencatat "sudah dihubungi" untuk pesan yang tak pernah sampai. Terbukti terjadi saat uji 2026-08-04.
+- **Template disimpan sebagai versi baru, versi lama dinonaktifkan bukan ditimpa.** Hak ubah sengaja seluas akses follow-up (keputusan pemilik sistem); pengamannya audit log + riwayat versi.
+- **Kartu Cek Dokumen jadi generik** (tanpa nomor mesin) → dicetak setumpuk, dibagikan ke konsumen mana pun. Halaman lama per-unit di Follow-up STNK/BPKB dihapus.
+- **Tidak pakai OTP WhatsApp** (keputusan lama, masih berlaku).
 
-## 2. Fitur "Self-Check STNK & BPKB" konsumen (selesai)
+### Angka dari data asli (dev.db, 2026-08-05)
 
-Alur: **scan QR kartu / klik link WA → `/cek?engine_number=...` (No. Mesin terisi) → isi No. HP atau 4 digit rangka → lihat status**.
-
-- **Landing `/`** untuk guest = 2 pintu (Cek Dokumen / Area Karyawan). User login → app shell. Restore sesi diangkat ke level App (probe `me()` tanpa redirect).
-- **`/cek`** (alias pendek) — prefill No. Mesin dari URL, tombol "Salin Link".
-- **Verifikasi** = `No. Mesin + (No. HP [6 digit akhir] ATAU 4 digit terakhir No. Rangka)`. Rangka = fallback bila HP konsumen sudah berganti.
-- **Masking DIHAPUS** — response publik tampil data penuh (nama, rangka, no dokumen). *(Lihat catatan keamanan §4.)*
-- **Kartu Self-Check** (`SelfCheckCard.jsx`) 85×55mm, QR + URL + No. Mesin; cetak per-baris / massal dari halaman **Document Follow-up**.
-- **Tombol "Request via WhatsApp"** di banner "Dokumen Siap Diambil" → `wa.me/<dealer>` template dinamis (daftar dokumen real).
-- **Pengecualian BPKB leasing**: `finance_company` terisi (FIF/Adira/IMFI/OTO/dll) → BPKB tidak muncul di banner & WA; BPKB hanya untuk konsumen **cash**.
-- **Staf koreksi No. HP**: `PATCH /api/showroom/stnk-bpkb-tracks/:engineNumber/mobile` (Admin/CRM/Kepala Cabang) + edit inline di halaman Follow-up.
-- **Menu internal** "Self-Check Publik" (grup "Layanan Publik" sidebar) → buka `/cek` tab baru.
-
-Nomor WA dealer (lokal): `VITE_DEALER_WA_PHONE=6289504400622`.
+Antrean menghasilkan **2.300 target** dalam 285 ms — 1.213 KPB, 844 STNK, 243 BPKB. Ada **72 baris gabungan STNK+BPKB** dan **524 baris yang menyembunyikan target lain** (aturan satu orang = satu baris per hari). Dengan jatah 30/hari, satu putaran penuh ≈ 4 bulan.
 
 ---
 
-## 3. FASE 2 — Permintaan Ambil Dokumen (PICKUP REQUEST) — SELESAI
+## 1. Bug yang ditemukan & diperbaiki sebelum commit
 
-> Sudah di-commit (`eeb5ce7` dst.), teruji 55 test pass. Branch `feat/fase2-pickup-request` siap di-merge ke `main` / di-push setelah review.
+Ketiganya lolos dari 185 test yang sudah ada — ditemukan lewat pembacaan kode + uji terhadap data asli, bukan dari test yang gagal.
 
-### Alur inti
-Konsumen verifikasi di `/cek` → bila ada dokumen eligible (sudah jadi, belum diserahkan, untuk konsumen; BPKB leasing dikeluarkan), response `/check` menyertakan `pickup_token` (JWT 15mnt, signed `JWT_SECRET`, payload `{engine_number, purpose:'pickup'}`) + `pickup_eligible` + `pickup_docs`. Form inline di `/cek` kirim `POST /api/public/stnk-bpkb/request-pickup` (multipart: field + file `ktp_photo`) → staf menindak lanjuti via halaman **Permintaan Ambil Dokumen**.
+1. **Jadwal hubungi-ulang hilang tepat di hari yang dijanjikan.** Urutan filter di `followupQueueService.js` mengecek `next_followup_at` dulu, lalu jeda 7 hari. Janji "hubungi saya Sabtu" yang dibuat Rabu tetap tersaring sebagai "baru dihubungi" sampai hari ke-7. Default prompt UI 7 hari (lolos tipis), jadi setiap tanggal < 7 hari diam-diam tidak berfungsi. **Perbaikan:** jadwal yang tanggalnya sudah tiba mengalahkan jeda 7 hari; jeda tetap penuh untuk kontak tanpa jadwal eksplisit.
+2. **Kirim WA sekali klik tanpa konfirmasi** di `FollowupKpb.jsx` dan `ShowroomDocumentFollowup.jsx`. Dulu tombol itu hanya membuka draf `wa.me` yang masih bisa dibatalkan; sekarang langsung terkirim dan tidak bisa ditarik. **Perbaikan:** `window.confirm` dengan nama + nomor, seperti di FollowupCenter.
+3. **Riwayat pengiriman kosong untuk kiriman gabungan.** Log ditulis `module: kebutuhan.join('+')` tapi dibaca `module: kind`. Saat memperbaiki ketemu bug kedua: urutan `kebutuhan` datang dari request, jadi pengiriman sama bisa tercatat `'STNK+BPKB'` atau `'BPKB+STNK'`. **Perbaikan:** nilai dibakukan lewat `documentTemplateKey()` → `'STNK_BPKB'`; riwayat STNK & BPKB sama-sama mengambilnya.
 
-### Keputusan verifikasi (penting)
-Backlog awal menyebut "OTP WhatsApp". **Diputuskan: TIDAK pakai OTP/gateway WA** — dipakai **token verifikasi dari `/check`** saja. Alasan: (1) tidak ada gateway WA server-side, (2) identitas konsumen **sudah terverifikasi** di `/check`. Bila kelak ingin OTP WA sungguhan, perlu tambah gateway (Fonnte/Wablas/Twilio) + API key di env.
+**4 test regresi ditambahkan dan sudah dibuktikan gagal terhadap kode sebelum perbaikan** (`jadwal yang tiba mengalahkan jeda 7 hari`, `STNK+BPKB satu unit...`, `riwayat STNK maupun BPKB memuat kiriman gabungan`, `urutan kebutuhan terbalik...`). Ada juga penjaga arah sebaliknya: `jeda 7 hari tetap berlaku untuk kontak tanpa jadwal` — supaya perbaikan #1 tidak diam-diam mematikan pengaman blokir WhatsApp.
 
-### File yang berubah (sudah di-commit)
-**Backend (api):**
-- `prisma/schema.prisma` — model `showroom_pickup_requests` (kolom: id, engine_number, branch_code/name, consumer_name/phone, requested_docs, preferred_time, notes, **ktp_photo_url**, status default PENDING, created_at, handled_by, handled_at) + 2 migrasi: `20260622091349_add_pickup_requests` & `20260622102011_add_pickup_ktp_photo`.
-- `src/controllers/publicController.js` — `checkStnkBpkb` keluarkan `pickup_token`/`pickup_eligible`/`pickup_docs`; `requestPickup` (verifikasi token **DULU** sebelum cek file KTP → token invalid tetap 401; cek KTP wajib → 400; 409 bila tak eligible lagi; simpan row + `ktp_photo_url`).
-- `src/controllers/showroomStnkBpkbTrackController.js` — `getPickupRequests` (bare array, take 200, orderBy created_at desc), `updatePickupRequest` (status PENDING/CONTACTED/DONE/CANCELLED, isi handled_by/at), `getPickupRequestKtp` (serve foto via `res.sendFile`, auth-protected).
-- `src/controllers/notificationController.js` — area `pickup` masuk feed notifikasi untuk Admin/CRM/Kepala Cabang/**IT Master**.
-- `src/middleware/upload.js` — `uploadPickupKtp` (diskStorage `uploads/pickup-ktp/`, imageFileFilter JPEG/PNG, max 10MB).
-- `src/routes/publicRoutes.js` — `POST /stnk-bpkb/request-pickup` (multer `uploadPickupKtp.single('ktp_photo')`, rate-limited `publicCheckLimiter`).
-- `src/routes/showroomRoutes.js` — `GET`/`PATCH /pickup-requests`, `GET /pickup-requests/:id/ktp` (authorize Admin/CRM/Kepala Cabang).
-- `tests/pickupRequests.integration.test.js` — 16 tes (multipart KTP): token valid→201, tanpa token→400, token salah→401, mismatch→401, **tanpa KTP→400**, 409, staff GET/PATCH, **serve KTP 200**, **RBAC KTP 403**, feed Admin + IT Master.
+### Sengaja TIDAK diperbaiki
 
-**Frontend (web):**
-- `src/pages/StnkBpkbCheck.jsx` — form "Ajukan Permintaan Ambil Dokumen": HP, **pemilih tanggal (`type=date`, min hari ini) + jam (`type=time`, 08.00–17.00)** digabung jadi string ramah-baca via `formatPreferredTime`, catatan, **lampiran KTP wajib** dengan 2 opsi (**Ambil Foto** = kamera in-app `getUserMedia` modal full-screen + shutter + preview + Gunakan/Ulangi; **Pilih File** = input file galeri). Error kamera spesifik (izin ditolak / tak ditemukan / browser tak dukung). Konfirmasi sukses.
-- `src/pages/ShowroomPickupRequests.jsx` — halaman staf: tabel + filter status + update status + link WA konsumen + **tombol "Lihat KTP"** (buka `/showroom/pickup-requests/:id/ktp` tab baru). Baca response sebagai array langsung (`res`, bukan `res.data`).
-- `src/services/api/showroom.js` — `getPickupRequests` + `updatePickupRequest`.
-- `src/components/Layout/Sidebar.jsx` — menu "Permintaan Ambil Dokumen" grup Layanan Publik.
-- `src/App.jsx` — `RoleGuard` support gate via `roles` (selain `menuKey`); route `/showroom/pickup-requests`.
-- `src/pages/ShowroomDashboard.jsx` — fix warning key-duplikat.
-
-### Catatan penting
-- **Urutan controller `requestPickup`**: verifikasi JWT **sebelum** cek `req.file`. Jika diubah, tes "token salah → 401" akan dapat 400. Jangan reorder.
-- **Shape response list**: backend `getPickupRequests` kembalikan **bare array**. Frontend baca `res` langsung. (Pengecualian: feed notifikasi tetap wrap `{data, summary}`.)
-- **test.db churn** (`api/prisma/prisma/test.db`) sengaja **tidak di-commit** (DB tes, berubah tiap run). `pretest` (`prisma db push --accept-data-loss`) auto-sync skema sebelum `npm test`.
-- **KTP = data pribadi sensitif**: hanya disajikan via route auth (Admin/CRM/Kepala Cabang), BUKAN static publik. Folder `uploads/pickup-ktp/` diisi multer.
-- **getUserMedia butuh HTTPS atau localhost**. Dev `localhost:5173` aman; produksi HARUS dilayani via HTTPS, kalau tidak browser blokir kamera (tombol Pilih File tetap jalan).
+- **Race batas harian** — `pastikanJatahHarianCukup()` cek-lalu-kirim, tidak atomik. Dua admin menekan bersamaan bisa melewati batas 1-2 pesan. Memperbaikinya perlu kunci/transaksi yang tidak sepadan dengan dampaknya.
+- **Filter "KPB" tidak menampilkan orang yang KPB-nya tersembunyi** di bawah baris STNK-nya (`tertunda_lain`). Ini konsekuensi aturan satu-orang-satu-baris, bukan bug.
 
 ---
 
-## 4. ⚠️ Yang HARUS dilakukan sebelum / saat go-live (di luar repo)
+## 2. WAJIB dilakukan saat deploy
 
-1. **Rotasi `JWT_SECRET` di server produksi** — `openssl rand -hex 32`, set di env server, restart API. (Secret lama sudah dihapus dari histori & ditolak guard, tapi server yang sudah ter-deploy harus pakai secret baru.)
-2. **Set env produksi saat `npm run build` di server:**
-   - `VITE_PUBLIC_URL=https://<domain-final>` (sekarang fallback ke origin → link/QR masih `localhost`).
-   - `VITE_DEALER_WA_PHONE=6289504400622`.
-3. **Uji cetak fisik kartu self-check** sekali (QR scannable, art carton 260gsm + laminasi).
-4. **Apply migrasi pickup ke DB produksi**: `prisma migrate deploy` saat deploy (`20260622091349_add_pickup_requests` + `20260622102011_add_pickup_ktp_photo`).
-5. **Produksi dilayani via HTTPS** supaya kamera in-app (`getUserMedia`) berfungsi.
-6. **Merge / push branch** `feat/fase2-pickup-request` ke `main` setelah review final.
+```bash
+git checkout main && git merge --ff-only feat/followup-center-whatsapp   # kalau sudah ditinjau
+git pull
+cd api && npx prisma db push && npx prisma generate   # 2 tabel + kolom next_followup_at
+node scripts/seed_permissions.js                       # 3 menuKey baru
+# set di api/.env server: PUBLIC_URL, WABLAS_TOKEN, WABLAS_SECRET
+cd ../web && npm run build
+pm2 restart <app>
+```
 
----
-
-## 5. Catatan keamanan (keputusan dealer, sudah diterima)
-
-Masking dihapus + rangka jadi faktor alternif → **siapa pun yang bisa membaca No. Mesin & No. Rangka di fisik unit dapat menarik nama pemilik penuh + nomor dokumen penuh.** Tradeoff sadar, terdokumentasi di commit `3f4b6e9` (SECURITY NOTE). Mitigasi yang tetap ada: rate limit publik (`publicCheckLimiter` 60/15mnt). Foto KTP yang diunggah konsumen hanya bisa diakses staf berotorisasi (bukan publik).
-
----
-
-## 6. Backlog / belum dikerjakan
-
-- ~~FASE 2 self-check pickup request~~ → **SELESAI**.
-- ~~Warning key-duplikat~~ → **SELESAI** (`ShowroomDashboard.jsx`).
-- ~~IT Master tak dapat notifikasi pickup~~ → **SELESAI** (commit `3c9022e`).
-- ~~Halaman staf pickup kosong~~ → **SELESAI** (commit `62def67`).
-- ~~Foto KTP wajib~~ → **SELESAI** (commit `4bd2321`).
-- ~~Waktu preferensi input manual~~ → **SELESAI** (date+time picker, commit `bca9683`).
-- ~~Ambil Foto di desktop ke file picker~~ → **SELESAI** (kamera in-app getUserMedia, commit `5d45769`).
-- **Lint warning** tersisa 1: `react-hooks/exhaustive-deps` di `WorkshopReportDashboard.jsx:35` (benign, dep array disengaja).
-- **SQLite** = DB resmi (keputusan terdokumentasi); sadari batas konkurensi tulis.
-- (Opsional, bila diminta) Kalender custom ber-tema DXK (date-fns + headless UI) untuk mengganti native date picker — saat ini pakai native `<input type=date/time>` sesuai konvensi codebase.
-- (Opsional) OTP WhatsApp sungguhan untuk verifikasi pickup — butuh gateway WA server-side.
+1. **`PUBLIC_URL` wajib diisi.** Fallback-nya `FRONTEND_URL`, yang boleh berisi beberapa origin dipisah koma — itu menghasilkan tautan `{link_cek}` rusak di pesan yang sudah terlanjur sampai ke konsumen. Sudah didokumentasikan di kedua file `.env.example`.
+2. **`WABLAS_TOKEN` + `WABLAS_SECRET`.** Selama kosong, tombol Kirim WA menjawab 503 "gateway belum dikonfigurasi" — halaman tetap bisa dipakai untuk menelusuri & menjadwalkan antrean.
+3. **Skema:** tabel `whatsapp_send_logs` + `whatsapp_templates`, kolom `next_followup_at` di `kpb_followups` dan `showroom_document_followups`. Ingat: **pakai `db push`, bukan `migrate`** (schema-engine rusak di setup ini).
+4. **menuKey baru:** `FOLLOWUP_CENTER`, `WHATSAPP_TEMPLATE`, `SELF_CHECK_CARD`.
 
 ---
 
-## 7. Info teknis cepat (untuk lanjut)
+## 3. Belum selesai / risiko terbuka
 
-- Frontend: `web/` (React 19 + Vite + Tailwind v4, token semantik via CSS var + `@theme`). Dev: `cd web && npm run dev` (5173). Lint+build: `npm run lint && npm run build`.
-- Backend: `api/` (Express 5 + Prisma 6.7 + SQLite WAL). Dev: `cd api && npm run dev` (3001). Test: `npm test` (pretest auto `prisma db push` ke test.db). Proxy Vite `/api → localhost:3001`.
-- Test DB ada di `api/prisma/prisma/test.db` (relatif `file:./prisma/test.db` dari schema dir). dev DB di `api/prisma/prisma/dev.db`. **Migrasi manual workaround** bila dev server kunci DB: buat folder migrasi + SQL, apply via `sqlite3 <db> "PRAGMA busy_timeout=10000; <SQL>"`, catat di `_prisma_migrations` (shasum -a 256 + uuidgen + datetime), lalu `npx prisma generate`.
-- User test (password `password`): `haris`/Admin, `guntur`/Kepala Cabang, `astri`/CRM, `danu`/Service Advisor, `imam`/Kepala Bengkel. (`itmaster` password BUKAN `password`.) Untuk tes integration: user `test_*` (password `password123`) di `tests/helpers.js`.
-- Endpoint publik: `GET /api/public/stnk-bpkb/check?engine_number=&phone=&chassis=`; `POST /api/public/stnk-bpkb/request-pickup` (multipart, field + `ktp_photo`).
-- Helper URL/QR self-check: `web/src/config/selfCheck.js`.
-- JWT_SECRET **jangan di-commit** (nilai dev di `.env` sudah untrack & dirotasi).
+- **Pengiriman sungguhan belum teruji.** Nomor gateway dibatasi WhatsApp 2026-08-04; semua uji kirim memakai gateway tiruan di test. Setelah nomornya pulih, uji satu pesan ke nomor sendiri dulu sebelum dipakai staf.
+- **Branch belum di-push & belum di-merge** ke `main`.
+- **`WHATSAPP_DAILY_LIMIT=30` belum pernah divalidasi di lapangan** — apakah 30 aman atau masih terlalu tinggi baru ketahuan setelah beberapa minggu berjalan. Angkanya bisa diturunkan lewat env tanpa deploy ulang kode.
+- **Lint warning** tersisa 1 (pre-existing): `react-hooks/exhaustive-deps` di `WorkshopReportDashboard.jsx:35`.
+
+---
+
+## 4. Info teknis cepat (untuk lanjut)
+
+- Backend `api/` (Express 5 + Prisma + SQLite). Dev `npm run dev` (3001). Test `npm test` (`pretest` auto `db push` ke test.db).
+- Frontend `web/` (React 19 + Vite + Tailwind v4). Dev `npm run dev` (5173, proxy `/api` → 3001). `npm run lint && npm run build`.
+- Endpoint baru: `GET /api/followup/queue|areas`, `GET /api/followup/history/:kind/:key`, `POST /api/followup/schedule/:kind/:key`, `POST /api/followup/send/:kind/:key`, `GET|PUT|POST /api/whatsapp-templates/*`, `POST /api/customers/:id/followups/whatsapp`, `POST /api/showroom/document-followups/:type/:engineNumber/whatsapp`.
+- Halaman baru: `/follow-up`, `/template-wa`, `/kartu-cek-dokumen`.
+- User test (password `password`): `haris`/Admin, `guntur`/Kepala Cabang, `astri`/CRM, `danu`/Service Advisor, `imam`/Kepala Bengkel. (`itmaster` password BUKAN `password`.) Integration test: user `test_*` (password `password123`) di `tests/helpers.js`.
+- **Setiap integration test WAJIB `process.env.DATABASE_URL = 'file:./test.db'` sebelum import `helpers.js`** — kalau tidak, app menembak `dev.db` (data kerja asli).
+- Uji cepat antrean terhadap data asli: skrip sementara di `api/` yang meng-import `services/followupQueueService.js` dan memanggil `buildFollowupQueue({})` (harus di dalam `api/` supaya `node_modules` ter-resolve).
