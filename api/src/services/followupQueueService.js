@@ -1,6 +1,6 @@
 import { prisma } from '../config/db.js'
 import { KPB_LEVELS, addMonths } from '../controllers/customerController.js'
-import { normalizePhone } from './wablasService.js'
+import { normalizePhone } from '../utils/phone.js'
 import { hitungSkor, terlaluBaruDihubungi } from './followupPriority.js'
 
 // Antrean follow-up terpadu: KPB + STNK + BPKB dalam satu daftar berurut

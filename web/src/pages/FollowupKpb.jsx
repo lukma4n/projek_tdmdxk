@@ -47,16 +47,10 @@ function formatDays(days) {
   return `${days} hari lagi`
 }
 
-function normalizePhone(phone) {
-  const digits = String(phone || '').replace(/\D/g, '')
-  if (!digits) return ''
-  if (digits.startsWith('62')) return digits
-  if (digits.startsWith('0')) return `62${digits.slice(1)}`
-  return digits
-}
-
-// Template pesan kini disusun backend (api/src/services/followupMessages.js)
-// karena pengiriman dilakukan server lewat gateway WhatsApp.
+// Teks pesan disusun backend (api/src/services/followupMessages.js) dan ikut
+// dalam respons daftar sebagai `draft_message`/`wa_url`. Halaman ini tidak lagi
+// menyusun sendiri, supaya isinya selalu mengikuti template aktif yang bisa
+// diubah dari menu Template Pesan WA.
 
 function getFollowupStatus(item) {
   return item.followup?.status || 'belum_dihubungi'
@@ -130,28 +124,28 @@ export default function FollowupKpb() {
     }
   }
 
-  // Dikirim server via gateway WhatsApp. Isi pesan disusun backend, jadi tidak
-  // ada lagi tab wa.me yang harus ditekan kirim manual.
+  // Buka draf WhatsApp, staf yang menekan Kirim di WhatsApp Web.
+  //
+  // `window.open` dipanggil LANGSUNG di handler klik — teks pesannya sudah ikut
+  // dalam respons daftar. Kalau menunggu request dulu baru membuka tab, browser
+  // menganggapnya bukan hasil klik user dan memblokirnya sebagai popup.
   const openWhatsapp = async (item) => {
-    if (!item.id) return
-    const phone = normalizePhone(item.customer_mobile)
-    if (!phone) return
+    if (!item.id || !item.wa_url) return
+    if (!window.confirm(
+      `Buka draf WhatsApp pengingat ${item.kpb_label} untuk ${item.customer || 'konsumen ini'}?\n\n` +
+      'Pesan akan terbuka di WhatsApp Web — Anda yang menekan tombol Kirim di sana.',
+    )) return
 
-    // Dulu tombol ini hanya membuka draf wa.me — staf masih bisa membaca dan
-    // membatalkan sebelum menekan kirim. Sekarang pesannya langsung terkirim dan
-    // tidak bisa ditarik kembali, jadi salah klik harus punya satu pintu tolak.
-    if (!window.confirm(`Kirim WhatsApp pengingat ${item.kpb_label} ke ${item.customer || 'konsumen ini'} (${phone})?`)) return
+    window.open(item.wa_url, '_blank', 'noopener,noreferrer')
 
     const key = `${item.id}:${item.kpb_label}:sudah_dihubungi`
     setSavingKey(key)
-
     try {
-      const res = await api.sendCustomerFollowupWhatsapp(item.id, { kpb_level: item.kpb_label })
+      const res = await api.recordFollowupContact('KPB', item.id, { kpb_level: item.kpb_label })
       if (res.daily) setDaily(res.daily)
       await loadData()
-      alert(`${res.message || 'WhatsApp terkirim.'}\nSisa jatah hari ini: ${res.daily?.sisa ?? '-'} dari ${res.daily?.limit ?? '-'} konsumen.`)
     } catch (err) {
-      alert('Gagal mengirim WhatsApp: ' + err.message)
+      alert('Draf sudah dibuka, tapi gagal mencatat kontaknya: ' + err.message)
     } finally {
       setSavingKey('')
     }
@@ -306,7 +300,6 @@ export default function FollowupKpb() {
           <div className="divide-y divide-slate-100">
             {filtered.map((item) => {
               const currentStatus = getFollowupStatus(item)
-              const waUrl = normalizePhone(item.customer_mobile)
               return (
                 <div key={`${item.id}-${item.kpb_label}`} className="p-4 hover:bg-hover/60 transition-colors">
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -350,11 +343,12 @@ export default function FollowupKpb() {
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <button
                         onClick={() => openWhatsapp(item)}
-                        disabled={!waUrl || savingKey !== ''}
+                        disabled={!item.wa_url || savingKey !== '' || daily?.sisa === 0}
+                        title={daily?.sisa === 0 ? 'Jatah hubungi hari ini sudah habis' : 'Buka draf di WhatsApp Web — Anda yang menekan Kirim'}
                         className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-lg text-xs font-medium transition-colors"
                       >
                         {savingKey === `${item.id}:${item.kpb_label}:sudah_dihubungi` ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />}
-                        WhatsApp
+                        Buka WA
                       </button>
                       <button
                         onClick={() => saveStatus(item, 'booking', 'Ditandai booking dari halaman Follow-up KPB')}

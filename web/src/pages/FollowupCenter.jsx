@@ -106,22 +106,32 @@ export default function FollowupCenter() {
   // halaman yang tidak ada lagi setelah hasilnya menyusut.
   const gantiFilter = (setter) => (nilai) => { setter(nilai); setPage(1) }
 
+  // Buka draf WhatsApp, staf yang menekan Kirim.
+  //
+  // `window.open` dipanggil LANGSUNG di dalam handler klik — teks pesannya sudah
+  // ikut dalam respons antrean. Kalau menunggu request dulu baru membuka tab,
+  // browser menganggapnya bukan hasil klik user dan memblokirnya sebagai popup.
   const kirim = async (item) => {
     const kebutuhan = item.kebutuhan || [item.kind]
     const nama = item.customer_name || 'konsumen ini'
-    if (!window.confirm(`Kirim WhatsApp ${kebutuhan.join(' + ')} ke ${nama} (${item.phone})?`)) return
+    if (!item.wa_url) return
+    if (!window.confirm(
+      `Buka draf WhatsApp ${kebutuhan.join(' + ')} untuk ${nama} (${item.phone})?\n\n` +
+      'Pesan akan terbuka di WhatsApp Web — Anda yang menekan tombol Kirim di sana.',
+    )) return
+
+    window.open(item.wa_url, '_blank', 'noopener,noreferrer')
 
     setBusyKey(`${item.kind}:${item.key}`)
     try {
-      const res = await api.sendFollowupWhatsapp(item.kind, item.key, {
+      const res = await api.recordFollowupContact(item.kind, item.key, {
         kebutuhan,
         kpb_level: item.kpb_label,
       })
       if (res.daily) setDaily(res.daily)
       await loadData()
-      alert(`${res.message}\nSisa jatah hari ini: ${res.daily?.sisa ?? '-'} dari ${res.daily?.limit ?? '-'} konsumen.`)
     } catch (err) {
-      alert('Gagal mengirim WhatsApp: ' + err.message)
+      alert('Draf sudah dibuka, tapi gagal mencatat kontaknya: ' + err.message)
     } finally {
       setBusyKey('')
     }
@@ -198,8 +208,9 @@ export default function FollowupCenter() {
         <div className="flex items-start gap-2 p-3 rounded-lg border border-warning-200 bg-warning-50 text-warning-600 text-sm">
           <AlertTriangle size={16} className="mt-0.5 shrink-0" />
           <span>
-            Jatah kirim hari ini sudah habis ({daily.limit} konsumen). Antrean tetap bisa ditelusuri dan dijadwalkan,
-            tapi pengiriman dilanjutkan besok. Batas ini menjaga nomor WhatsApp dealer tetap aman.
+            Jatah hubungi hari ini sudah habis ({daily.limit} konsumen). Antrean tetap bisa ditelusuri dan dijadwalkan,
+            tapi lanjutkan menghubungi besok. Batas ini menjaga nomor WhatsApp dealer tetap aman — mengirim
+            berpuluh pesan beruntun tetap terbaca blast walau ditekan manual.
           </span>
         </div>
       )}
@@ -338,11 +349,11 @@ export default function FollowupCenter() {
                       </button>
                       <button
                         onClick={() => kirim(item)}
-                        disabled={sibuk || !item.phone || daily?.sisa === 0}
-                        title={daily?.sisa === 0 ? 'Jatah kirim hari ini sudah habis' : undefined}
+                        disabled={sibuk || !item.wa_url || daily?.sisa === 0}
+                        title={daily?.sisa === 0 ? 'Jatah hubungi hari ini sudah habis' : 'Buka draf di WhatsApp Web — Anda yang menekan Kirim'}
                         className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-lg text-xs font-medium"
                       >
-                        {sibuk ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />} Kirim WA
+                        {sibuk ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />} Buka WA
                       </button>
                     </div>
                   </div>

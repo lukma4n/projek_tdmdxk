@@ -115,6 +115,19 @@ export async function getTemplateHistory(key) {
 
 // ── Perender yang dipakai jalur pengiriman ────────────────────────────────
 
+/**
+ * Perender untuk banyak baris sekaligus: template dimuat SEKALI lalu dipakai
+ * berulang. Tanpa ini, menyiapkan draf 50 baris antrean berarti 50 query
+ * template — padahal isinya sama semua.
+ */
+export async function muatPerenderMassal() {
+  const isi = Object.fromEntries((await getAllTemplates()).map((t) => [t.key, t.content]))
+  return {
+    kpb: (data) => renderTemplate(isi.KPB, kpbValues(data)),
+    dokumen: (kebutuhan, item) => renderTemplate(isi[documentTemplateKey(kebutuhan)], dokumenValues(item)),
+  }
+}
+
 export async function renderKpbMessage(data) {
   return renderTemplate(await getTemplateContent('KPB'), kpbValues(data))
 }

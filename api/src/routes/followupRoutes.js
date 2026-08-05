@@ -5,7 +5,7 @@ import {
   getFollowupAreas,
   scheduleFollowup,
   getFollowupHistory,
-  sendFollowupWhatsapp,
+  recordFollowupContact,
 } from '../controllers/followupController.js'
 
 const router = Router()
@@ -20,6 +20,8 @@ router.get('/queue', authenticate, followupCenterAccess, getFollowupQueue)
 router.get('/areas', authenticate, followupCenterAccess, getFollowupAreas)
 router.get('/history/:kind/:key', authenticate, followupCenterAccess, getFollowupHistory)
 router.post('/schedule/:kind/:key', authenticate, followupCenterAccess, scheduleFollowup)
-router.post('/send/:kind/:key', authenticate, followupCenterAccess, sendFollowupWhatsapp)
+// Bukan pengiriman: pesan dikirim manual oleh staf lewat WhatsApp Web, endpoint
+// ini hanya mencatat kontaknya dan memotong jatah harian.
+router.post('/contact/:kind/:key', authenticate, followupCenterAccess, recordFollowupContact)
 
 export default router

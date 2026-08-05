@@ -5,9 +5,10 @@ process.env.DATABASE_URL = 'file:./test.db'
 import { prismaTest, seedKnownUsers, loginAs, callAuthenticated } from './helpers.js'
 import { batasHariIni, getDailyLimit, DEFAULT_DAILY_LIMIT } from '../src/services/whatsappLimitService.js'
 
-// Batas 30 konsumen/hari melindungi nomor WhatsApp dealer: WhatsApp membatasi
-// nomor gateway pada 2026-08-04 karena terdeteksi "pengiriman pesan otomatis
-// atau massal". Batas berlaku GLOBAL lintas KPB/STNK/BPKB, bukan per modul.
+// Batas 30 konsumen/hari melindungi nomor WhatsApp dealer: nomor dealer
+// dibatasi WhatsApp pada 2026-08-04 karena terdeteksi "pengiriman pesan otomatis
+// atau massal". Batas berlaku GLOBAL lintas KPB/STNK/BPKB, bukan per modul, dan
+// TETAP berlaku di mode manual — 60 draf yang dikirim beruntun tetap blast.
 const PREFIX = 'WALIMIT-'
 let kabengCookie
 let userId
@@ -90,11 +91,11 @@ test('batas hari mengikuti tengah malam waktu setempat, bukan UTC', () => {
   assert.equal(batasHariIni(dinihari).mulai.getDate(), 4)
 })
 
-test('menolak kirim setelah 30 pesan hari ini', async () => {
+test('menolak hubungi setelah 30 konsumen hari ini', async () => {
   await isiLog(30)
-  const res = await callAuthenticated('post', `/api/customers/${customerId}/followups/whatsapp`, kabengCookie, { kpb_level: 'KPB1' })
+  const res = await callAuthenticated('post', `/api/followup/contact/KPB/${customerId}`, kabengCookie, { kpb_level: 'KPB1' })
   assert.equal(res.status, 429)
-  assert.match(res.body.error, /Batas kirim WhatsApp hari ini sudah tercapai \(30\/30/)
+  assert.match(res.body.error, /Batas hubungi WhatsApp hari ini sudah tercapai \(30\/30/)
 })
 
 test('pengiriman kemarin tidak memakan jatah hari ini', async () => {
@@ -121,7 +122,7 @@ test('jatah dihitung global lintas modul, bukan per modul', async () => {
   assert.equal(res.body.daily.terpakai, 30)
   assert.equal(res.body.daily.sisa, 0)
 
-  const kirim = await callAuthenticated('post', `/api/customers/${customerId}/followups/whatsapp`, kabengCookie, { kpb_level: 'KPB1' })
+  const kirim = await callAuthenticated('post', `/api/followup/contact/KPB/${customerId}`, kabengCookie, { kpb_level: 'KPB1' })
   assert.equal(kirim.status, 429)
 })
 
@@ -135,7 +136,7 @@ test('sisa jatah ikut di respons daftar alert', async () => {
 test('batas tercapai tidak meninggalkan catatan follow-up palsu', async () => {
   await isiLog(30)
   const sebelum = await prismaTest.kpb_followups.count({ where: { customer_id: customerId } })
-  await callAuthenticated('post', `/api/customers/${customerId}/followups/whatsapp`, kabengCookie, { kpb_level: 'KPB1' })
+  await callAuthenticated('post', `/api/followup/contact/KPB/${customerId}`, kabengCookie, { kpb_level: 'KPB1' })
   const sesudah = await prismaTest.kpb_followups.count({ where: { customer_id: customerId } })
   assert.equal(sebelum, sesudah)
 })

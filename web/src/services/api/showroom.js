@@ -88,8 +88,6 @@ export const getShowroomDocumentFollowups = (type, params = {}) => {
   return fetchWithAuth(`/showroom/document-followups/${type}${query ? '?' + query : ''}`)
 }
 export const createShowroomDocumentFollowup = (type, engineNumber, data) => fetchWithAuth(`/showroom/document-followups/${type}/${encodeURIComponent(engineNumber)}`, { method: 'POST', body: data })
-// Kirim pemberitahuan dokumen via gateway WhatsApp; pesan disusun server.
-export const sendShowroomDocumentFollowupWhatsapp = (type, engineNumber) => fetchWithAuth(`/showroom/document-followups/${type}/${encodeURIComponent(engineNumber)}/whatsapp`, { method: 'POST', body: {} })
 export const updateStnkBpkbTrackMobile = (engineNumber, mobile) => fetchWithAuth(`/showroom/stnk-bpkb-tracks/${encodeURIComponent(engineNumber)}/mobile`, { method: 'PATCH', body: { mobile } })
 
 // OTR Prices

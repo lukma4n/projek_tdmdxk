@@ -1,13 +1,36 @@
 import { prisma } from '../config/db.js'
 import { clampLimit } from '../utils/pagination.js'
 import { buildFollowupQueue } from '../services/followupQueueService.js'
-import { getDailyUsage, pastikanJatahHarianCukup, catatPengiriman } from '../services/whatsappLimitService.js'
-import { sendWhatsappText, WablasError } from '../services/wablasService.js'
-import { renderKpbMessage, renderDocumentMessage } from '../services/templateService.js'
+import { getDailyUsage, pastikanJatahHarianCukup, catatPengiriman, BatasHarianError } from '../services/whatsappLimitService.js'
+import { muatPerenderMassal } from '../services/templateService.js'
 import { documentTemplateKey } from '../services/followupMessages.js'
-import { KPB_LEVELS, addMonths } from './customerController.js'
+import { waMeUrl, normalizePhone } from '../utils/phone.js'
+import { KPB_LEVELS } from './customerController.js'
 
 const JENIS_VALID = ['KPB', 'STNK', 'BPKB']
+
+/**
+ * Lampirkan teks pesan + tautan wa.me ke tiap baris.
+ *
+ * Pesan disusun di server (bukan di browser) supaya isinya tetap mengikuti
+ * template aktif yang bisa diubah dari UI, dan tidak bisa dikarang sembarangan
+ * atas nama dealer lewat request langsung.
+ */
+async function lampirkanDraf(items) {
+  if (items.length === 0) return items
+  const render = await muatPerenderMassal()
+
+  return items.map((item) => {
+    const pesan = item.kind === 'KPB'
+      ? render.kpb({
+          customerName: item.customer_name, model: item.model,
+          kpbLabel: item.kpb_label, dueDate: item.due_date, daysRemaining: item.days_remaining,
+        })
+      : render.dokumen(item.kebutuhan || [item.kind], { engineNumber: item.engine_number })
+
+    return { ...item, draft_message: pesan, wa_url: waMeUrl(item.phone, pesan) }
+  })
+}
 
 /**
  * Antrean follow-up terpadu, berurut prioritas.
@@ -27,9 +50,13 @@ export async function getFollowupQueue(req, res, next) {
       includeInvalidPhone: include_invalid_phone === 'true',
     })
 
+    // Draf hanya disiapkan untuk baris yang benar-benar tampil. Merendernya
+    // untuk seluruh 2.300 target berarti ~2 MB teks yang 98%-nya tak terpakai.
     const skip = (pageInt - 1) * limitInt
+    const halaman = await lampirkanDraf(data.slice(skip, skip + limitInt))
+
     res.json({
-      data: data.slice(skip, skip + limitInt),
+      data: halaman,
       ringkasan,
       tersaring,
       daily: await getDailyUsage(),
@@ -136,11 +163,18 @@ export async function scheduleFollowup(req, res, next) {
 }
 
 /**
- * Kirim WhatsApp dari antrean terpadu — satu pintu untuk KPB, STNK, BPKB, dan
- * kombinasi STNK+BPKB. Layar antrean tidak perlu tahu endpoint mana yang harus
- * dipanggil untuk jenis apa.
+ * Catat satu konsumen sebagai sudah dihubungi via WhatsApp.
+ *
+ * Pengirimannya sendiri MANUAL: browser membuka wa.me, staf menekan Kirim di
+ * WhatsApp Web miliknya. Endpoint ini tidak mengirim apa pun — ia hanya
+ * memotong jatah harian dan mencatat kontaknya, supaya jeda 7 hari, riwayat,
+ * dan urutan antrean tetap jalan.
+ *
+ * Dipanggil SETELAH draf dibuka. Kalau staf batal menekan Kirim, konsumen tetap
+ * tercatat terhubungi — disengaja: menghitung lebih lebih aman daripada
+ * mengirimi orang yang sama dua kali.
  */
-export async function sendFollowupWhatsapp(req, res, next) {
+export async function recordFollowupContact(req, res, next) {
   try {
     const kind = String(req.params.kind || '').toUpperCase()
     if (!JENIS_VALID.includes(kind)) return res.status(400).json({ error: 'Jenis follow-up tidak valid' })
@@ -154,35 +188,19 @@ export async function sendFollowupWhatsapp(req, res, next) {
       if (!customer) return res.status(404).json({ error: 'Konsumen tidak ditemukan' })
 
       const level = KPB_LEVELS.find((l) => l.label === req.body.kpb_level) || KPB_LEVELS[0]
-      const dueDate = customer.so_date ? addMonths(customer.so_date, level.months) : null
-      const daysRemaining = dueDate ? Math.ceil((dueDate - new Date()) / 86400000) : null
+      const phone = normalizePhone(customer.customer_mobile)
+      if (!phone) return res.status(422).json({ error: 'Nomor HP konsumen tidak valid atau kosong.' })
 
-      const hasil = await sendWhatsappText({
-        phone: customer.customer_mobile,
-        message: await renderKpbMessage({
-          customerName: customer.customer_name, model: customer.model,
-          kpbLabel: level.label, dueDate, daysRemaining,
-        }),
-        refId: `kpb-${customerId}-${level.label}`,
-      })
-
-      await catatPengiriman({
-        module: 'KPB', targetKey: customerId, phone: hasil.phone,
-        messageId: hasil.messageId, quotaLeft: hasil.quota, sentBy: req.user.userId,
-      })
-      await prisma.kpb_followups.create({
+      await catatPengiriman({ module: 'KPB', targetKey: customerId, phone, sentBy: req.user.userId })
+      const data = await prisma.kpb_followups.create({
         data: {
           customer_id: customerId, kpb_level: level.label, status: 'sudah_dihubungi',
-          note: `Pengingat ${level.label} dikirim via WhatsApp ke ${hasil.phone}`,
+          note: `Pengingat ${level.label} dikirim manual via WhatsApp ke ${phone}`,
           created_by: req.user.userId,
         },
       })
 
-      return res.status(201).json({
-        message: `WhatsApp terkirim ke ${hasil.phone}`,
-        whatsapp: hasil,
-        daily: await getDailyUsage(),
-      })
+      return res.status(201).json({ message: `Dicatat: ${phone} dihubungi`, data, daily: await getDailyUsage() })
     }
 
     // Dokumen — bisa satu jenis atau gabungan STNK+BPKB dalam satu pesan.
@@ -194,26 +212,22 @@ export async function sendFollowupWhatsapp(req, res, next) {
     const kebutuhan = [...new Set(diminta.map((k) => String(k).toUpperCase()))].filter((k) => k === 'STNK' || k === 'BPKB')
     if (kebutuhan.length === 0) return res.status(400).json({ error: 'Kebutuhan dokumen tidak valid' })
 
-    const hasil = await sendWhatsappText({
-      phone: track.mobile,
-      message: await renderDocumentMessage(kebutuhan, { engineNumber }),
-      refId: `${kebutuhan.join('-').toLowerCase()}-${engineNumber}`,
-    })
+    const phone = normalizePhone(track.mobile)
+    if (!phone) return res.status(422).json({ error: 'Nomor HP konsumen tidak valid atau kosong.' })
 
     // Satu pesan = satu baris log = satu jatah. Nilai module dibakukan lewat
     // documentTemplateKey ('STNK' | 'BPKB' | 'STNK_BPKB') — bukan digabung dari
     // urutan `kebutuhan` yang datang dari request, karena urutannya bisa terbalik
-    // dan menghasilkan dua nilai berbeda untuk pengiriman yang sama.
+    // dan menghasilkan dua nilai berbeda untuk kontak yang sama.
     await catatPengiriman({
-      module: documentTemplateKey(kebutuhan), targetKey: engineNumber, phone: hasil.phone,
-      messageId: hasil.messageId, quotaLeft: hasil.quota, sentBy: req.user.userId,
+      module: documentTemplateKey(kebutuhan), targetKey: engineNumber, phone, sentBy: req.user.userId,
     })
 
     // Satu pesan, tapi tiap dokumen dicatat sendiri supaya daftar per jenis dan
     // riwayat per dokumen tetap akurat.
     const catatan = kebutuhan.length > 1
-      ? `Pemberitahuan ${kebutuhan.join(' + ')} dikirim dalam satu WhatsApp ke ${hasil.phone}`
-      : `Pemberitahuan ${kebutuhan[0]} dikirim via WhatsApp ke ${hasil.phone}`
+      ? `Pemberitahuan ${kebutuhan.join(' + ')} dikirim manual dalam satu WhatsApp ke ${phone}`
+      : `Pemberitahuan ${kebutuhan[0]} dikirim manual via WhatsApp ke ${phone}`
     for (const jenis of kebutuhan) {
       await prisma.showroom_document_followups.create({
         data: {
@@ -224,13 +238,12 @@ export async function sendFollowupWhatsapp(req, res, next) {
     }
 
     res.status(201).json({
-      message: `WhatsApp terkirim ke ${hasil.phone}`,
+      message: `Dicatat: ${phone} dihubungi`,
       kebutuhan,
-      whatsapp: hasil,
       daily: await getDailyUsage(),
     })
   } catch (error) {
-    if (error instanceof WablasError) {
+    if (error instanceof BatasHarianError) {
       return res.status(error.status).json({ error: error.message })
     }
     next(error)

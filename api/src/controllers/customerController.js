@@ -12,9 +12,9 @@ import { createAuditLog } from '../services/auditService.js'
 import { withImportLock } from '../services/importLockService.js'
 import { bulkUpsert } from '../services/bulkUpsertService.js'
 import { excelDateToJSDate, formatForExcel } from '../utils/excelUtils.js'
-import { sendWhatsappText, WablasError } from '../services/wablasService.js'
-import { renderKpbMessage } from '../services/templateService.js'
-import { pastikanJatahHarianCukup, catatPengiriman, getDailyUsage } from '../services/whatsappLimitService.js'
+import { muatPerenderMassal } from '../services/templateService.js'
+import { getDailyUsage } from '../services/whatsappLimitService.js'
+import { waMeUrl } from '../utils/phone.js'
 
 // ─── KPB Configuration ────────────────────────────────────────────────────
 export const KPB_LEVELS = [
@@ -495,8 +495,20 @@ export async function getCustomerAlerts(req, res, next) {
   try {
     const { days = 7 } = req.query
     const { data, summary } = await buildKpbFollowupAlerts(days)
+    // Draf disiapkan di server supaya isinya mengikuti template aktif yang bisa
+    // diubah dari UI — halaman tidak lagi menyusun teksnya sendiri.
+    const halaman = data.slice(0, 100)
+    const render = await muatPerenderMassal()
+    const denganDraf = halaman.map((a) => {
+      const pesan = render.kpb({
+        customerName: a.customer, model: a.model, kpbLabel: a.kpb_label,
+        dueDate: a.kpb_due_date, daysRemaining: a.days_remaining,
+      })
+      return { ...a, draft_message: pesan, wa_url: waMeUrl(a.customer_mobile, pesan) }
+    })
+
     res.json({
-      data: data.slice(0, 100),
+      data: denganDraf,
       summary,
       daily: await getDailyUsage(),
     })
@@ -591,75 +603,6 @@ export async function getCustomerFollowups(req, res, next) {
 
     res.json({ data })
   } catch (error) {
-    next(error)
-  }
-}
-
-// Kirim pengingat KPB via WhatsApp gateway, lalu catat follow-up-nya.
-// Pesan disusun di server (bukan dikirim client) supaya isinya tidak bisa
-// diubah sembarangan atas nama dealer.
-export async function sendCustomerFollowupWhatsapp(req, res, next) {
-  try {
-    const customerId = parseInt(req.params.id)
-    const { kpb_level } = req.body
-    const level = KPB_LEVELS.find((l) => l.label === kpb_level)
-    if (!level) return res.status(400).json({ error: 'Level KPB tidak valid' })
-
-    const customer = await prisma.customers.findUnique({ where: { id: customerId } })
-    if (!customer) return res.status(404).json({ error: 'Konsumen tidak ditemukan' })
-
-    const dueDate = getKpbDueDate(customer.so_date, level.months)
-    const daysRemaining = dueDate
-      ? Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24))
-      : null
-
-    const message = await renderKpbMessage({
-      customerName: customer.customer_name,
-      model: customer.model,
-      kpbLabel: level.label,
-      dueDate,
-      daysRemaining,
-    })
-
-    // Dicek sebelum kirim supaya jatah gateway tidak terpakai saat batas tercapai.
-    await pastikanJatahHarianCukup()
-
-    const hasil = await sendWhatsappText({
-      phone: customer.customer_mobile,
-      message,
-      refId: `kpb-${customerId}-${level.label}`,
-    })
-
-    await catatPengiriman({
-      module: 'KPB',
-      targetKey: customerId,
-      phone: hasil.phone,
-      messageId: hasil.messageId,
-      quotaLeft: hasil.quota,
-      sentBy: req.user.userId,
-    })
-
-    const data = await prisma.kpb_followups.create({
-      data: {
-        customer_id: customerId,
-        kpb_level: level.label,
-        status: 'sudah_dihubungi',
-        note: `Pengingat ${level.label} dikirim via WhatsApp ke ${hasil.phone}`,
-        created_by: req.user.userId,
-      },
-      include: { creator: { select: { id: true, username: true, name: true, role: true } } },
-    })
-
-    res.status(201).json({
-      message: `WhatsApp terkirim ke ${hasil.phone}`,
-      data,
-      whatsapp: hasil,
-      daily: await getDailyUsage(),
-    })
-  } catch (error) {
-    if (error instanceof WablasError) {
-      return res.status(error.status).json({ error: error.message })
-    }
     next(error)
   }
 }

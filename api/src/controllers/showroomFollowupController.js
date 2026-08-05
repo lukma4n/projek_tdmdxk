@@ -6,9 +6,9 @@ import { clampLimit } from '../utils/pagination.js'
 import { prisma } from '../config/db.js'
 import { DOCUMENT_FOLLOWUP_STATUSES, applyCustomerTypeFilter, getCustomerType, getFinanceCompanyShort } from './showroomUtils.js'
 import { formatForExcel } from '../utils/excelUtils.js'
-import { sendWhatsappText, WablasError } from '../services/wablasService.js'
-import { renderDocumentMessage } from '../services/templateService.js'
-import { pastikanJatahHarianCukup, catatPengiriman, getDailyUsage } from '../services/whatsappLimitService.js'
+import { muatPerenderMassal } from '../services/templateService.js'
+import { getDailyUsage } from '../services/whatsappLimitService.js'
+import { waMeUrl } from '../utils/phone.js'
 
 function documentFollowupStatusLabel(status) {
   const labels = {
@@ -200,72 +200,22 @@ export async function getDocumentFollowups(req, res, next) {
     const skip = (pageInt - 1) * limitInt
     const paginated = data.slice(skip, skip + limitInt)
 
+    // Draf disiapkan di server supaya isinya mengikuti template aktif yang bisa
+    // diubah dari UI — halaman tidak lagi menyusun teksnya sendiri.
+    const render = await muatPerenderMassal()
+    const denganDraf = paginated.map((item) => {
+      const pesan = render.dokumen([documentType], { engineNumber: item.engine_number })
+      return { ...item, draft_message: pesan, wa_url: waMeUrl(item.mobile || item.customer_phone, pesan) }
+    })
+
     res.json({
-      data: paginated,
+      data: denganDraf,
       summary: summarizeDocumentFollowups(data, byAging),
       agingBuckets: AGING_BUCKETS.map(({ value, label }) => ({ value, label })),
       pagination: { page: pageInt, limit: limitInt, total: data.length, totalPages: Math.ceil(data.length / limitInt) },
       daily: await getDailyUsage(),
     })
   } catch (error) {
-    next(error)
-  }
-}
-
-// Kirim pemberitahuan dokumen siap diambil via WhatsApp gateway, lalu catat
-// follow-up-nya. Pesan disusun di server, sama seperti follow-up KPB.
-export async function sendDocumentFollowupWhatsapp(req, res, next) {
-  try {
-    const documentType = String(req.params.type || '').toUpperCase()
-    if (!['STNK', 'BPKB'].includes(documentType)) return res.status(400).json({ error: 'Tipe dokumen tidak valid' })
-
-    const engineNumber = String(req.params.engineNumber || '').trim()
-    if (!engineNumber) return res.status(400).json({ error: 'Nomor mesin wajib diisi' })
-
-    const track = await prisma.showroom_stnk_bpkb_tracks.findUnique({ where: { engine_number: engineNumber } })
-    if (!track) return res.status(404).json({ error: 'Dokumen tidak ditemukan' })
-
-    const message = await renderDocumentMessage([documentType], { engineNumber })
-
-    // Dicek sebelum kirim supaya jatah gateway tidak terpakai saat batas tercapai.
-    await pastikanJatahHarianCukup()
-
-    const hasil = await sendWhatsappText({
-      phone: track.mobile,
-      message,
-      refId: `${documentType.toLowerCase()}-${engineNumber}`,
-    })
-
-    await catatPengiriman({
-      module: documentType,
-      targetKey: engineNumber,
-      phone: hasil.phone,
-      messageId: hasil.messageId,
-      quotaLeft: hasil.quota,
-      sentBy: req.user.userId,
-    })
-
-    const followup = await prisma.showroom_document_followups.create({
-      data: {
-        document_type: documentType,
-        engine_number: engineNumber,
-        status: 'sudah_dihubungi',
-        note: `Pemberitahuan ${documentType} dikirim via WhatsApp ke ${hasil.phone}`,
-        created_by: req.user.userId,
-      },
-      include: { creator: { select: { id: true, username: true, name: true, role: true } } },
-    })
-
-    res.status(201).json({
-      message: `WhatsApp terkirim ke ${hasil.phone}`,
-      data: followup,
-      whatsapp: hasil,
-      daily: await getDailyUsage(),
-    })
-  } catch (error) {
-    if (error instanceof WablasError) {
-      return res.status(error.status).json({ error: error.message })
-    }
     next(error)
   }
 }

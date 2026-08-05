@@ -24,16 +24,10 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function normalizePhone(phone) {
-  const digits = String(phone || '').replace(/\D/g, '')
-  if (!digits) return ''
-  if (digits.startsWith('62')) return digits
-  if (digits.startsWith('0')) return `62${digits.slice(1)}`
-  return digits
-}
-
-// Template pesan kini disusun backend (api/src/services/followupMessages.js)
-// karena pengiriman dilakukan server lewat gateway WhatsApp.
+// Teks pesan disusun backend (api/src/services/followupMessages.js) dan ikut
+// dalam respons daftar sebagai `draft_message`/`wa_url`. Halaman ini tidak lagi
+// menyusun sendiri, supaya isinya selalu mengikuti template aktif yang bisa
+// diubah dari menu Template Pesan WA.
 
 
 function getStatus(item) {
@@ -117,26 +111,29 @@ export default function ShowroomDocumentFollowup({ type }) {
     }
   }
 
-  // Dikirim server via gateway WhatsApp; isi pesan disusun backend.
+  // Buka draf WhatsApp, staf yang menekan Kirim di WhatsApp Web.
+  //
+  // `window.open` dipanggil LANGSUNG di handler klik — teks pesannya sudah ikut
+  // dalam respons daftar. Kalau menunggu request dulu baru membuka tab, browser
+  // menganggapnya bukan hasil klik user dan memblokirnya sebagai popup.
   const openWhatsapp = async (item) => {
-    const phone = normalizePhone(item.mobile || item.customer_phone)
-    if (!phone) return
-
-    // Dulu tombol ini hanya membuka draf wa.me — staf masih bisa membaca dan
-    // membatalkan sebelum menekan kirim. Sekarang pesannya langsung terkirim dan
-    // tidak bisa ditarik kembali, jadi salah klik harus punya satu pintu tolak.
+    if (!item.wa_url) return
     const nama = item.stnk_name || item.applicant_name || 'konsumen ini'
-    if (!window.confirm(`Kirim WhatsApp pemberitahuan ${isStnk ? 'STNK' : 'BPKB'} ke ${nama} (${phone})?`)) return
+    if (!window.confirm(
+      `Buka draf WhatsApp pemberitahuan ${isStnk ? 'STNK' : 'BPKB'} untuk ${nama}?\n\n` +
+      'Pesan akan terbuka di WhatsApp Web — Anda yang menekan tombol Kirim di sana.',
+    )) return
+
+    window.open(item.wa_url, '_blank', 'noopener,noreferrer')
 
     const key = `${item.engine_number}:sudah_dihubungi`
     setSavingKey(key)
     try {
-      const res = await api.sendShowroomDocumentFollowupWhatsapp(type, item.engine_number)
+      const res = await api.recordFollowupContact(isStnk ? 'STNK' : 'BPKB', item.engine_number)
       if (res.daily) setDaily(res.daily)
       await loadData()
-      alert(`${res.message || 'WhatsApp terkirim.'}\nSisa jatah hari ini: ${res.daily?.sisa ?? '-'} dari ${res.daily?.limit ?? '-'} konsumen.`)
     } catch (err) {
-      alert(`Gagal mengirim WhatsApp ${isStnk ? 'STNK' : 'BPKB'}: ` + err.message)
+      alert('Draf sudah dibuka, tapi gagal mencatat kontaknya: ' + err.message)
     } finally {
       setSavingKey('')
     }
@@ -291,7 +288,6 @@ export default function ShowroomDocumentFollowup({ type }) {
           <div className="divide-y divide-slate-100">
             {filteredItems.map((item) => {
               const currentStatus = getStatus(item)
-              const waUrl = normalizePhone(item.mobile || item.customer_phone)
               return (
                 <div key={item.engine_number} className="p-4 hover:bg-hover/60 transition-colors">
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -336,7 +332,7 @@ export default function ShowroomDocumentFollowup({ type }) {
                       {item.followup?.note && <p className="text-xs text-muted">Catatan terakhir: {item.followup.note}</p>}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      <button onClick={() => openWhatsapp(item)} disabled={!waUrl || savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-lg text-xs font-medium transition-colors">{savingKey === `${item.engine_number}:sudah_dihubungi` ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />} WhatsApp</button>
+                      <button onClick={() => openWhatsapp(item)} disabled={!item.wa_url || savingKey !== '' || daily?.sisa === 0} title={daily?.sisa === 0 ? 'Jatah hubungi hari ini sudah habis' : 'Buka draf di WhatsApp Web — Anda yang menekan Kirim'} className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white rounded-lg text-xs font-medium transition-colors">{savingKey === `${item.engine_number}:sudah_dihubungi` ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />} Buka WA</button>
                       <button onClick={() => saveStatus(item, 'diambil', `Ditandai diambil dari halaman ${title}`)} disabled={savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-success-50 border border-success-200 text-success-700 rounded-lg text-xs font-medium hover:bg-success-100 disabled:opacity-50">Diambil</button>
                       <button onClick={() => saveStatus(item, 'pending', `Ditandai pending dari halaman ${title}`)} disabled={savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-warning-50 border border-warning-200 text-warning-700 rounded-lg text-xs font-medium hover:bg-warning-100 disabled:opacity-50">Pending</button>
                       <button onClick={() => saveStatus(item, 'batal', `Ditandai batal dari halaman ${title}`)} disabled={savingKey !== ''} className="inline-flex items-center gap-1.5 px-3 py-2 bg-danger-50 border border-danger-200 text-danger-700 rounded-lg text-xs font-medium hover:bg-danger-100 disabled:opacity-50"><XCircle size={14} /> Batal</button>
