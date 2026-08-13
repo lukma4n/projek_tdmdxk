@@ -6,6 +6,17 @@
 // produksi; hanya kalimat pembuka dokumen yang diubah agar menyebut nama, tipe
 // motor, dan nomor polisi. Dikunci oleh tests/followupMessages.test.js.
 //
+// TIDAK ADA URL DI TEMPLATE MANA PUN — jangan tambahkan. Nomor dealer diblokir
+// berulang kali dengan alasan tautan spam meski pengiriman sudah manual. Tautan
+// self-check dulu terpasang di 3 template dokumen dalam bentuk
+// `tdmketapang.net/cek?engine_number=<beda tiap orang>`: domain di luar daftar
+// putih WhatsApp, query berubah tiap penerima, dikirim ke nomor yang belum
+// pernah membalas — pola yang dinilai sebagai blast phishing. Fungsinya tidak
+// hilang: Kartu Cek Dokumen cetak (generik, ber-QR) menjalankan peran yang sama
+// tanpa lewat WhatsApp. `{link_cek}` sengaja tetap tersedia sebagai variabel
+// supaya bisa dipasang lagi lewat UI kalau situasinya berubah, tapi jangan
+// dijadikan bawaan lagi.
+//
 // Pesan disusun di server (bukan dikirim client) supaya isinya tidak bisa
 // diubah sembarangan atas nama dealer lewat request langsung.
 
@@ -32,9 +43,9 @@ export const MAX_PANJANG_PESAN = 1024
 
 export const DEFAULT_TEMPLATES = {
   KPB: 'Salam Satu Hati Pelanggan Setia Honda\n\nKami Mau menginformasikan Bahwa motor Honda Bapak/Ibu {nama} dengan tipe {tipe_motor} sudah waktunya melakukan {kpb} di AHASS Honda TDM Motor.\nDiharapkan untuk segera melakukan service agar kondisi motor tetap prima dan garansi service tetap terjaga.\n\nALAMAT : JL Ahmad Yani no 133,kel Mulia Baru, Delta Pawan\n\nDENGAN PERSYARATAN :\n# Membawa buku service/KPB\n# Membawa STNK kendaraan\n# Membawa motor yang akan diservice\n\nTenggat: {tenggat} ({sisa_hari}).\n\nJam buka\nSenin-Jumat : 09.00-16.00\nSabtu                : 09.00-14.00\nIstirahat          : 12.00-13.30\n\nTerimakasih',
-  STNK: 'Salam Satu Hati Pelanggan Setia Honda\n\nBapak/Ibu {nama}, kami menginformasikan bahwa STNK motor Honda {tipe_motor} dengan nomor polisi {no_polisi} SUDAH JADI.\nDiharapkan untuk segera mengambil STNK di Dealer Honda TDM Motor.\nALAMAT : JL Ahmad Yani no 133,kel Mulia Baru, Delta Pawan\n\nDENGAN PERSYARATAN :\n# Jika yang mengambil konsumen sendiri (konsumen an. Stnk)\nkonsumen wajib membawa STNK Sementara dan KTP asli\n\nJam buka\nSenin-Jumat   : 09.00-16.00\nSabtu               : 09.00-14.00\nIstirahat          : 12.00-13.30\n\nCek status dokumen Anda kapan saja:\n{link_cek}\n\nTerimakasih',
-  BPKB: 'Salam Satu Hati Pelanggan Setia Honda\n\nBapak/Ibu {nama}, kami menginformasikan bahwa BPKB motor Honda {tipe_motor} dengan nomor polisi {no_polisi} SUDAH JADI.\nDiharapkan untuk segera mengambil BPKB di Dealer Honda TDM Motor.\nALAMAT : JL Ahmad Yani no 133,kel Mulia Baru, Delta Pawan\n\nDENGAN PERSYARATAN :\n# Jika yang mengambil konsumen sendiri (konsumen an. Stnk)\nkonsumen wajib membawa STNK dan KTP asli\n\n# Jika Pengambilan BPKB diwakili\nkonsumen wajib : membawa surat kuasa dr pemilik kendaraan yg bertanda tangan diatas materai 10.000\ndan ktp Asli pembeli dan yg mewakili 1 lembar STNK dan KTP Asli\n\nJam buka\nSenin-Jumat : 09.00-16.00\nSabtu                : 09.00-14.00\nIstirahat          : 12.00-13.30\n\nCek status dokumen Anda kapan saja:\n{link_cek}\n\nTerimakasih',
-  STNK_BPKB: 'Salam Satu Hati Pelanggan Setia Honda\n\nBapak/Ibu {nama}, kami menginformasikan bahwa STNK dan BPKB motor Honda {tipe_motor} dengan nomor polisi {no_polisi} SUDAH JADI.\nKeduanya bisa diambil sekaligus di Dealer Honda TDM Motor.\nALAMAT : JL Ahmad Yani no 133,kel Mulia Baru, Delta Pawan\n\nDENGAN PERSYARATAN :\n# Jika yang mengambil konsumen sendiri (konsumen an. Stnk)\nkonsumen wajib membawa STNK Sementara dan KTP asli\n\n# Jika Pengambilan diwakili\nkonsumen wajib : membawa surat kuasa dr pemilik kendaraan yg bertanda tangan diatas materai 10.000\ndan ktp Asli pembeli dan yg mewakili 1 lembar STNK dan KTP Asli\n\nJam buka\nSenin-Jumat : 09.00-16.00\nSabtu                : 09.00-14.00\nIstirahat          : 12.00-13.30\n\nCek status dokumen Anda kapan saja:\n{link_cek}\n\nTerimakasih',
+  STNK: 'Salam Satu Hati Pelanggan Setia Honda\n\nBapak/Ibu {nama}, kami menginformasikan bahwa STNK motor Honda {tipe_motor} dengan nomor polisi {no_polisi} SUDAH JADI.\nDiharapkan untuk segera mengambil STNK di Dealer Honda TDM Motor.\nALAMAT : JL Ahmad Yani no 133,kel Mulia Baru, Delta Pawan\n\nDENGAN PERSYARATAN :\n# Jika yang mengambil konsumen sendiri (konsumen an. Stnk)\nkonsumen wajib membawa STNK Sementara dan KTP asli\n\nJam buka\nSenin-Jumat   : 09.00-16.00\nSabtu               : 09.00-14.00\nIstirahat          : 12.00-13.30\n\nTerimakasih',
+  BPKB: 'Salam Satu Hati Pelanggan Setia Honda\n\nBapak/Ibu {nama}, kami menginformasikan bahwa BPKB motor Honda {tipe_motor} dengan nomor polisi {no_polisi} SUDAH JADI.\nDiharapkan untuk segera mengambil BPKB di Dealer Honda TDM Motor.\nALAMAT : JL Ahmad Yani no 133,kel Mulia Baru, Delta Pawan\n\nDENGAN PERSYARATAN :\n# Jika yang mengambil konsumen sendiri (konsumen an. Stnk)\nkonsumen wajib membawa STNK dan KTP asli\n\n# Jika Pengambilan BPKB diwakili\nkonsumen wajib : membawa surat kuasa dr pemilik kendaraan yg bertanda tangan diatas materai 10.000\ndan ktp Asli pembeli dan yg mewakili 1 lembar STNK dan KTP Asli\n\nJam buka\nSenin-Jumat : 09.00-16.00\nSabtu                : 09.00-14.00\nIstirahat          : 12.00-13.30\n\nTerimakasih',
+  STNK_BPKB: 'Salam Satu Hati Pelanggan Setia Honda\n\nBapak/Ibu {nama}, kami menginformasikan bahwa STNK dan BPKB motor Honda {tipe_motor} dengan nomor polisi {no_polisi} SUDAH JADI.\nKeduanya bisa diambil sekaligus di Dealer Honda TDM Motor.\nALAMAT : JL Ahmad Yani no 133,kel Mulia Baru, Delta Pawan\n\nDENGAN PERSYARATAN :\n# Jika yang mengambil konsumen sendiri (konsumen an. Stnk)\nkonsumen wajib membawa STNK Sementara dan KTP asli\n\n# Jika Pengambilan diwakili\nkonsumen wajib : membawa surat kuasa dr pemilik kendaraan yg bertanda tangan diatas materai 10.000\ndan ktp Asli pembeli dan yg mewakili 1 lembar STNK dan KTP Asli\n\nJam buka\nSenin-Jumat : 09.00-16.00\nSabtu                : 09.00-14.00\nIstirahat          : 12.00-13.30\n\nTerimakasih',
 }
 
 function formatTanggal(value) {

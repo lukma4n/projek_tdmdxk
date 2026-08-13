@@ -1,7 +1,10 @@
 import test, { before, after } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { buildKpbMessage, buildStnkMessage, buildBpkbMessage, buildDocumentMessage } from '../src/services/followupMessages.js'
+import {
+  buildKpbMessage, buildStnkMessage, buildBpkbMessage, buildDocumentMessage,
+  buildStnkBpkbMessage, DEFAULT_TEMPLATES,
+} from '../src/services/followupMessages.js'
 
 // Teks di bawah ini disalin dari hasil render template LAMA (frontend, sebelum
 // pengiriman pindah ke server) dan sudah diverifikasi identik byte-per-byte.
@@ -62,9 +65,6 @@ const STNK_HARAPAN = [
   'Sabtu               : 09.00-14.00',
   'Istirahat          : 12.00-13.30',
   '',
-  'Cek status dokumen Anda kapan saja:',
-  'https://tdmketapang.net/cek?engine_number=JBK1E2146575',
-  '',
   'Terimakasih',
 ].join('\n')
 
@@ -87,9 +87,6 @@ const BPKB_HARAPAN = [
   'Senin-Jumat : 09.00-16.00',
   'Sabtu                : 09.00-14.00',
   'Istirahat          : 12.00-13.30',
-  '',
-  'Cek status dokumen Anda kapan saja:',
-  'https://tdmketapang.net/cek?engine_number=EF32E1000330',
   '',
   'Terimakasih',
 ].join('\n')
@@ -126,6 +123,33 @@ test('semua pesan di bawah batas 1024 karakter Wablas', () => {
   assert.ok(kpb.length < 1024, `KPB ${kpb.length} karakter`)
   assert.ok(buildStnkMessage({ engineNumber: 'JBK1E2146575', customerName: 'MAT JUNI', model: 'REVO', noPolisi: 'KB5080IR' }).length < 1024)
   assert.ok(buildBpkbMessage({ engineNumber: 'EF32E1000330', customerName: 'MAT JUNI', model: 'REVO', noPolisi: 'KB5080IR' }).length < 1024)
+})
+
+// Penjaga utama: nomor dealer diblokir berulang dengan alasan tautan spam, jadi
+// tak satu pun pesan boleh membawa URL. Pemeriksaan dilakukan pada hasil render
+// (bukan teks template) supaya link yang masuk lewat nilai variabel pun ketahuan.
+test('tidak ada pesan bawaan yang membawa tautan', () => {
+  const dokumen = { engineNumber: 'JBK1E2146575', customerName: 'MAT JUNI', model: 'REVO', noPolisi: 'KB5080IR' }
+  const pesan = {
+    KPB: buildKpbMessage({
+      customerName: 'YUSUF', model: 'VARIO125', kpbLabel: 'KPB1',
+      dueDate: new Date('2026-05-06T00:00:00'), daysRemaining: -90,
+    }),
+    STNK: buildStnkMessage(dokumen),
+    BPKB: buildBpkbMessage(dokumen),
+    STNK_BPKB: buildStnkBpkbMessage(dokumen),
+  }
+  // Menangkap URL berskema maupun telanjang ("tdmketapang.net/cek", "wa.me/...").
+  const pola = /https?:\/\/|www\.|\b[a-z0-9-]+\.(net|com|id|co|io|link|me)\b/i
+  for (const [kunci, isi] of Object.entries(pesan)) {
+    const cocok = isi.match(pola)
+    assert.equal(cocok, null, `template ${kunci} membawa tautan: ${cocok?.[0]}`)
+  }
+  // Bawaan juga tidak boleh lagi memakai placeholder linknya. Variabelnya tetap
+  // terdaftar (bisa dipasang lewat UI), yang dilarang adalah jadi bawaan.
+  for (const [kunci, isi] of Object.entries(DEFAULT_TEMPLATES)) {
+    assert.ok(!isi.includes('{link_cek}'), `template bawaan ${kunci} masih memasang {link_cek}`)
+  }
 })
 
 test('buildDocumentMessage memilih template sesuai tipe', () => {
