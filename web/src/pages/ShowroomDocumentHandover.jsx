@@ -110,7 +110,12 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
   const [signatureReceiver, setSignatureReceiver] = useState(null)
   const [powerOfAttorney, setPowerOfAttorney] = useState(null)
   const [receiverIsCustomer, setReceiverIsCustomer] = useState(true)
-  const [receiptItems, setReceiptItems] = useState([])
+  // Checklist ITU per jenis dokumen, bukan satu daftar dibagi rata ke semua
+  // dokumen dalam grup -- grup campuran STNK+BPKB (satu konsumen ambil
+  // keduanya sekaligus, dikelompokkan lewat engine_number:status:mode) punya
+  // dua checklist yang himpunannya lepas (STNK/Plat vs BPKB/Copy Faktur/NIK).
+  // Bentuk: { STNK: ['STNK', 'Plat'], BPKB: ['BPKB'] }.
+  const [receiptItemsByType, setReceiptItemsByType] = useState({})
   // Serah ke ekspedisi: penerima = akun kurir yang sudah ditugaskan (bukan
   // ketikan bebas). Konfirmasi diterima: penerima = konsumen, boleh dikoreksi.
   const [receivedBy, setReceivedBy] = useState(() => {
@@ -163,20 +168,24 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
 
   const RECEIPT_TYPES = ['STNK', 'BPKB']
   const CONSUMER_STEPS = ['serah_ke_konsumen', 'ekspedisi_ke_konsumen']
+  // Himpunan item lepas satu sama lain -- STNK tidak pernah punya 'BPKB',
+  // BPKB tidak pernah punya 'Plat'. Checklist yang ditawarkan dan yang
+  // dikirim ke tiap dokumen HARUS berasal dari himpunan jenisnya sendiri.
+  const ITEMS_BY_TYPE = { STNK: ['STNK', 'Plat'], BPKB: ['BPKB', 'Copy Faktur', 'NIK'] }
 
   // Dokumen mana saja dalam grup ini yang akan menerbitkan tanda terima.
   const receiptDocs = CONSUMER_STEPS.includes(stepType)
     ? handovers.filter((h) => RECEIPT_TYPES.includes(h.document_type))
     : []
   const issuesReceipt = receiptDocs.length > 0
+  // Jenis dokumen penerbit tanda terima yang benar-benar ada di grup ini --
+  // biasanya satu, tapi grup campuran (konsumen ambil STNK+BPKB sekaligus)
+  // bisa berisi keduanya.
+  const receiptDocTypes = [...new Set(receiptDocs.map((h) => h.document_type))]
 
   // Syarat di kaki form BPKB: bila diwakilkan, wajib surat kuasa bermaterai.
   const requiresPowerOfAttorney = !receiverIsCustomer &&
     receiptDocs.some((h) => h.document_type === 'BPKB')
-
-  const availableItems = receiptDocs.some((h) => h.document_type === 'BPKB')
-    ? ['BPKB', 'Copy Faktur', 'NIK']
-    : ['STNK', 'Plat']
 
   const canSubmit = !issuesReceipt || (
     signatureGiver &&
@@ -220,7 +229,9 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
         // dalam grup yang sama tetap dikirim tanpa tanda tangan.
         if (RECEIPT_TYPES.includes(h.document_type) && CONSUMER_STEPS.includes(stepType)) {
           formData.append('receiver_is_customer', String(receiverIsCustomer))
-          formData.append('receipt_items', JSON.stringify(receiptItems))
+          // Item yang dikirim milik jenis dokumen INI saja -- bukan checklist
+          // gabungan grup (lihat catatan di deklarasi receiptItemsByType).
+          formData.append('receipt_items', JSON.stringify(receiptItemsByType[h.document_type] || []))
           if (signatureGiver) formData.append('signature_giver', signatureGiver, 'ttd-petugas.png')
           if (signatureReceiver) formData.append('signature_receiver', signatureReceiver, 'ttd-penerima.png')
           if (powerOfAttorney) formData.append('photo_power_of_attorney', powerOfAttorney)
@@ -474,26 +485,34 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-semibold text-text mb-1.5">
-                  Item yang diserahkan
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  {availableItems.map((item) => (
-                    <label key={item} className="flex items-center gap-1.5 text-sm text-text">
-                      <input
-                        type="checkbox"
-                        checked={receiptItems.includes(item)}
-                        onChange={(e) => setReceiptItems((prev) =>
-                          e.target.checked ? [...prev, item] : prev.filter((i) => i !== item)
-                        )}
-                        className="rounded border-border"
-                      />
-                      {item}
-                    </label>
-                  ))}
+              {receiptDocTypes.map((docType) => (
+                <div key={docType}>
+                  <label className="block text-sm font-semibold text-text mb-1.5">
+                    Item {DOC_TYPE_LABELS[docType]?.label || docType} yang diserahkan
+                  </label>
+                  <div className="flex flex-wrap gap-3">
+                    {ITEMS_BY_TYPE[docType].map((item) => (
+                      <label key={item} className="flex items-center gap-1.5 text-sm text-text">
+                        <input
+                          type="checkbox"
+                          checked={(receiptItemsByType[docType] || []).includes(item)}
+                          onChange={(e) => setReceiptItemsByType((prev) => {
+                            const current = prev[docType] || []
+                            return {
+                              ...prev,
+                              [docType]: e.target.checked
+                                ? [...current, item]
+                                : current.filter((i) => i !== item),
+                            }
+                          })}
+                          className="rounded border-border"
+                        />
+                        {item}
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ))}
 
               <SignaturePad label="Tanda tangan petugas" onChange={setSignatureGiver} />
               <SignaturePad label="Tanda tangan penerima" onChange={setSignatureReceiver} />
