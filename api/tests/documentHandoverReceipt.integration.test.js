@@ -393,3 +393,50 @@ test('GET receipt: Admin tetap bisa mengunduh tanda terima milik salesman manapu
 
   assert.equal(res.body.subarray(0, 4).toString(), '%PDF')
 })
+
+test('nomor terbit tapi data pemilik tidak ada: tidak ada PDF, tapi kejadiannya dicatat log (bukan diam-diam)', async () => {
+  const engineTanpaTrack = 'RCPT-NO-TRACK-1'
+  await prismaTest.document_handovers.deleteMany({ where: { engine_number: engineTanpaTrack } })
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: engineTanpaTrack,
+      document_type: 'STNK',
+      handover_mode: 'langsung',
+      status: 'tersedia',
+      created_by: adminId,
+    },
+  })
+
+  const originalWarn = console.warn
+  const logged = []
+  console.warn = (line) => logged.push(line)
+  let res
+  try {
+    res = await request(app)
+      .post(`/api/showroom/document-handovers/${handover.id}/steps`)
+      .set('Cookie', adminCookie)
+      .field('step_type', 'serah_ke_konsumen')
+      .field('received_by_name', 'TANPA TRACK')
+      .field('receiver_is_customer', 'true')
+      .field('receipt_items', JSON.stringify(['STNK', 'Plat']))
+      .attach('photo_handover', FOTO, 'serah.jpg')
+      .attach('signature_giver', PNG, 'ttd-petugas.png')
+      .attach('signature_receiver', PNG, 'ttd-penerima.png')
+      .expect(201)
+  } finally {
+    console.warn = originalWarn
+  }
+
+  assert.ok(res.body.receipt_number, 'nomor tanda terima tetap terbit walau data pemilik tidak ada')
+  assert.equal(res.body.receipt_pdf_url, null, 'PDF tidak boleh terbentuk tanpa data pemilik')
+
+  const baris = logged.find((l) => l.includes('data pemilik dokumen tidak ditemukan'))
+  assert.ok(baris, 'kejadian PDF tidak terbentuk harus tercatat di log, bukan lolos diam-diam')
+  const entry = JSON.parse(baris)
+  assert.equal(entry.level, 'warn')
+  assert.equal(entry.step_id, res.body.id)
+  assert.equal(entry.receipt_number, res.body.receipt_number)
+  assert.equal(entry.engine_number, engineTanpaTrack)
+
+  await prismaTest.document_handovers.deleteMany({ where: { engine_number: engineTanpaTrack } })
+})

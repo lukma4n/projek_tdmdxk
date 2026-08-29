@@ -554,6 +554,17 @@ export async function addHandoverStep(req, res, next) {
             data: { receipt_pdf_url: pdf.urlPath, receipt_pdf_sha256: pdf.sha256 },
             include: { performer: { select: { id: true, name: true } } },
           })
+        } else {
+          // showroom_stnk_bpkb_tracks tidak punya baris untuk nomor mesin ini --
+          // nomor tanda terima sudah terbit dan tanda tangan sudah tersimpan,
+          // tapi PDF-nya tidak pernah ada. Tanpa log ini kejadian lolos diam-diam:
+          // HTTP 201, tidak ada exception. Bisa dibangun ulang lewat
+          // scripts/rebuild-receipt-pdfs.js selama receipt_pdf_sha256 masih null.
+          logger.warn(req, 'PDF tanda terima tidak dibuat: data pemilik dokumen tidak ditemukan', {
+            step_id: step.id,
+            receipt_number: step.receipt_number,
+            engine_number: handover.engine_number,
+          })
         }
       } catch (pdfError) {
         // Penyerahan fisik sudah terjadi -- jangan gagalkan permintaan hanya
