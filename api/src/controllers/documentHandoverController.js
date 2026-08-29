@@ -452,10 +452,42 @@ export async function addHandoverStep(req, res, next) {
     const issuesReceipt = CONSUMER_STEP_TYPES.includes(step_type) &&
       RECEIPT_DOCUMENT_TYPES.includes(handover.document_type)
 
-    // receiver_is_customer datang sebagai teks dari multipart form-data.
-    const receiverIsCustomer = receiver_is_customer === undefined
+    // receiver_is_customer datang sebagai teks dari multipart form-data --
+    // ini KLAIM dari form, belum tentu benar.
+    const receiverIsCustomerClaim = receiver_is_customer === undefined
       ? true
       : String(receiver_is_customer) !== 'false'
+
+    // Aturan surat kuasa BPKB (di bawah) sebelumnya mempercayai klaim itu
+    // mentah-mentah -- petugas bisa mengetik nama orang lain sambil
+    // membiarkan "Konsumen sendiri yang menerima" tercentang, dan surat
+    // kuasa jadi tidak wajib. Diverifikasi ulang di server terhadap nama
+    // pemilik dokumen sesungguhnya:
+    //   - klaim "BUKAN konsumen" dihormati apa adanya -- itu klaim yang lebih
+    //     ketat, tidak ada yang perlu dilonggarkan.
+    //   - klaim "konsumen sendiri" hanya dipercaya kalau received_by_name
+    //     benar-benar cocok dengan nama pemilik. Tidak cocok -> dianggap
+    //     BUKAN konsumen, menutup celah "tidak mencentang".
+    //   - kalau nama pemilik sama sekali tidak bisa ditentukan, jangan
+    //     blokir serah terima -- pakai klaim form, tapi catat di log.
+    let receiverIsCustomer = receiverIsCustomerClaim
+    if (receiverIsCustomerClaim) {
+      const track = await prisma.showroom_stnk_bpkb_tracks.findUnique({
+        where: { engine_number: handover.engine_number },
+        select: { stnk_name: true },
+      })
+      const ownerName = track?.stnk_name || handover.consumer_name || null
+
+      if (ownerName) {
+        const namesMatch = ownerName.trim().toLowerCase() === String(received_by_name || '').trim().toLowerCase()
+        receiverIsCustomer = namesMatch
+      } else {
+        logger.warn(req, 'Nama pemilik dokumen tidak bisa ditentukan untuk verifikasi penerima -- memakai klaim form apa adanya', {
+          handover_id: handover.id,
+          engine_number: handover.engine_number,
+        })
+      }
+    }
 
     if (issuesReceipt) {
       if (!signature_giver_url || !signature_receiver_url) {

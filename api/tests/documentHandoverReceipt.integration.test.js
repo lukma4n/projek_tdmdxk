@@ -440,3 +440,116 @@ test('nomor terbit tapi data pemilik tidak ada: tidak ada PDF, tapi kejadiannya 
 
   await prismaTest.document_handovers.deleteMany({ where: { engine_number: engineTanpaTrack } })
 })
+
+test('penerima BPKB dengan nama cocok pemilik: server anggap konsumen sendiri walau tidak dicentang eksplisit', async () => {
+    await prismaTest.document_handovers.deleteMany({ where: { engine_number: ENG_BPKB, document_type: 'BPKB' } })
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_BPKB,
+      document_type: 'BPKB',
+      handover_mode: 'langsung',
+      status: 'tersedia',
+      created_by: adminId,
+    },
+  })
+
+  const res = await request(app)
+    .post(`/api/showroom/document-handovers/${handover.id}/steps`)
+    .set('Cookie', adminCookie)
+    .field('step_type', 'serah_ke_konsumen')
+    .field('received_by_name', 'DARWIN') // sama persis dengan stnk_name di track BPKB
+    .field('receiver_is_customer', 'true')
+    .field('receipt_items', JSON.stringify(['BPKB', 'Copy Faktur', 'NIK']))
+    .attach('photo_handover', FOTO, 'serah.jpg')
+    .attach('signature_giver', PNG, 'a.png')
+    .attach('signature_receiver', PNG, 'b.png')
+    .expect(201)
+
+  assert.equal(res.body.receiver_is_customer, true)
+  assert.equal(res.body.photo_power_of_attorney_url, null)
+})
+
+test('BPKB: nama penerima BEDA dari pemilik tapi kotak "konsumen sendiri" dicentang -> tetap ditolak (server verifikasi ulang, bukan percaya klaim form)', async () => {
+    await prismaTest.document_handovers.deleteMany({ where: { engine_number: ENG_BPKB, document_type: 'BPKB' } })
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_BPKB,
+      document_type: 'BPKB',
+      handover_mode: 'langsung',
+      status: 'tersedia',
+      created_by: adminId,
+    },
+  })
+
+  const res = await request(app)
+    .post(`/api/showroom/document-handovers/${handover.id}/steps`)
+    .set('Cookie', adminCookie)
+    .field('step_type', 'serah_ke_konsumen')
+    .field('received_by_name', 'ORANG BERBEDA') // BUKAN 'DARWIN' -- si pemilik BPKB
+    .field('receiver_is_customer', 'true') // klaim form: konsumen sendiri
+    .field('receipt_items', JSON.stringify(['BPKB']))
+    .attach('photo_handover', FOTO, 'serah.jpg')
+    .attach('signature_giver', PNG, 'a.png')
+    .attach('signature_receiver', PNG, 'b.png')
+    .expect(400)
+
+  assert.match(res.body.error, /surat kuasa/i)
+})
+
+test('BPKB: nama beda + kotak "konsumen sendiri" dicentang, TAPI surat kuasa dilampirkan -> berhasil, tersimpan sebagai bukan konsumen', async () => {
+    await prismaTest.document_handovers.deleteMany({ where: { engine_number: ENG_BPKB, document_type: 'BPKB' } })
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_BPKB,
+      document_type: 'BPKB',
+      handover_mode: 'langsung',
+      status: 'tersedia',
+      created_by: adminId,
+    },
+  })
+
+  const res = await request(app)
+    .post(`/api/showroom/document-handovers/${handover.id}/steps`)
+    .set('Cookie', adminCookie)
+    .field('step_type', 'serah_ke_konsumen')
+    .field('received_by_name', 'ORANG BERBEDA')
+    .field('receiver_is_customer', 'true')
+    .field('receipt_items', JSON.stringify(['BPKB', 'Copy Faktur', 'NIK']))
+    .attach('photo_handover', FOTO, 'serah.jpg')
+    .attach('signature_giver', PNG, 'a.png')
+    .attach('signature_receiver', PNG, 'b.png')
+    .attach('photo_power_of_attorney', FOTO, 'kuasa.jpg')
+    .expect(201)
+
+  // Server yang menentukan nilai sebenarnya (bukan klaim 'true' dari form) --
+  // nama tidak cocok, jadi harus tersimpan sebagai BUKAN konsumen.
+  assert.equal(res.body.receiver_is_customer, false)
+  assert.ok(res.body.photo_power_of_attorney_url)
+})
+
+test('STNK: nama penerima beda dari pemilik tetap berhasil tanpa surat kuasa (aturan surat kuasa cuma untuk BPKB)', async () => {
+    await prismaTest.document_handovers.deleteMany({ where: { engine_number: ENG_STNK, document_type: 'STNK' } })
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_STNK,
+      document_type: 'STNK',
+      handover_mode: 'langsung',
+      status: 'tersedia',
+      created_by: adminId,
+    },
+  })
+
+  const res = await request(app)
+    .post(`/api/showroom/document-handovers/${handover.id}/steps`)
+    .set('Cookie', adminCookie)
+    .field('step_type', 'serah_ke_konsumen')
+    .field('received_by_name', 'ORANG LAIN LAGI') // BUKAN 'HEPRI FAHRIANSYAH' -- pemilik STNK
+    .field('receiver_is_customer', 'true')
+    .field('receipt_items', JSON.stringify(['STNK', 'Plat']))
+    .attach('photo_handover', FOTO, 'serah.jpg')
+    .attach('signature_giver', PNG, 'a.png')
+    .attach('signature_receiver', PNG, 'b.png')
+    .expect(201)
+
+  assert.equal(res.body.receiver_is_customer, false, 'server tetap mendeteksi nama tidak cocok, hanya saja STNK tidak mewajibkan surat kuasa')
+})
