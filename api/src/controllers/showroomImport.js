@@ -79,6 +79,44 @@ export async function upsertRecordsInTx(tx, { records, model, uniqueField }) {
   return tally(deduped, existingKeys, uniqueField)
 }
 
+/**
+ * Panen peta kode warna -> nama lengkap dari record import stok unit.
+ *
+ * Report Stock Unit membawa warna sebagai "BK-BLACK", satu-satunya tempat nama
+ * lengkap itu tersedia. Baris unit yang sudah terjual dihapus di import
+ * berikutnya, jadi tanpa panen ini namanya hilang dan tanda terima cuma bisa
+ * mencetak kode "BK".
+ *
+ * Isian manual tidak pernah ditimpa — petugas mengisi kode yang tidak pernah
+ * muncul di stok, dan import tidak boleh membatalkan pekerjaan itu.
+ */
+export async function harvestColorNames(client, records) {
+  const byCode = new Map()
+
+  for (const record of records) {
+    const color = (record?.color || '').trim()
+    const separator = color.indexOf('-')
+    // Tanpa tanda hubung berarti tidak ada nama, cuma kode -- tidak berguna.
+    if (separator <= 0) continue
+
+    const code = color.slice(0, separator).trim().toUpperCase()
+    if (code) byCode.set(code, color)
+  }
+
+  for (const [code, name] of byCode) {
+    const existing = await client.unit_color_names.findUnique({ where: { code } })
+    if (existing?.source === 'manual') continue
+
+    await client.unit_color_names.upsert({
+      where: { code },
+      update: { name, source: 'import' },
+      create: { code, name, source: 'import' },
+    })
+  }
+
+  return byCode.size
+}
+
 export async function runShowroomSnapshotImport({
   req,
   records,
@@ -94,6 +132,13 @@ export async function runShowroomSnapshotImport({
 
   const result = await prisma.$transaction(async (tx) => {
     const { created, updated } = await upsertRecordsInTx(tx, { records, model, uniqueField: 'engine_number' })
+
+    // Panen nama warna SEBELUM baris unit terjual dihapus di bawah. Setelah
+    // deleteMany berjalan, nama lengkapnya tidak bisa didapat lagi.
+    if (model === 'showroom_stock_units') {
+      await harvestColorNames(tx, records)
+    }
+
     const deleted = await tx[model].deleteMany({
       where: { branch_code: 'DXK', engine_number: { notIn: activeEngineNumbers } },
     })
