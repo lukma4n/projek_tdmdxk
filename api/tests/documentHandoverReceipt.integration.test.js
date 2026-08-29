@@ -17,6 +17,7 @@ const RECEIPT_TMP_DIR = `uploads/test-tanda-terima-tmp-${process.pid}-${Date.now
 process.env.RECEIPT_PDF_DIR = RECEIPT_TMP_DIR
 
 import fs from 'fs/promises'
+import bcrypt from 'bcryptjs'
 import {
   prismaTest,
   seedKnownUsers,
@@ -27,9 +28,11 @@ import {
 
 const ENG_STNK = 'RCPT-FLOW-STNK1'
 const ENG_BPKB = 'RCPT-FLOW-BPKB1'
-const ENGINES = [ENG_STNK, ENG_BPKB]
+const ENG_OWN = 'RCPT-FLOW-OWN01'
+const ENGINES = [ENG_STNK, ENG_BPKB, ENG_OWN]
 const SO_STNK = 'SO/DXK/26/08/RFS1'
 const SO_BPKB = 'SO/DXK/26/08/RFB1'
+const SO_OWN = 'SO/DXK/26/08/RFO1'
 
 const PNG = Buffer.from('89504e470d0a1a0a-tanda-tangan-uji')
 const FOTO = Buffer.from('isi-foto-uji')
@@ -38,18 +41,30 @@ let adminCookie
 let adminId
 let handoverStnkId
 let handoverBpkbId
+let salesmanOwnerCookie
+let salesmanOtherCookie
 
 async function cleanup() {
   await prismaTest.document_handovers.deleteMany({ where: { engine_number: { in: ENGINES } } })
   await prismaTest.showroom_stnk_bpkb_tracks.deleteMany({ where: { engine_number: { in: ENGINES } } })
-  await prismaTest.customers.deleteMany({ where: { so_number: { in: [SO_STNK, SO_BPKB] } } })
+  await prismaTest.customers.deleteMany({ where: { so_number: { in: [SO_STNK, SO_BPKB, SO_OWN] } } })
+  await prismaTest.users.deleteMany({ where: { username: { in: ['test_salesman_rcpt_owner', 'test_salesman_rcpt_other'] } } })
+}
+
+async function createUser(username, role) {
+  const password_hash = await bcrypt.hash('password123', 10)
+  return prismaTest.users.upsert({
+    where: { username },
+    update: {},
+    create: { username, password_hash, name: username, role },
+  })
 }
 
 before(async () => {
   await seedKnownUsers()
   await cleanup()
 
-  for (const [eng, so, nama] of [[ENG_STNK, SO_STNK, 'HEPRI FAHRIANSYAH'], [ENG_BPKB, SO_BPKB, 'DARWIN']]) {
+  for (const [eng, so, nama] of [[ENG_STNK, SO_STNK, 'HEPRI FAHRIANSYAH'], [ENG_BPKB, SO_BPKB, 'DARWIN'], [ENG_OWN, SO_OWN, 'BUDI SANTOSO']]) {
     await prismaTest.showroom_stnk_bpkb_tracks.create({
       data: {
         branch_code: 'DXK',
@@ -93,6 +108,11 @@ before(async () => {
 
   handoverStnkId = await buat(ENG_STNK, 'STNK')
   handoverBpkbId = await buat(ENG_BPKB, 'BPKB')
+
+  await createUser('test_salesman_rcpt_owner', 'Salesman')
+  await createUser('test_salesman_rcpt_other', 'Salesman')
+  salesmanOwnerCookie = (await loginAs('test_salesman_rcpt_owner', 'password123')).cookie
+  salesmanOtherCookie = (await loginAs('test_salesman_rcpt_other', 'password123')).cookie
 })
 
 after(async () => {
@@ -296,4 +316,80 @@ test('GET receipt: tanpa cookie sesi ditolak (401)', async () => {
     .expect(401)
 
   assert.match(res.body.error, /token/i)
+})
+
+test('GET receipt: Salesman yang ditugaskan bisa mengunduh tanda terima miliknya sendiri', async () => {
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_OWN,
+      document_type: 'STNK',
+      handover_mode: 'via_sales',
+      status: 'diterima_sales',
+      salesman_name: 'test_salesman_rcpt_owner',
+      created_by: adminId,
+    },
+  })
+
+  const stepRes = await request(app)
+    .post(`/api/showroom/document-handovers/${handover.id}/steps`)
+    .set('Cookie', salesmanOwnerCookie)
+    .field('step_type', 'serah_ke_konsumen')
+    .field('received_by_name', 'BUDI SANTOSO')
+    .field('receiver_is_customer', 'true')
+    .field('receipt_items', JSON.stringify(['STNK', 'Plat']))
+    .attach('photo_handover', FOTO, 'serah.jpg')
+    .attach('signature_giver', PNG, 'ttd-petugas.png')
+    .attach('signature_receiver', PNG, 'ttd-penerima.png')
+    .expect(201)
+
+  assert.ok(stepRes.body.receipt_number, 'tanda terima harus terbit untuk tes ini')
+
+  const res = await request(app)
+    .get(`/api/showroom/document-handovers/receipt/${stepRes.body.id}`)
+    .set('Cookie', salesmanOwnerCookie)
+    .buffer()
+    .parse((response, callback) => {
+      const chunks = []
+      response.on('data', (chunk) => chunks.push(chunk))
+      response.on('end', () => callback(null, Buffer.concat(chunks)))
+    })
+    .expect(200)
+
+  assert.equal(res.body.subarray(0, 4).toString(), '%PDF')
+})
+
+test('GET receipt: Salesman lain (bukan yang ditugaskan) ditolak (403)', async () => {
+  const step = await prismaTest.document_handover_steps.findFirst({
+    where: { receipt_number: { startsWith: 'TT-STNK/' }, handover: { engine_number: ENG_OWN } },
+    orderBy: { id: 'desc' },
+  })
+  assert.ok(step, 'perlu tanda terima STNK milik salesman pemilik dari test sebelumnya')
+
+  const res = await request(app)
+    .get(`/api/showroom/document-handovers/receipt/${step.id}`)
+    .set('Cookie', salesmanOtherCookie)
+    .expect(403)
+
+  assert.match(res.body.error, /akses ditolak/i)
+})
+
+test('GET receipt: Admin tetap bisa mengunduh tanda terima milik salesman manapun', async () => {
+  const step = await prismaTest.document_handover_steps.findFirst({
+    where: { receipt_number: { startsWith: 'TT-STNK/' }, handover: { engine_number: ENG_OWN } },
+    orderBy: { id: 'desc' },
+  })
+  assert.ok(step)
+
+  const res = await request(app)
+    .get(`/api/showroom/document-handovers/receipt/${step.id}`)
+    .set('Cookie', adminCookie)
+    .buffer()
+    .parse((response, callback) => {
+      const chunks = []
+      response.on('data', (chunk) => chunks.push(chunk))
+      response.on('end', () => callback(null, Buffer.concat(chunks)))
+    })
+    .expect(200)
+
+  assert.equal(res.body.subarray(0, 4).toString(), '%PDF')
 })

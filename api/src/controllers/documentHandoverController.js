@@ -644,6 +644,7 @@ export async function getReceiptPdf(req, res, next) {
   try {
     const step = await prisma.document_handover_steps.findUnique({
       where: { id: parseInt(req.params.stepId) },
+      include: { handover: true },
     })
 
     if (!step) {
@@ -651,6 +652,22 @@ export async function getReceiptPdf(req, res, next) {
     }
     if (!step.receipt_pdf_url) {
       return res.status(404).json({ error: 'Tanda terima belum diterbitkan untuk langkah ini' })
+    }
+
+    // stepId sekuensial dan satu PDF memuat nama lengkap, alamat, KTP, rangka,
+    // mesin dan plat sekaligus -- Salesman/Ekspedisi hanya boleh mengunduh
+    // tanda terima milik penyerahan yang ditugaskan padanya. Skoping ini
+    // sengaja disamakan persis dengan getDocumentHandovers (nama field yang
+    // dibandingkan maupun perbandingan case-sensitive-nya).
+    const handover = step.handover
+    if (req.user.role === 'Salesman') {
+      if (!handover || handover.salesman_name !== req.user.name) {
+        return res.status(403).json({ error: 'Akses ditolak. Dokumen ini tidak ditugaskan kepada Anda.' })
+      }
+    } else if (req.user.role === 'Ekspedisi') {
+      if (!handover || handover.assigned_courier_id !== req.user.userId) {
+        return res.status(403).json({ error: 'Akses ditolak. Dokumen ini tidak ditugaskan kepada Anda.' })
+      }
     }
 
     res.sendFile(step.receipt_pdf_url.replace(/^\//, ''), { root: process.cwd() })
