@@ -436,6 +436,17 @@ export async function addHandoverStep(req, res, next) {
       }
     }
 
+    // Serah terima lewat pihak ketiga (ekspedisi, atau salesman di lapangan)
+    // tidak diawasi langsung oleh kantor -- foto ini satu-satunya bukti bahwa
+    // dokumen benar sudah sampai ke konsumen, bukan cuma klaim ketik nama.
+    // Admin yang serah terima langsung di counter tidak wajib (konsumen hadir
+    // sendiri di tempat).
+    const isThirdPartyHandover = step_type === 'ekspedisi_ke_konsumen' ||
+      (step_type === 'serah_ke_konsumen' && req.user.role === 'Salesman')
+    if (isThirdPartyHandover && !photo_handover_url) {
+      return res.status(400).json({ error: 'Foto penyerahan fisik wajib dilampirkan sebagai bukti dokumen sudah diterima konsumen.' })
+    }
+
     // Tanda terima hanya terbit saat dokumen benar-benar sampai ke konsumen,
     // dan hanya untuk STNK/BPKB.
     const issuesReceipt = CONSUMER_STEP_TYPES.includes(step_type) &&
@@ -461,17 +472,6 @@ export async function addHandoverStep(req, res, next) {
           error: 'Penerima BPKB bukan konsumen sendiri. Foto surat kuasa bermaterai wajib dilampirkan.',
         })
       }
-    }
-
-    // Serah terima lewat pihak ketiga (ekspedisi, atau salesman di lapangan)
-    // tidak diawasi langsung oleh kantor -- foto ini satu-satunya bukti bahwa
-    // dokumen benar sudah sampai ke konsumen, bukan cuma klaim ketik nama.
-    // Admin yang serah terima langsung di counter tidak wajib (konsumen hadir
-    // sendiri di tempat).
-    const isThirdPartyHandover = step_type === 'ekspedisi_ke_konsumen' ||
-      (step_type === 'serah_ke_konsumen' && req.user.role === 'Salesman')
-    if (isThirdPartyHandover && !photo_handover_url) {
-      return res.status(400).json({ error: 'Foto penyerahan fisik wajib dilampirkan sebagai bukti dokumen sudah diterima konsumen.' })
     }
 
     const newStatus = transition.to
