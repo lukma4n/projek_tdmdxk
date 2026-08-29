@@ -13,7 +13,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { createDatabaseBackup, listDatabaseBackups } from '../src/services/backupService.js'
+import { createDatabaseBackup, createUploadsBackup, listDatabaseBackups } from '../src/services/backupService.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const backupDir = path.resolve(__dirname, '../prisma/backups')
@@ -24,6 +24,13 @@ async function main() {
   const result = await createDatabaseBackup('scheduled')
   console.log(`[backup] dibuat: ${result.filename} (${result.created_at})`)
 
+  const uploads = await createUploadsBackup('scheduled')
+  if (uploads) {
+    console.log(`[backup] uploads dibuat: ${uploads.filename}`)
+  } else {
+    console.log('[backup] folder uploads belum ada, dilewati')
+  }
+
   // Retensi: simpan N backup "scheduled" terbaru, hapus sisanya.
   const backups = await listDatabaseBackups()
   const scheduled = backups.filter((b) => b.filename.startsWith('dev.db.backup.scheduled.'))
@@ -32,6 +39,18 @@ async function main() {
     await fs.unlink(path.join(backupDir, b.filename))
     console.log(`[backup] dihapus (retensi): ${b.filename}`)
   }
+
+  // Retensi arsip uploads mengikuti retensi database.
+  const entries = await fs.readdir(backupDir)
+  const uploadArchives = entries
+    .filter((name) => name.startsWith('uploads.backup.scheduled.'))
+    .sort()
+    .reverse()
+  for (const name of uploadArchives.slice(keep)) {
+    await fs.unlink(path.join(backupDir, name))
+    console.log(`[backup] uploads dihapus (retensi): ${name}`)
+  }
+
   console.log(`[backup] selesai. total scheduled=${scheduled.length}, keep=${keep}, dihapus=${stale.length}`)
 }
 

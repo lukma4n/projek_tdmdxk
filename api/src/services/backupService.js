@@ -1,13 +1,18 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { execFile } from 'child_process'
+import { promisify } from 'util'
 import { PrismaClient } from '@prisma/client'
 import { prisma } from '../config/db.js'
+
+const execFileAsync = promisify(execFile)
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const prismaDir = path.resolve(__dirname, '../../prisma')
 const dbPath = path.join(prismaDir, 'dev.db')
 const backupDir = path.join(prismaDir, 'backups')
+const uploadsDir = path.resolve(__dirname, '../../uploads')
 
 // Sejalan dengan retensi backup terjadwal (14) di scripts/backup-db.js.
 const PRE_IMPORT_KEEP = 14
@@ -39,6 +44,33 @@ export async function createDatabaseBackup(reason = 'manual') {
   if (safeReason.startsWith('pre_import')) {
     await cleanupPreImportBackups(PRE_IMPORT_KEEP).catch(() => {})
   }
+
+  return { filename, path: target, created_at: new Date().toISOString() }
+}
+
+/**
+ * Arsipkan folder uploads/ bersama backup database.
+ *
+ * Foto serah terima, tanda tangan, dan PDF tanda terima hanya ada di disk --
+ * tidak ikut di dalam file SQLite. Setelah berkas fisik dihapus, kehilangan
+ * folder ini berarti kehilangan seluruh bukti penyerahan tanpa kertas
+ * pengganti.
+ */
+export async function createUploadsBackup(reason = 'manual') {
+  await fs.mkdir(backupDir, { recursive: true })
+
+  // Folder belum ada di instalasi baru -- bukan kegagalan.
+  try {
+    await fs.access(uploadsDir)
+  } catch {
+    return null
+  }
+
+  const safeReason = String(reason).toLowerCase().replace(/[^a-z0-9_-]/g, '_').slice(0, 40) || 'manual'
+  const filename = `uploads.backup.${safeReason}.${timestamp()}.tar.gz`
+  const target = path.join(backupDir, filename)
+
+  await execFileAsync('tar', ['-czf', target, '-C', path.dirname(uploadsDir), 'uploads'])
 
   return { filename, path: target, created_at: new Date().toISOString() }
 }
