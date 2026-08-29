@@ -7,9 +7,11 @@ import { collectReceiptData } from '../src/services/receiptDataService.js'
 
 const ENG = 'RCPT-DATA-0001'
 const SO = 'SO/DXK/26/08/RCPT1'
+const YATIM = 'RCPT-DATA-YATIM'
 
 async function cleanup() {
   await prismaTest.showroom_stnk_bpkb_tracks.deleteMany({ where: { engine_number: ENG } })
+  await prismaTest.showroom_stnk_bpkb_tracks.deleteMany({ where: { engine_number: YATIM } })
   await prismaTest.customers.deleteMany({ where: { so_number: SO } })
   await prismaTest.unit_color_names.deleteMany({ where: { code: 'BK' } })
 }
@@ -90,7 +92,7 @@ test('tetap jalan meski data konsumen tidak ketemu', async () => {
     data: {
       branch_code: 'DXK',
       branch_name: 'Cabang Ketapang',
-      engine_number: 'RCPT-DATA-YATIM',
+      engine_number: YATIM,
       chassis_number: 'JMH11XTK409061',
       stnk_name: 'TANPA SO',
       no_stnk: '999',
@@ -98,7 +100,7 @@ test('tetap jalan meski data konsumen tidak ketemu', async () => {
   })
 
   const data = await collectReceiptData(prismaTest, {
-    engineNumber: 'RCPT-DATA-YATIM',
+    engineNumber: YATIM,
     documentType: 'STNK',
   })
 
@@ -106,6 +108,4 @@ test('tetap jalan meski data konsumen tidak ketemu', async () => {
   assert.equal(data.owner_ktp, null)
   assert.equal(data.merk_type, null)
   assert.equal(data.production_year, 2026, 'tahun tetap dari nomor rangka')
-
-  await prismaTest.showroom_stnk_bpkb_tracks.deleteMany({ where: { engine_number: 'RCPT-DATA-YATIM' } })
 })
