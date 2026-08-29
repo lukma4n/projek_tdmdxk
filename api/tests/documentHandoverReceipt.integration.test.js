@@ -218,3 +218,67 @@ test('nomor urut naik untuk penyerahan berikutnya di bulan yang sama', async () 
     assert.deepEqual([...urutan].sort((a, b) => a - b), urutan, `urutan tidak naik pada ${awalan}`)
   }
 })
+
+test('GET receipt: mengembalikan PDF asli untuk langkah yang punya tanda terima', async () => {
+  const step = await prismaTest.document_handover_steps.findFirst({
+    where: { receipt_number: { startsWith: 'TT-STNK/' } },
+    orderBy: { id: 'asc' },
+  })
+  assert.ok(step, 'perlu langkah STNK dengan tanda terima dari test sebelumnya')
+
+  const res = await request(app)
+    .get(`/api/showroom/document-handovers/receipt/${step.id}`)
+    .set('Cookie', adminCookie)
+    .buffer()
+    .parse((response, callback) => {
+      const chunks = []
+      response.on('data', (chunk) => chunks.push(chunk))
+      response.on('end', () => callback(null, Buffer.concat(chunks)))
+    })
+    .expect(200)
+
+  assert.ok(Buffer.isBuffer(res.body))
+  assert.equal(res.body.subarray(0, 4).toString(), '%PDF')
+
+  const isiAsli = await fs.readFile(`.${step.receipt_pdf_url}`)
+  assert.ok(res.body.equals(isiAsli), 'isi PDF yang dikirim harus sama persis dengan file di disk')
+})
+
+test('GET receipt: 404 untuk langkah yang tidak menerbitkan tanda terima (PLAT)', async () => {
+  const step = await prismaTest.document_handover_steps.findFirst({
+    where: { receipt_number: null, step_type: 'serah_ke_konsumen' },
+    orderBy: { id: 'desc' },
+  })
+  assert.ok(step, 'perlu langkah PLAT tanpa tanda terima dari test sebelumnya')
+  assert.equal(step.receipt_pdf_url, null)
+
+  const res = await request(app)
+    .get(`/api/showroom/document-handovers/receipt/${step.id}`)
+    .set('Cookie', adminCookie)
+    .expect(404)
+
+  assert.match(res.body.error, /belum diterbitkan/i)
+})
+
+test('GET receipt: 404 untuk stepId yang tidak ada', async () => {
+  const res = await request(app)
+    .get('/api/showroom/document-handovers/receipt/999999999')
+    .set('Cookie', adminCookie)
+    .expect(404)
+
+  assert.match(res.body.error, /tidak ditemukan/i)
+})
+
+test('GET receipt: tanpa cookie sesi ditolak (401)', async () => {
+  const step = await prismaTest.document_handover_steps.findFirst({
+    where: { receipt_number: { startsWith: 'TT-STNK/' } },
+    orderBy: { id: 'asc' },
+  })
+  assert.ok(step)
+
+  const res = await request(app)
+    .get(`/api/showroom/document-handovers/receipt/${step.id}`)
+    .expect(401)
+
+  assert.match(res.body.error, /token/i)
+})
