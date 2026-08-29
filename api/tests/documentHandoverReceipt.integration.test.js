@@ -1,6 +1,20 @@
 import test, { before, after } from 'node:test'
 import assert from 'node:assert/strict'
 process.env.DATABASE_URL = 'file:./test.db'
+// Serah terima lewat controller ini benar-benar menyusun PDF ke disk. Nomor
+// tanda terima di DB uji selalu mulai dari 00001 -- sama seperti tanda
+// terima pertama bulan itu di produksi -- jadi tanpa ini tes akan menimpa
+// arsip produksi (lihat receiptPdfService.js). Diarahkan ke subfolder
+// sementara (bukan folder arsip produksi), dibersihkan di after().
+//
+// Sengaja BUKAN di bawah os.tmpdir(): GET .../receipt/:stepId menyajikan
+// berkas lewat res.sendFile(receipt_pdf_url, {root: process.cwd()}), jadi
+// lokasi tulis harus tetap berupa path relatif terhadap cwd supaya alur
+// unduh lewat HTTP di tes ini benar-benar bisa dites end-to-end. Nama folder
+// juga sengaja TANPA titik di depan -- modul `send` yang dipakai
+// res.sendFile() meng-ignore (404) segmen path apa pun yang diawali titik.
+const RECEIPT_TMP_DIR = `uploads/test-tanda-terima-tmp-${process.pid}-${Date.now()}`
+process.env.RECEIPT_PDF_DIR = RECEIPT_TMP_DIR
 
 import fs from 'fs/promises'
 import {
@@ -83,6 +97,7 @@ before(async () => {
 
 after(async () => {
   await cleanup()
+  await fs.rm(RECEIPT_TMP_DIR, { recursive: true, force: true })
   await prismaTest.$disconnect()
 })
 

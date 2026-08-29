@@ -15,7 +15,22 @@ import crypto from 'crypto'
 import PDFDocument from 'pdfkit'
 import { logger } from '../utils/logger.js'
 
-const RECEIPT_DIR = 'uploads/tanda-terima'
+// Tanda terima ditulis dengan nama berkas deterministik (nomor tanda terima),
+// dan sekuens nomor di database uji selalu mulai dari 00001 -- sama seperti
+// tanda terima pertama bulan itu di produksi. RECEIPT_PDF_DIR memberi tes
+// jalan resmi untuk mengarahkan seluruh alur (termasuk lewat controller HTTP)
+// ke direktori sementara tanpa mengubah titik panggil produksi.
+//
+// Sengaja dibaca lewat fungsi (bukan const level-modul): pada ESM, seluruh
+// pernyataan import di sebuah berkas tes dievaluasi SEBELUM pernyataan biasa
+// apa pun di berkas itu -- termasuk `process.env.RECEIPT_PDF_DIR = ...` yang
+// ditulis sebelum importnya secara tekstual. Kalau nilai ini di-cache jadi
+// const saat modul dimuat (lewat rantai import controller/app.js), env var
+// yang di-set belakangan oleh tes tidak akan pernah terbaca.
+const DEFAULT_RECEIPT_DIR = 'uploads/tanda-terima'
+function resolveReceiptDir() {
+  return process.env.RECEIPT_PDF_DIR || DEFAULT_RECEIPT_DIR
+}
 
 const TITLES = {
   STNK: 'TANDA TERIMA PENYERAHAN STNK',
@@ -83,12 +98,25 @@ export async function generateReceiptPdf({
   signatureGiverPath = null,
   signatureReceiverPath = null,
   issuedAt = new Date(),
+  outputDir,
 }) {
-  await fs.mkdir(RECEIPT_DIR, { recursive: true })
+  const envDir = resolveReceiptDir()
+  const dir = outputDir || envDir
+  await fs.mkdir(dir, { recursive: true })
 
   const fileName = `${safeFileName(receiptNumber)}.pdf`
-  const absolutePath = path.resolve(RECEIPT_DIR, fileName)
-  const urlPath = `/${RECEIPT_DIR}/${fileName}`
+  const absolutePath = path.resolve(dir, fileName)
+  // getReceiptPdf (controller) menyajikan file lewat res.sendFile(urlPath,
+  // {root: process.cwd()}) -- urlPath HARUS menunjuk ke lokasi fisik yang
+  // sama dengan tempat berkas ditulis, relatif terhadap cwd.
+  // - Panggilan langsung dengan `outputDir` eksplisit (tes unit di luar cwd,
+  //   mis. os.tmpdir()) sengaja memutus keterkaitan itu -- tes tersebut tidak
+  //   menyajikan berkas lewat route, jadi urlPath tetap berbentuk arsip
+  //   produksi supaya bentuknya representatif.
+  // - Alur lewat controller HTTP (tanpa outputDir eksplisit) memakai envDir
+  //   apa adanya, sehingga saat RECEIPT_PDF_DIR di-set oleh tes integrasi,
+  //   berkas yang ditulis dan yang dilayani lewat HTTP tetap sinkron.
+  const urlPath = outputDir ? `/${DEFAULT_RECEIPT_DIR}/${fileName}` : `/${envDir}/${fileName}`
 
   const doc = new PDFDocument({ size: 'A4', margin: 50 })
   const stream = createWriteStream(absolutePath)
@@ -128,14 +156,26 @@ export async function generateReceiptPdf({
     [docType === 'BPKB' ? 'k. Nomor BPKB' : 'k. No.STNK', data.document_number],
   ]
 
+  // `continued: true` diikuti x eksplisit pada panggilan kedua TIDAK bekerja
+  // seperti kelihatannya -- x pada panggilan lanjutan diabaikan, dan nilai
+  // panjang kehilangan karakter (bukan dibungkus, bukan terpotong-tapi-ada --
+  // hilang begitu saja dari layer teks). Jadi label dan nilai digambar
+  // sebagai dua panggilan doc.text independen, masing-masing dengan x dan
+  // width eksplisit, supaya pdfkit membungkus nilai alih-alih menelannya, dan
+  // kolom titik dua sejajar di satu x untuk seluruh dua belas baris.
+  const labelX = left + 20
+  const valueX = left + 170
+  const valueWidth = doc.page.width - doc.page.margins.right - valueX
+
   for (const [label, value] of fields) {
+    const rowY = doc.y
     if (!label) {
-      // Baris lanjutan alamat: sejajarkan dengan kolom nilai.
-      doc.text(value || '', left + 170, doc.y)
+      // Baris lanjutan alamat (provinsi): sejajarkan dengan kolom nilai, tanpa label/kolon.
+      doc.text(value || '', valueX, rowY, { width: valueWidth })
       continue
     }
-    doc.text(label, left + 20, doc.y, { continued: true })
-    doc.text(`:  ${value ?? '-'}`, left + 170, doc.y)
+    doc.text(label, labelX, rowY)
+    doc.text(`:  ${value ?? '-'}`, valueX, rowY, { width: valueWidth })
   }
 
   doc.moveDown(0.9)

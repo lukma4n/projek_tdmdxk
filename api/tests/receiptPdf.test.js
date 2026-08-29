@@ -1,6 +1,8 @@
-import test, { after } from 'node:test'
+import test, { after, before } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'fs/promises'
+import os from 'os'
+import path from 'path'
 import crypto from 'crypto'
 import { PDFParse } from 'pdf-parse'
 
@@ -18,6 +20,20 @@ async function bacaTeksPdf(absolutePath) {
 }
 
 const dibuat = []
+
+// Nomor tanda terima di bawah ini deterministik (00001, 00042, ...) --
+// sama persis dengan pola nomor produksi bulan itu. Tulis ke direktori
+// sementara, bukan arsip produksi, atau tes ini bisa menimpa tanda terima
+// asli yang sudah diserahkan ke konsumen.
+let tmpDir
+
+before(async () => {
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'tanda-terima-test-'))
+})
+
+after(async () => {
+  await fs.rm(tmpDir, { recursive: true, force: true })
+})
 
 const DATA = {
   document_type: 'BPKB',
@@ -48,6 +64,7 @@ test('menyusun PDF dan mengembalikan hash isinya', async () => {
     receiverName: 'DARWIN',
     items: ['BPKB', 'Copy Faktur', 'NIK'],
     issuedAt: new Date(2026, 7, 29, 12, 29),
+    outputDir: tmpDir,
   })
   dibuat.push(hasil.absolutePath)
 
@@ -69,6 +86,7 @@ test('nama berkas memuat nomor tanda terima yang aman untuk path', async () => {
     receiverName: 'RINALDI AKBAR HASZ',
     items: ['STNK', 'Plat'],
     issuedAt: new Date(2026, 7, 29, 12, 27),
+    outputDir: tmpDir,
   })
   dibuat.push(hasil.absolutePath)
 
@@ -85,6 +103,7 @@ test('tetap menyusun PDF walau tahun dan KTP kosong', async () => {
     receiverName: 'SESEORANG',
     items: ['STNK'],
     issuedAt: new Date(2026, 7, 29),
+    outputDir: tmpDir,
   })
   dibuat.push(hasil.absolutePath)
 
@@ -109,6 +128,7 @@ test('tanda tangan yang berkasnya sudah tidak ada di disk tetap menghasilkan PDF
     issuedAt: new Date(2026, 7, 29),
     signatureGiverPath: '/tidak/ada/berkas-tanda-tangan-ini.png',
     signatureReceiverPath: '/tidak/ada/berkas-lainnya.png',
+    outputDir: tmpDir,
   })
   dibuat.push(hasil.absolutePath)
 

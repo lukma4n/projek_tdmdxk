@@ -1,7 +1,15 @@
 import test, { before, after } from 'node:test'
 import assert from 'node:assert/strict'
 process.env.DATABASE_URL = 'file:./test.db'
+// Beberapa langkah di sini benar-benar menyusun PDF tanda terima ke disk
+// (lihat receiptPdfService.js) -- arahkan ke subfolder sementara (bukan
+// folder arsip produksi) supaya tidak menimpa tanda terima asli. Sengaja
+// BUKAN di bawah os.tmpdir(), dan sengaja TANPA titik di depan nama folder:
+// lihat catatan di documentHandoverReceipt.integration.test.js.
+const RECEIPT_TMP_DIR = `uploads/test-tanda-terima-eksp-tmp-${process.pid}-${Date.now()}`
+process.env.RECEIPT_PDF_DIR = RECEIPT_TMP_DIR
 
+import fs from 'fs/promises'
 import bcrypt from 'bcryptjs'
 import {
   prismaTest,
@@ -67,7 +75,10 @@ before(async () => {
   salesmanDhCookie = (await loginAs('test_salesman_dh', 'password123')).cookie
 })
 
-after(cleanup)
+after(async () => {
+  await cleanup()
+  await fs.rm(RECEIPT_TMP_DIR, { recursive: true, force: true })
+})
 
 test('transisi admin_ke_ekspedisi TIDAK butuh nomor resi, ekspedisi_ke_konsumen menyelesaikan', async () => {
   // Resi umumnya belum ada saat admin baru menyerahkan paket secara fisik --
