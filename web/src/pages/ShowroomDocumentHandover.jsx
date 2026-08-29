@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { API_BASE } from '../services/api'
 import CameraCapture from '../components/common/CameraCapture'
@@ -1103,7 +1104,7 @@ export default function ShowroomDocumentHandover() {
           <h1 className="text-2xl font-bold text-text-strong">Document Handling</h1>
           <p className="text-sm text-muted">Monitoring penyerahan STNK, BPKB, Buku Service & Plat ke salesman/konsumen</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           {canManageHandover && (
             <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 transition-colors shadow-lg shadow-accent/20">
               <Plus size={16} /> Tambah Dokumen
@@ -1112,6 +1113,12 @@ export default function ShowroomDocumentHandover() {
           <button onClick={loadData} className="flex items-center gap-2 px-4 py-2.5 bg-panel border border-border rounded-xl text-sm font-semibold text-muted hover:bg-hover transition-colors">
             <RefreshCw size={16} /> Refresh
           </button>
+          <Link
+            to="/showroom/warna-unit"
+            className="text-xs font-semibold text-muted hover:text-accent transition-colors"
+          >
+            Nama Warna Unit
+          </Link>
         </div>
       </div>
 
