@@ -468,19 +468,35 @@ export async function addHandoverStep(req, res, next) {
     //   - klaim "konsumen sendiri" hanya dipercaya kalau received_by_name
     //     benar-benar cocok dengan nama pemilik. Tidak cocok -> dianggap
     //     BUKAN konsumen, menutup celah "tidak mencentang".
-    //   - kalau nama pemilik sama sekali tidak bisa ditentukan, jangan
-    //     blokir serah terima -- pakai klaim form, tapi catat di log.
+    //   - kalau nama pemilik sama sekali tidak bisa ditentukan: STNK tetap
+    //     memakai klaim form apa adanya (syaratnya memang lebih ringan),
+    //     tapi BPKB gagal TERTUTUP -- dianggap BUKAN konsumen sehingga surat
+    //     kuasa tetap wajib. Aturan otorisasi ini adalah pemeriksaan
+    //     terakhir; kalau datanya tidak lengkap dia tidak boleh melonggar.
+    //   - derivasi ini cuma relevan untuk langkah yang benar-benar
+    //     menerbitkan tanda terima (issuesReceipt). Langkah lain
+    //     (admin_ke_sales, sales_terima, admin_ke_ekspedisi) menyerahkan ke
+    //     salesman/kurir, bukan konsumen -- membandingkan nama di situ cuma
+    //     mengotori kolom audit, jadi biarkan nilainya ikut klaim form apa
+    //     adanya (default true, sama seperti sebelum verifikasi ini ada).
     let receiverIsCustomer = receiverIsCustomerClaim
-    if (receiverIsCustomerClaim) {
+    let ownerName = null
+    if (issuesReceipt && receiverIsCustomerClaim) {
       const track = await prisma.showroom_stnk_bpkb_tracks.findUnique({
         where: { engine_number: handover.engine_number },
         select: { stnk_name: true },
       })
-      const ownerName = track?.stnk_name || handover.consumer_name || null
+      ownerName = track?.stnk_name || handover.consumer_name || null
 
       if (ownerName) {
         const namesMatch = ownerName.trim().toLowerCase() === String(received_by_name || '').trim().toLowerCase()
         receiverIsCustomer = namesMatch
+      } else if (handover.document_type === 'BPKB') {
+        receiverIsCustomer = false
+        logger.warn(req, 'Nama pemilik BPKB tidak bisa ditentukan -- verifikasi penerima gagal tertutup, surat kuasa tetap diwajibkan', {
+          handover_id: handover.id,
+          engine_number: handover.engine_number,
+        })
       } else {
         logger.warn(req, 'Nama pemilik dokumen tidak bisa ditentukan untuk verifikasi penerima -- memakai klaim form apa adanya', {
           handover_id: handover.id,
@@ -501,7 +517,9 @@ export async function addHandoverStep(req, res, next) {
       // hampir empat kali lipat.
       if (handover.document_type === 'BPKB' && !receiverIsCustomer && !photo_power_of_attorney_url) {
         return res.status(400).json({
-          error: 'Penerima BPKB bukan konsumen sendiri. Foto surat kuasa bermaterai wajib dilampirkan.',
+          error: ownerName
+            ? `Penerima BPKB bukan konsumen sendiri (nama pemilik menurut sistem: ${ownerName}). Foto surat kuasa bermaterai wajib dilampirkan.`
+            : 'Penerima BPKB bukan konsumen sendiri. Foto surat kuasa bermaterai wajib dilampirkan.',
         })
       }
     }
