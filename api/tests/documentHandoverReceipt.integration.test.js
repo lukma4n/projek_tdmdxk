@@ -553,3 +553,77 @@ test('STNK: nama penerima beda dari pemilik tetap berhasil tanpa surat kuasa (at
 
   assert.equal(res.body.receiver_is_customer, false, 'server tetap mendeteksi nama tidak cocok, hanya saja STNK tidak mewajibkan surat kuasa')
 })
+
+// Route foto dan riwayat memakai id sekuensial yang sama dengan route tanda
+// terima. Foto dokumen umumnya foto fisik STNK-nya sendiri, dan riwayat
+// membawa stnk_name/no_polisi/mobile/no_stnk/no_bpkb -- keduanya harus tunduk
+// pada pembatasan penugasan yang sama, bukan cuma route PDF.
+
+async function langkahMilikSalesmanPemilik() {
+  const step = await prismaTest.document_handover_steps.findFirst({
+    where: { photo_handover_url: { not: null }, handover: { engine_number: ENG_OWN } },
+    orderBy: { id: 'desc' },
+  })
+  assert.ok(step, 'perlu langkah berfoto milik salesman pemilik dari test sebelumnya')
+  return step
+}
+
+test('GET photo: Salesman yang ditugaskan bisa membuka foto miliknya sendiri', async () => {
+  const step = await langkahMilikSalesmanPemilik()
+
+  await request(app)
+    .get(`/api/showroom/document-handovers/photo/${step.id}?type=handover`)
+    .set('Cookie', salesmanOwnerCookie)
+    .expect(200)
+})
+
+test('GET photo: Salesman lain ditolak (403)', async () => {
+  const step = await langkahMilikSalesmanPemilik()
+
+  const res = await request(app)
+    .get(`/api/showroom/document-handovers/photo/${step.id}?type=handover`)
+    .set('Cookie', salesmanOtherCookie)
+    .expect(403)
+
+  assert.match(res.body.error, /akses ditolak/i)
+})
+
+test('GET photo: Admin tetap bisa membuka foto milik salesman manapun', async () => {
+  const step = await langkahMilikSalesmanPemilik()
+
+  await request(app)
+    .get(`/api/showroom/document-handovers/photo/${step.id}?type=handover`)
+    .set('Cookie', adminCookie)
+    .expect(200)
+})
+
+test('GET steps: Salesman yang ditugaskan bisa membuka riwayat miliknya sendiri', async () => {
+  const step = await langkahMilikSalesmanPemilik()
+
+  const res = await request(app)
+    .get(`/api/showroom/document-handovers/${step.handover_id}/steps`)
+    .set('Cookie', salesmanOwnerCookie)
+    .expect(200)
+
+  assert.equal(res.body.engine_number, ENG_OWN)
+})
+
+test('GET steps: Salesman lain ditolak (403)', async () => {
+  const step = await langkahMilikSalesmanPemilik()
+
+  const res = await request(app)
+    .get(`/api/showroom/document-handovers/${step.handover_id}/steps`)
+    .set('Cookie', salesmanOtherCookie)
+    .expect(403)
+
+  assert.match(res.body.error, /akses ditolak/i)
+})
+
+test('GET steps: Admin tetap bisa membuka riwayat milik salesman manapun', async () => {
+  const step = await langkahMilikSalesmanPemilik()
+
+  await request(app)
+    .get(`/api/showroom/document-handovers/${step.handover_id}/steps`)
+    .set('Cookie', adminCookie)
+    .expect(200)
+})

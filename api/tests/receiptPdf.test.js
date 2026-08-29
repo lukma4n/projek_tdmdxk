@@ -139,3 +139,34 @@ test('tanda tangan yang berkasnya sudah tidak ada di disk tetap menghasilkan PDF
   assert.equal(hasil.sha256, hashSebenarnya, 'hash harus tetap cocok dengan isi berkas')
   assert.equal(hasil.sha256.length, 64)
 })
+
+// Kolom label/nilai pernah digambar dengan doc.text(..., { continued: true }),
+// yang DIAM-DIAM membuang karakter dari nilai yang panjang -- bukan memotong
+// tampilannya, tapi menghilangkannya dari lapisan teks PDF. Di dokumen bukti
+// itu berarti alamat pemilik tercetak salah tanpa ada yang tahu.
+//
+// Nilai di bawah adalah partner_address terpanjang yang benar-benar ada di
+// data produksi (74 karakter). Kalau rendering kembali memakai bentuk lama,
+// test ini gagal.
+test('alamat dan nama pemilik yang panjang tidak kehilangan karakter di PDF', async () => {
+  const ALAMAT_PANJANG = 'KANTOR DESA BETOK JAYA KECAMATAN KEPULAUAN KARIMATA KABUPATEN KAYONG UTARA'
+  const NAMA_PANJANG = 'MUHAMMAD HARIS SAPUTRA WIJAYAKUSUMA HERLAMBANG'
+
+  const hasil = await generateReceiptPdf({
+    receiptNumber: 'TT-BPKB/DXK/26/08/00777',
+    data: { ...DATA, owner_name: NAMA_PANJANG, owner_address: ALAMAT_PANJANG },
+    giverName: 'LUKMAN',
+    receiverName: NAMA_PANJANG,
+    items: ['BPKB'],
+    issuedAt: new Date(2026, 7, 29),
+    outputDir: tmpDir,
+  })
+  dibuat.push(hasil.absolutePath)
+
+  // Nilai yang membungkus ke baris kedua memunculkan newline di ekstraksi;
+  // normalkan spasi supaya yang diuji adalah kelengkapan karakternya.
+  const teks = (await bacaTeksPdf(hasil.absolutePath)).replace(/\s+/g, ' ')
+
+  assert.ok(teks.includes(ALAMAT_PANJANG), 'alamat panjang harus utuh di lapisan teks PDF')
+  assert.ok(teks.includes(NAMA_PANJANG), 'nama panjang harus utuh di lapisan teks PDF')
+})

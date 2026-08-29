@@ -9,6 +9,33 @@ import { generateReceiptPdf } from '../services/receiptPdfService.js'
 const RECEIPT_DOCUMENT_TYPES = ['STNK', 'BPKB']
 const CONSUMER_STEP_TYPES = ['serah_ke_konsumen', 'ekspedisi_ke_konsumen']
 
+/**
+ * Salesman dan Ekspedisi hanya boleh membuka penyerahan yang ditugaskan
+ * kepadanya.
+ *
+ * Id di route (`:id`, `:stepId`) bersifat sekuensial, jadi tanpa penjagaan ini
+ * satu akun cukup menyusuri angka untuk membaca dokumen konsumen lain: foto
+ * fisik STNK-nya, nomor rangka dan mesin, sampai KTP dan alamat yang tercetak
+ * di tanda terima.
+ *
+ * Perbandingannya sengaja disamakan persis dengan getDocumentHandovers —
+ * termasuk sifat case-sensitive-nya — supaya daftar dan detail tidak pernah
+ * berbeda pendapat soal siapa yang berhak.
+ *
+ * @returns pesan penolakan bila ditolak, null bila boleh lewat
+ */
+function handoverAccessDenial(req, handover) {
+  const denial = 'Akses ditolak. Dokumen ini tidak ditugaskan kepada Anda.'
+
+  if (req.user.role === 'Salesman') {
+    if (!handover || handover.salesman_name !== req.user.name) return denial
+  } else if (req.user.role === 'Ekspedisi') {
+    if (!handover || handover.assigned_courier_id !== req.user.userId) return denial
+  }
+
+  return null
+}
+
 export async function getDocumentHandovers(req, res, next) {
   try {
     const {
@@ -652,6 +679,10 @@ export async function getHandoverSteps(req, res, next) {
       return res.status(404).json({ error: 'Record serah terima tidak ditemukan' })
     }
 
+    // Riwayat ini membawa stnk_name, no_polisi, mobile, no_stnk dan no_bpkb.
+    const denial = handoverAccessDenial(req, handover)
+    if (denial) return res.status(403).json({ error: denial })
+
     const track = await prisma.showroom_stnk_bpkb_tracks.findUnique({
       where: { engine_number: handover.engine_number },
       select: {
@@ -679,11 +710,16 @@ export async function getHandoverPhoto(req, res, next) {
 
     const step = await prisma.document_handover_steps.findUnique({
       where: { id: parseInt(stepId) },
+      include: { handover: true },
     })
 
     if (!step) {
       return res.status(404).json({ error: 'Langkah serah terima tidak ditemukan' })
     }
+
+    // Foto dokumen di sini umumnya foto fisik STNK-nya sendiri.
+    const denial = handoverAccessDenial(req, step.handover)
+    if (denial) return res.status(403).json({ error: denial })
 
     const pathField = type === 'handover' ? step.photo_handover_url : step.photo_url
     if (!pathField) {
@@ -715,21 +751,9 @@ export async function getReceiptPdf(req, res, next) {
       return res.status(404).json({ error: 'Tanda terima belum diterbitkan untuk langkah ini' })
     }
 
-    // stepId sekuensial dan satu PDF memuat nama lengkap, alamat, KTP, rangka,
-    // mesin dan plat sekaligus -- Salesman/Ekspedisi hanya boleh mengunduh
-    // tanda terima milik penyerahan yang ditugaskan padanya. Skoping ini
-    // sengaja disamakan persis dengan getDocumentHandovers (nama field yang
-    // dibandingkan maupun perbandingan case-sensitive-nya).
-    const handover = step.handover
-    if (req.user.role === 'Salesman') {
-      if (!handover || handover.salesman_name !== req.user.name) {
-        return res.status(403).json({ error: 'Akses ditolak. Dokumen ini tidak ditugaskan kepada Anda.' })
-      }
-    } else if (req.user.role === 'Ekspedisi') {
-      if (!handover || handover.assigned_courier_id !== req.user.userId) {
-        return res.status(403).json({ error: 'Akses ditolak. Dokumen ini tidak ditugaskan kepada Anda.' })
-      }
-    }
+    // Satu PDF memuat nama lengkap, alamat, KTP, rangka, mesin dan plat sekaligus.
+    const denial = handoverAccessDenial(req, step.handover)
+    if (denial) return res.status(403).json({ error: denial })
 
     res.sendFile(step.receipt_pdf_url.replace(/^\//, ''), { root: process.cwd() })
   } catch (err) {
