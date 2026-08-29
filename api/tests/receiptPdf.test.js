@@ -2,8 +2,20 @@ import test, { after } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'fs/promises'
 import crypto from 'crypto'
+import { PDFParse } from 'pdf-parse'
 
 import { generateReceiptPdf } from '../src/services/receiptPdfService.js'
+
+// Teks pada PDF dikompresi di dalam stream, jadi tidak bisa dicek dari byte
+// mentah -- pakai pdf-parse (sudah dipakai di controller lain) untuk membaca
+// teks yang benar-benar dirender.
+async function bacaTeksPdf(absolutePath) {
+  const buffer = await fs.readFile(absolutePath)
+  const parser = new PDFParse({ data: buffer })
+  const { text } = await parser.getText()
+  await parser.destroy()
+  return text
+}
 
 const dibuat = []
 
@@ -78,4 +90,32 @@ test('tetap menyusun PDF walau tahun dan KTP kosong', async () => {
 
   const isi = await fs.readFile(hasil.absolutePath)
   assert.equal(isi.subarray(0, 4).toString(), '%PDF')
+
+  const teks = await bacaTeksPdf(hasil.absolutePath)
+  assert.match(teks, /Tahun Pembuatan\s*:\s*-/, 'field kosong harus dirender sebagai "-"')
+  assert.match(teks, /No\.KTP Pemilik\s*:\s*-/, 'field kosong harus dirender sebagai "-"')
+  assert.match(teks, /Merk\/Type\s*:\s*-/, 'field kosong harus dirender sebagai "-"')
+  assert.doesNotMatch(teks, /null/i, 'nilai null tidak boleh muncul sebagai teks literal')
+  assert.doesNotMatch(teks, /undefined/i, 'nilai undefined tidak boleh muncul sebagai teks literal')
+})
+
+test('tanda tangan yang berkasnya sudah tidak ada di disk tetap menghasilkan PDF valid', async () => {
+  const hasil = await generateReceiptPdf({
+    receiptNumber: 'TT-STNK/DXK/26/08/00044',
+    data: { ...DATA, document_type: 'STNK' },
+    giverName: 'LUKMAN',
+    receiverName: 'SESEORANG',
+    items: ['STNK'],
+    issuedAt: new Date(2026, 7, 29),
+    signatureGiverPath: '/tidak/ada/berkas-tanda-tangan-ini.png',
+    signatureReceiverPath: '/tidak/ada/berkas-lainnya.png',
+  })
+  dibuat.push(hasil.absolutePath)
+
+  const isi = await fs.readFile(hasil.absolutePath)
+  assert.equal(isi.subarray(0, 4).toString(), '%PDF', 'berkas harus tetap PDF sungguhan walau gambar tanda tangan hilang')
+
+  const hashSebenarnya = crypto.createHash('sha256').update(isi).digest('hex')
+  assert.equal(hasil.sha256, hashSebenarnya, 'hash harus tetap cocok dengan isi berkas')
+  assert.equal(hasil.sha256.length, 64)
 })

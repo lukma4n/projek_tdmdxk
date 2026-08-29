@@ -13,6 +13,7 @@ import { createWriteStream } from 'fs'
 import path from 'path'
 import crypto from 'crypto'
 import PDFDocument from 'pdfkit'
+import { logger } from '../utils/logger.js'
 
 const RECEIPT_DIR = 'uploads/tanda-terima'
 
@@ -57,9 +58,20 @@ function safeFileName(receiptNumber) {
   return receiptNumber.replace(/[^A-Za-z0-9]+/g, '-')
 }
 
-function drawField(doc, label, value, indent) {
-  doc.text(label, indent, doc.y, { continued: true, width: 150 })
-  doc.text(`: ${value || '-'}`, indent + 150, doc.y)
+// Gambar tanda tangan opsional -- berkas bisa saja sudah terhapus dari disk.
+// pdfkit membaca file secara sinkron (fs.readFileSync) di dalam doc.image(),
+// jadi kalau berkas hilang ini melempar ENOENT sinkron. Tanpa try/catch,
+// seluruh PDF gagal disusun tepat saat serah terima fisik sudah terjadi --
+// jadi biarkan area tanda tangan kosong, jangan gagalkan seluruh tanda terima.
+function drawSignatureImage(doc, imagePath, x, y, options) {
+  try {
+    doc.image(imagePath, x, y, options)
+  } catch (err) {
+    logger.warn(null, 'gagal memuat gambar tanda tangan, tanda terima tetap dibuat tanpa gambar', {
+      imagePath,
+      error: err.message,
+    })
+  }
 }
 
 export async function generateReceiptPdf({
@@ -163,10 +175,10 @@ export async function generateReceiptPdf({
   const imageTop = signatureTop + 18
   const imageHeight = 55
   if (signatureGiverPath) {
-    doc.image(signatureGiverPath, left, imageTop, { fit: [160, imageHeight] })
+    drawSignatureImage(doc, signatureGiverPath, left, imageTop, { fit: [160, imageHeight] })
   }
   if (signatureReceiverPath) {
-    doc.image(signatureReceiverPath, left + columnWidth + 60, imageTop, { fit: [160, imageHeight] })
+    drawSignatureImage(doc, signatureReceiverPath, left + columnWidth + 60, imageTop, { fit: [160, imageHeight] })
   }
 
   const lineY = imageTop + imageHeight + 6
