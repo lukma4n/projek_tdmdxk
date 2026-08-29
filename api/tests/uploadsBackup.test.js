@@ -1,19 +1,14 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 
 import { createUploadsBackup } from '../src/services/backupService.js'
 
 const execFileAsync = promisify(execFile)
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const apiDir = path.resolve(__dirname, '..')
-const uploadsDir = path.join(apiDir, 'uploads')
-const uploadsSwapDir = path.join(apiDir, 'uploads.__test_backup__')
 
 async function pathExists(target) {
   try {
@@ -24,60 +19,52 @@ async function pathExists(target) {
   }
 }
 
-// uploads/ nyata bisa berisi foto & PDF produksi -- test tidak boleh membaca
-// atau merusaknya. Pindahkan dulu, kembalikan tanpa syarat setelah selesai.
-async function swapOutRealUploads() {
-  if (await pathExists(uploadsDir)) {
-    await fs.rename(uploadsDir, uploadsSwapDir)
-    return true
-  }
-  return false
-}
-
-async function restoreRealUploads(hadReal) {
-  await fs.rm(uploadsDir, { recursive: true, force: true })
-  if (hadReal) {
-    await fs.rename(uploadsSwapDir, uploadsDir)
-  }
-}
-
-test('createUploadsBackup mengarsipkan berkas nyata dari uploads/', async (t) => {
-  const hadReal = await swapOutRealUploads()
-  let archivePath = null
+// Test ini TIDAK PERNAH menyentuh api/uploads/ atau api/prisma/backups/ yang
+// nyata -- source dan target dibuat sebagai folder sementara di OS temp dir,
+// dan dihapus tanpa syarat setelah selesai.
+test('createUploadsBackup mengarsipkan berkas dari sourceDir sementara', async (t) => {
+  const sourceDir = await fs.mkdtemp(path.join(os.tmpdir(), 'uploads-src-'))
+  const targetDir = await fs.mkdtemp(path.join(os.tmpdir(), 'uploads-dst-'))
 
   t.after(async () => {
-    if (archivePath) await fs.rm(archivePath, { force: true })
-    await restoreRealUploads(hadReal)
+    await fs.rm(sourceDir, { recursive: true, force: true })
+    await fs.rm(targetDir, { recursive: true, force: true })
   })
 
-  await fs.mkdir(path.join(uploadsDir, 'pickup-ktp'), { recursive: true })
-  await fs.writeFile(path.join(uploadsDir, 'pickup-ktp', 'sample.txt'), 'bukti-serah-terima')
+  await fs.mkdir(path.join(sourceDir, 'pickup-ktp'), { recursive: true })
+  await fs.writeFile(path.join(sourceDir, 'pickup-ktp', 'sample.txt'), 'bukti-serah-terima')
+  await fs.writeFile(path.join(sourceDir, 'root-file.txt'), 'contoh-lain')
 
-  const result = await createUploadsBackup('unit_test')
+  const result = await createUploadsBackup('unit_test', { sourceDir, targetDir })
 
   assert.ok(result, 'seharusnya mengembalikan hasil backup, bukan null')
-  archivePath = result.path
   assert.ok(await pathExists(result.path), 'file arsip harus ada di disk')
+  assert.equal(path.dirname(result.path), targetDir, 'arsip harus ditulis ke targetDir sementara')
 
   const { stdout } = await execFileAsync('tar', ['-tzf', result.path])
   const entries = stdout.trim().split('\n')
+  const base = path.basename(sourceDir)
   assert.ok(
-    entries.includes('uploads/pickup-ktp/sample.txt'),
+    entries.includes(`${base}/pickup-ktp/sample.txt`),
     `arsip harus memuat berkas test, isi arsip: ${entries.join(', ')}`
+  )
+  assert.ok(
+    entries.includes(`${base}/root-file.txt`),
+    `arsip harus memuat berkas test lain, isi arsip: ${entries.join(', ')}`
   )
 })
 
-test('createUploadsBackup mengembalikan null jika uploads/ tidak ada', async (t) => {
-  const hadReal = await swapOutRealUploads()
+test('createUploadsBackup mengembalikan null jika sourceDir tidak ada', async (t) => {
+  const parentDir = await fs.mkdtemp(path.join(os.tmpdir(), 'uploads-missing-'))
+  const sourceDir = path.join(parentDir, 'does-not-exist')
+  const targetDir = await fs.mkdtemp(path.join(os.tmpdir(), 'uploads-dst-'))
 
   t.after(async () => {
-    await restoreRealUploads(hadReal)
+    await fs.rm(parentDir, { recursive: true, force: true })
+    await fs.rm(targetDir, { recursive: true, force: true })
   })
 
-  // Pastikan benar-benar tidak ada folder uploads/ tersisa.
-  await fs.rm(uploadsDir, { recursive: true, force: true })
-
-  const result = await createUploadsBackup('unit_test')
+  const result = await createUploadsBackup('unit_test', { sourceDir, targetDir })
 
   assert.equal(result, null)
 })

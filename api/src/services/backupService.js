@@ -56,21 +56,21 @@ export async function createDatabaseBackup(reason = 'manual') {
  * folder ini berarti kehilangan seluruh bukti penyerahan tanpa kertas
  * pengganti.
  */
-export async function createUploadsBackup(reason = 'manual') {
-  await fs.mkdir(backupDir, { recursive: true })
+export async function createUploadsBackup(reason = 'manual', { sourceDir = uploadsDir, targetDir = backupDir } = {}) {
+  await fs.mkdir(targetDir, { recursive: true })
 
   // Folder belum ada di instalasi baru -- bukan kegagalan.
   try {
-    await fs.access(uploadsDir)
+    await fs.access(sourceDir)
   } catch {
     return null
   }
 
   const safeReason = String(reason).toLowerCase().replace(/[^a-z0-9_-]/g, '_').slice(0, 40) || 'manual'
   const filename = `uploads.backup.${safeReason}.${timestamp()}.tar.gz`
-  const target = path.join(backupDir, filename)
+  const target = path.join(targetDir, filename)
 
-  await execFileAsync('tar', ['-czf', target, '-C', path.dirname(uploadsDir), 'uploads'])
+  await execFileAsync('tar', ['-czf', target, '-C', path.dirname(sourceDir), path.basename(sourceDir)])
 
   return { filename, path: target, created_at: new Date().toISOString() }
 }
