@@ -1,4 +1,4 @@
-import fetchWithAuth from './fetchWithAuth.js'
+import fetchWithAuth, { API_BASE } from './fetchWithAuth.js'
 
 // Dashboard
 export const getShowroomDashboard = () => fetchWithAuth('/showroom/dashboard')
@@ -359,4 +359,4 @@ export const updateUnitColor = (code, name) =>
 
 // PDF diambil lewat route berautentikasi, bukan tautan statis.
 export const getReceiptPdfUrl = (stepId) =>
-  `/api/showroom/document-handovers/receipt/${stepId}`
+  `${API_BASE}/showroom/document-handovers/receipt/${stepId}`

@@ -451,7 +451,7 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
                 </label>
                 {!receiverIsCustomer && (
                   <p className="mb-2 text-xs text-warning">
-                    {handover?.document_type === 'BPKB'
+                    {receiptDocs.some((h) => h.document_type === 'BPKB')
                       ? 'BPKB diwakilkan — surat kuasa bermaterai 10.000 wajib difoto.'
                       : 'Pastikan KTP pemilik dan KTP pengambil sudah diperiksa.'}
                   </p>
