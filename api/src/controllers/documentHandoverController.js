@@ -1,4 +1,13 @@
 import { prisma } from '../config/db.js'
+import { logger } from '../utils/logger.js'
+import { issueReceiptNumber } from '../services/receiptNumberService.js'
+import { collectReceiptData } from '../services/receiptDataService.js'
+import { generateReceiptPdf } from '../services/receiptPdfService.js'
+
+// Hanya dua jenis ini yang menerbitkan tanda terima; BUKU_SERVICE dan PLAT
+// ikut sebagai item checklist di badan tanda terima dokumen utamanya.
+const RECEIPT_DOCUMENT_TYPES = ['STNK', 'BPKB']
+const CONSUMER_STEP_TYPES = ['serah_ke_konsumen', 'ekspedisi_ke_konsumen']
 
 export async function getDocumentHandovers(req, res, next) {
   try {
@@ -333,7 +342,14 @@ export async function createDocumentHandover(req, res, next) {
 export async function addHandoverStep(req, res, next) {
   try {
     const { id } = req.params
-    const { step_type, given_by_name, received_by_name, notes } = req.body
+    const {
+      step_type,
+      given_by_name,
+      received_by_name,
+      notes,
+      receipt_items,
+      receiver_is_customer,
+    } = req.body
 
     const handover = await prisma.document_handovers.findUnique({
       where: { id: parseInt(id) },
@@ -405,6 +421,48 @@ export async function addHandoverStep(req, res, next) {
       }
     }
 
+    let signature_giver_url = null
+    let signature_receiver_url = null
+    let photo_power_of_attorney_url = null
+    if (req.files) {
+      if (req.files.signature_giver?.[0]) {
+        signature_giver_url = `/uploads/handovers/${req.files.signature_giver[0].filename}`
+      }
+      if (req.files.signature_receiver?.[0]) {
+        signature_receiver_url = `/uploads/handovers/${req.files.signature_receiver[0].filename}`
+      }
+      if (req.files.photo_power_of_attorney?.[0]) {
+        photo_power_of_attorney_url = `/uploads/handovers/${req.files.photo_power_of_attorney[0].filename}`
+      }
+    }
+
+    // Tanda terima hanya terbit saat dokumen benar-benar sampai ke konsumen,
+    // dan hanya untuk STNK/BPKB.
+    const issuesReceipt = CONSUMER_STEP_TYPES.includes(step_type) &&
+      RECEIPT_DOCUMENT_TYPES.includes(handover.document_type)
+
+    // receiver_is_customer datang sebagai teks dari multipart form-data.
+    const receiverIsCustomer = receiver_is_customer === undefined
+      ? true
+      : String(receiver_is_customer) !== 'false'
+
+    if (issuesReceipt) {
+      if (!signature_giver_url || !signature_receiver_url) {
+        return res.status(400).json({
+          error: 'Tanda tangan petugas dan penerima wajib diisi untuk menerbitkan tanda terima.',
+        })
+      }
+
+      // Syarat di kaki form BPKB: bila diwakilkan, wajib surat kuasa bermaterai.
+      // STNK sengaja tidak diwajibkan -- syaratnya lebih ringan dan volumenya
+      // hampir empat kali lipat.
+      if (handover.document_type === 'BPKB' && !receiverIsCustomer && !photo_power_of_attorney_url) {
+        return res.status(400).json({
+          error: 'Penerima BPKB bukan konsumen sendiri. Foto surat kuasa bermaterai wajib dilampirkan.',
+        })
+      }
+    }
+
     // Serah terima lewat pihak ketiga (ekspedisi, atau salesman di lapangan)
     // tidak diawasi langsung oleh kantor -- foto ini satu-satunya bukti bahwa
     // dokumen benar sudah sampai ke konsumen, bukan cuma klaim ketik nama.
@@ -421,8 +479,14 @@ export async function addHandoverStep(req, res, next) {
       : step_type === 'admin_ke_ekspedisi' ? 'ekspedisi'
       : handover.handover_mode
 
-    const [step] = await prisma.$transaction([
-      prisma.document_handover_steps.create({
+    const step = await prisma.$transaction(async (tx) => {
+      // Dibaca-lalu-ditulis di dalam satu transaksi; SQLite menyerialkan
+      // penulisan, jadi dua penyerahan bersamaan tidak bisa dapat nomor sama.
+      const receiptNumber = issuesReceipt
+        ? await issueReceiptNumber(tx, handover.document_type)
+        : null
+
+      const created = await tx.document_handover_steps.create({
         data: {
           handover_id: parseInt(id),
           step_type,
@@ -432,10 +496,17 @@ export async function addHandoverStep(req, res, next) {
           photo_handover_url,
           notes: notes || null,
           performed_by: req.user.userId,
+          receipt_number: receiptNumber,
+          signature_giver_url,
+          signature_receiver_url,
+          photo_power_of_attorney_url,
+          receiver_is_customer: receiverIsCustomer,
+          receipt_items: issuesReceipt ? (receipt_items || null) : null,
         },
         include: { performer: { select: { id: true, name: true } } },
-      }),
-      prisma.document_handovers.update({
+      })
+
+      await tx.document_handovers.update({
         where: { id: parseInt(id) },
         data: {
           status: newStatus,
@@ -443,10 +514,59 @@ export async function addHandoverStep(req, res, next) {
           ...(step_type === 'admin_ke_sales' && received_by_name ? { salesman_name: received_by_name } : {}),
           ...(step_type === 'serah_ke_konsumen' && received_by_name ? { consumer_name: received_by_name } : {}),
         },
-      }),
-    ])
+      })
 
-    res.status(201).json(step)
+      return created
+    })
+
+    // PDF disusun SETELAH transaksi commit -- menulis berkas di dalam transaksi
+    // menahan kunci tulis SQLite selama I/O disk. Bila penyusunan gagal, baris
+    // langkah tetap ada dengan nomornya dan PDF bisa dibangun ulang selama
+    // receipt_pdf_sha256 masih null.
+    let finalStep = step
+    if (step.receipt_number) {
+      try {
+        const data = await collectReceiptData(prisma, {
+          engineNumber: handover.engine_number,
+          documentType: handover.document_type,
+        })
+
+        if (data) {
+          let items = []
+          try {
+            const parsed = JSON.parse(step.receipt_items || '[]')
+            if (Array.isArray(parsed)) items = parsed
+          } catch { /* checklist rusak tidak boleh membatalkan penyerahan */ }
+
+          const pdf = await generateReceiptPdf({
+            receiptNumber: step.receipt_number,
+            data,
+            giverName: step.given_by_name,
+            receiverName: step.received_by_name,
+            items,
+            signatureGiverPath: signature_giver_url ? `.${signature_giver_url}` : null,
+            signatureReceiverPath: signature_receiver_url ? `.${signature_receiver_url}` : null,
+            issuedAt: step.performed_at,
+          })
+
+          finalStep = await prisma.document_handover_steps.update({
+            where: { id: step.id },
+            data: { receipt_pdf_url: pdf.urlPath, receipt_pdf_sha256: pdf.sha256 },
+            include: { performer: { select: { id: true, name: true } } },
+          })
+        }
+      } catch (pdfError) {
+        // Penyerahan fisik sudah terjadi -- jangan gagalkan permintaan hanya
+        // karena PDF gagal disusun. Nomornya sudah terbit dan bisa dibangun ulang.
+        logger.warn(req, 'Penyusunan PDF tanda terima gagal', {
+          step_id: step.id,
+          receipt_number: step.receipt_number,
+          error: pdfError.message,
+        })
+      }
+    }
+
+    res.status(201).json(finalStep)
   } catch (err) {
     next(err)
   }

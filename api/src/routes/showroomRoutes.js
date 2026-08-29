@@ -286,7 +286,10 @@ router.put('/document-handovers/:id', authenticate, handoverWriteAccess, updateD
 router.delete('/document-handovers/:id', authenticate, handoverDeleteAccess, deleteDocumentHandover)
 router.post('/document-handovers/:id/steps', authenticate, handoverStepAccess, uploadHandoverPhoto.fields([
   { name: 'photo_doc', maxCount: 1 },
-  { name: 'photo_handover', maxCount: 1 }
+  { name: 'photo_handover', maxCount: 1 },
+  { name: 'signature_giver', maxCount: 1 },
+  { name: 'signature_receiver', maxCount: 1 },
+  { name: 'photo_power_of_attorney', maxCount: 1 }
 ]), addHandoverStep)
 router.get('/document-handovers/photo/:stepId', authenticate, handoverReadAccess, getHandoverPhoto)
 router.patch('/document-handovers/:id/tracking-number', authenticate, handoverTrackingAccess, updateTrackingNumber)
