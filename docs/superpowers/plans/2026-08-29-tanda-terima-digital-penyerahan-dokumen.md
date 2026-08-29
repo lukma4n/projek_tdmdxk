@@ -1835,7 +1835,7 @@ git commit -m "feat(backup): ikutkan folder uploads agar bukti penyerahan terlin
 - Create: `web/src/components/common/SignaturePad.jsx`
 
 **Interfaces:**
-- Produces: `<SignaturePad label value onChange />` — `onChange(blob | null)` dipanggil dengan `Blob` PNG saat coretan selesai, `null` saat dikosongkan.
+- Produces: `<SignaturePad label onChange disabled />` — tanpa prop `value` (komponen sengaja uncontrolled; tidak ada yang perlu memuat ulang tanda tangan lama). `onChange(blob | null)` dipanggil dengan `Blob` PNG saat coretan selesai, `null` saat dikosongkan.
 
 - [ ] **Step 1: Tulis komponen**
 
