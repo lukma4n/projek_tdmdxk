@@ -11,25 +11,61 @@ import { Eraser } from 'lucide-react'
 export default function SignaturePad({ label, onChange, disabled = false }) {
   const canvasRef = useRef(null)
   const drawingRef = useRef(false)
+  const isEmptyRef = useRef(true)
+  const onChangeRef = useRef(onChange)
   const [isEmpty, setIsEmpty] = useState(true)
 
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
+
   // Canvas diskalakan ke devicePixelRatio supaya garisnya tidak buram di layar
-  // beresolusi tinggi.
+  // beresolusi tinggi. Ukuran backing store diikat ke ResizeObserver, bukan
+  // hanya diukur sekali di mount -- komponen ini dirender di dalam modal yang
+  // bisa masih beranimasi/menata layout ulang setelah mount, jadi rect awal
+  // bisa nol atau basi.
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const ratio = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * ratio
-    canvas.height = rect.height * ratio
-
     const ctx = canvas.getContext('2d')
-    ctx.scale(ratio, ratio)
-    ctx.lineWidth = 2
-    ctx.lineCap = 'round'
-    ctx.lineJoin = 'round'
-    ctx.strokeStyle = '#111827'
+    const ratio = window.devicePixelRatio || 1
+    let lastWidth = 0
+    let lastHeight = 0
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect()
+      const width = Math.round(rect.width * ratio)
+      const height = Math.round(rect.height * ratio)
+      if (width === 0 || height === 0) return
+      if (width === lastWidth && height === lastHeight) return
+      lastWidth = width
+      lastHeight = height
+
+      // Mengubah canvas.width/height mengosongkan bitmap-nya. Daripada
+      // membiarkan kanvas kosong sementara parent masih memegang Blob lama,
+      // kita reset state komponen secara konsisten: tanda tangan sebelum
+      // resize sudah tidak terlihat, jadi jangan dianggap masih berlaku.
+      canvas.width = width
+      canvas.height = height
+      ctx.scale(ratio, ratio)
+      ctx.lineWidth = 2
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
+      ctx.strokeStyle = '#111827'
+
+      drawingRef.current = false
+      isEmptyRef.current = true
+      setIsEmpty(true)
+      onChangeRef.current?.(null)
+    }
+
+    resize()
+
+    const observer = new ResizeObserver(resize)
+    observer.observe(canvas)
+
+    return () => observer.disconnect()
   }, [])
 
   const pointFrom = (event) => {
@@ -57,19 +93,25 @@ export default function SignaturePad({ label, onChange, disabled = false }) {
     const ctx = canvasRef.current.getContext('2d')
     ctx.lineTo(x, y)
     ctx.stroke()
-    if (isEmpty) setIsEmpty(false)
+    if (isEmptyRef.current) {
+      isEmptyRef.current = false
+      setIsEmpty(false)
+    }
   }
 
   const handleUp = () => {
     if (!drawingRef.current) return
     drawingRef.current = false
-    emit()
+    // Ketuk/klik tanpa menyeret tidak pernah menggambar apa pun -- jangan
+    // kirim Blob kosong yang bisa dianggap parent sebagai tanda tangan sah.
+    if (!isEmptyRef.current) emit()
   }
 
   const clear = () => {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, canvas.width, canvas.height)
+    isEmptyRef.current = true
     setIsEmpty(true)
     onChange?.(null)
   }
@@ -91,6 +133,7 @@ export default function SignaturePad({ label, onChange, disabled = false }) {
       </div>
       <canvas
         ref={canvasRef}
+        aria-label={label}
         onPointerDown={handleDown}
         onPointerMove={handleMove}
         onPointerUp={handleUp}
