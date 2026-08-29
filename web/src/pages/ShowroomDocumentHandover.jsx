@@ -120,7 +120,9 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
   // ketikan bebas). Konfirmasi diterima: penerima = konsumen, boleh dikoreksi.
   const [receivedBy, setReceivedBy] = useState(() => {
     if (initialStepType === 'admin_ke_ekspedisi') return handover.assigned_courier?.name || ''
-    if (initialStepType === 'ekspedisi_ke_konsumen') return handover.consumer_name || ''
+    if (initialStepType === 'ekspedisi_ke_konsumen' || initialStepType === 'serah_ke_konsumen') {
+      return handover.track?.stnk_name || handover.consumer_name || ''
+    }
     return ''
   })
   const [notes, setNotes] = useState('')
