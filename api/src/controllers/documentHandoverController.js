@@ -636,6 +636,29 @@ export async function getHandoverPhoto(req, res, next) {
   }
 }
 
+/**
+ * Unduh PDF tanda terima. Disajikan lewat route berautentikasi, tidak pernah
+ * sebagai berkas statis -- isinya memuat KTP dan alamat konsumen.
+ */
+export async function getReceiptPdf(req, res, next) {
+  try {
+    const step = await prisma.document_handover_steps.findUnique({
+      where: { id: parseInt(req.params.stepId) },
+    })
+
+    if (!step) {
+      return res.status(404).json({ error: 'Langkah serah terima tidak ditemukan' })
+    }
+    if (!step.receipt_pdf_url) {
+      return res.status(404).json({ error: 'Tanda terima belum diterbitkan untuk langkah ini' })
+    }
+
+    res.sendFile(step.receipt_pdf_url.replace(/^\//, ''), { root: process.cwd() })
+  } catch (err) {
+    next(err)
+  }
+}
+
 export async function updateDocumentHandover(req, res, next) {
   try {
     const { id } = req.params
