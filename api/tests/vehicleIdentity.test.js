@@ -57,6 +57,19 @@ test('merk/type null bila kode produk kosong', () => {
   assert.equal(formatMerkType(null, 'AT'), null)
 })
 
+test('merk/type: EV AT dipetakan ke A/T (bukan ikut default M/T)', () => {
+  assert.equal(formatMerkType('PCXE', 'EV AT'), 'PCXE / A/T')
+})
+
+test('merk/type: kategori tidak dikenal dikosongkan, tidak ditebak M/T', () => {
+  // Sebelum perbaikan ini, apa pun selain 'AT' otomatis dicetak M/T --
+  // 4 unit EV AT ikut salah cetak, dan kategori baru apa pun dari Honda di
+  // masa depan akan ikut salah juga. Field bukti harus kosong, bukan tebakan.
+  assert.equal(formatMerkType('XX99', 'HYBRID'), null)
+  assert.equal(formatMerkType('XX99', ''), null)
+  assert.equal(formatMerkType('XX99', null), null)
+})
+
 test('warna memakai nama lengkap bila kodenya dikenal', () => {
   const peta = new Map([['BK', 'BK-BLACK'], ['MH', 'MH-MERAH HITAM']])
   assert.equal(formatColorName('BK', peta), 'BK-BLACK')

@@ -49,19 +49,35 @@ export function deriveProductionYear(chassisNumber) {
   return VIN_YEAR_CODES[chassis[index]] ?? null
 }
 
+// Peta eksplisit customers.type -> transmisi. Data riil: AT 13.146 / SPORT
+// 3.710 / CUB 3.141 / EV AT 4. Kategori yang tidak ada di peta ini (termasuk
+// yang belum ada saat kode ini ditulis -- Honda bisa menambah kategori baru
+// kapan saja) TIDAK ditebak M/T -- ikut aturan yang sama dengan
+// deriveProductionYear satu fungsi di atas: field bukti tidak boleh menebak,
+// mending kosong daripada salah.
+const TRANSMISSION_BY_CATEGORY = {
+  AT: 'A/T',
+  'EV AT': 'A/T',
+  SPORT: 'M/T',
+  CUB: 'M/T',
+}
+
 /**
  * Merk/Type untuk tanda terima, mis. "ML2A / A/T".
  *
  * @param productCode customers.product_code — kolom "Type" di Report Penjualan
  * @param parentCategory customers.type — kolom "Parent Category Name" di Report
- *   Penjualan, isinya AT / SPORT / CUB. JANGAN pakai customers.category
+ *   Penjualan, isinya AT / SPORT / CUB / EV AT. JANGAN pakai customers.category
  *   ("AT LOW END") — itu segmen harga, bukan transmisi.
+ * @returns null bila kode produk kosong ATAU kategorinya tidak dikenal —
+ *   lihat TRANSMISSION_BY_CATEGORY.
  */
 export function formatMerkType(productCode, parentCategory) {
   const code = (productCode || '').trim()
   if (!code) return null
 
-  const transmission = (parentCategory || '').trim().toUpperCase() === 'AT' ? 'A/T' : 'M/T'
+  const transmission = TRANSMISSION_BY_CATEGORY[(parentCategory || '').trim().toUpperCase()]
+  if (!transmission) return null
   return `${code} / ${transmission}`
 }
 
