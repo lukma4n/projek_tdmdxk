@@ -1243,7 +1243,7 @@ test('serah terima STNK menerbitkan nomor, PDF, dan hash', async () => {
   assert.equal(isi.subarray(0, 4).toString(), '%PDF')
 })
 
-test('serah terima ditolak tanpa tanda tangan', async () => {
+test('PLAT tidak menerbitkan tanda terima dan tidak minta tanda tangan', async () => {
   const handover = await prismaTest.document_handovers.create({
     data: {
       engine_number: ENG_STNK,
@@ -1302,13 +1302,53 @@ test('BPKB dengan penerima berbeda diterima bila surat kuasa dilampirkan', async
   assert.equal(res.body.receiver_is_customer, false)
 })
 
-test('nomor tanda terima tidak pernah kembar', async () => {
-  const nomor = await prismaTest.document_handover_steps.findMany({
-    where: { receipt_number: { not: null } },
-    select: { receipt_number: true },
+test('STNK tanpa tanda tangan ditolak', async () => {
+  const handover = await prismaTest.document_handovers.create({
+    data: {
+      engine_number: ENG_STNK,
+      document_type: 'BPKB',
+      handover_mode: 'langsung',
+      status: 'tersedia',
+      created_by: adminId,
+    },
   })
-  const unik = new Set(nomor.map((n) => n.receipt_number))
-  assert.equal(unik.size, nomor.length)
+
+  const res = await request(app)
+    .post(`/api/showroom/document-handovers/${handover.id}/steps`)
+    .set('Cookie', adminCookie)
+    .field('step_type', 'serah_ke_konsumen')
+    .field('received_by_name', 'TANPA TTD')
+    .attach('photo_handover', FOTO, 'serah.jpg')
+    .expect(400)
+
+  assert.match(res.body.error, /tanda tangan/i)
+})
+
+test('nomor urut naik untuk penyerahan berikutnya di bulan yang sama', async () => {
+  // Dua tanda terima STNK sudah terbit di test-test di atas untuk cabang dan
+  // bulan yang sama; nomornya harus berbeda dan berurutan.
+  const steps = await prismaTest.document_handover_steps.findMany({
+    where: { receipt_number: { startsWith: 'TT-' } },
+    select: { receipt_number: true },
+    orderBy: { id: 'asc' },
+  })
+
+  assert.ok(steps.length >= 2, 'perlu minimal dua tanda terima untuk diuji')
+
+  const perAwalan = new Map()
+  for (const { receipt_number } of steps) {
+    const pisah = receipt_number.lastIndexOf('/')
+    const awalan = receipt_number.slice(0, pisah + 1)
+    const urut = parseInt(receipt_number.slice(pisah + 1), 10)
+    if (!perAwalan.has(awalan)) perAwalan.set(awalan, [])
+    perAwalan.get(awalan).push(urut)
+  }
+
+  for (const [awalan, urutan] of perAwalan) {
+    const unik = new Set(urutan)
+    assert.equal(unik.size, urutan.length, `nomor kembar pada ${awalan}`)
+    assert.deepEqual([...urutan].sort((a, b) => a - b), urutan, `urutan tidak naik pada ${awalan}`)
+  }
 })
 ```
 
@@ -1685,15 +1725,23 @@ Backup harian hanya menyalin SQLite. Setelah berkas fisik dihapus, PDF tanda ter
 
 - [ ] **Step 1: Tulis fungsi backup uploads**
 
-Di `api/src/services/backupService.js`, tambahkan di bawah `createDatabaseBackup`. Memakai `tar` bawaan sistem (tersedia di macOS maupun VPS Linux) supaya tidak menambah dependensi.
+Di `api/src/services/backupService.js`, tambahkan dua import ini **di bagian atas berkas** bersama import yang sudah ada — bukan di tengah berkas:
 
 ```js
 import { execFile } from 'child_process'
 import { promisify } from 'util'
+```
 
+Lalu tambahkan konstanta ini di dekat `const backupDir = ...` yang sudah ada:
+
+```js
 const execFileAsync = promisify(execFile)
 const uploadsDir = path.resolve(__dirname, '../../uploads')
+```
 
+Terakhir, tambahkan fungsi berikut di bawah `createDatabaseBackup`. Memakai `tar` bawaan sistem (tersedia di macOS maupun VPS Linux) supaya tidak menambah dependensi.
+
+```js
 /**
  * Arsipkan folder uploads/ bersama backup database.
  *
