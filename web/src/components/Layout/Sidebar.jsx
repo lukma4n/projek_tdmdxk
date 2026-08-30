@@ -116,6 +116,7 @@ const navStructure = [
           { path: '/showroom/dashboard', label: 'Dashboard Unit', menuKey: 'SHOWROOM' },
           { path: '/showroom/stock-unit', label: 'Stock Unit', menuKey: 'SHOWROOM' },
           { path: '/showroom/ksu', label: 'Master KSU', menuKey: 'SHOWROOM' },
+          { path: '/showroom/warna-unit', label: 'Nama Warna Unit', menuKey: 'SHOWROOM' },
         ],
       },
       {

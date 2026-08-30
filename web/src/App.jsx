@@ -561,7 +561,7 @@ function App() {
         <Route
           path="showroom/warna-unit"
           element={
-            <RoleGuard roles={[ROLES.ADMIN_SHOWROOM, ROLES.KEPALA_CABANG]}>
+            <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomUnitColors /></LazyPage>
             </RoleGuard>
           }
