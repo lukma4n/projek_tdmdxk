@@ -1,4 +1,40 @@
 import { prisma } from '../config/db.js'
+import { logger } from '../utils/logger.js'
+import { issueReceiptNumber } from '../services/receiptNumberService.js'
+import { collectReceiptData } from '../services/receiptDataService.js'
+import { generateReceiptPdf } from '../services/receiptPdfService.js'
+
+// Hanya dua jenis ini yang menerbitkan tanda terima; BUKU_SERVICE dan PLAT
+// ikut sebagai item checklist di badan tanda terima dokumen utamanya.
+const RECEIPT_DOCUMENT_TYPES = ['STNK', 'BPKB']
+const CONSUMER_STEP_TYPES = ['serah_ke_konsumen', 'ekspedisi_ke_konsumen']
+
+/**
+ * Salesman dan Ekspedisi hanya boleh membuka penyerahan yang ditugaskan
+ * kepadanya.
+ *
+ * Id di route (`:id`, `:stepId`) bersifat sekuensial, jadi tanpa penjagaan ini
+ * satu akun cukup menyusuri angka untuk membaca dokumen konsumen lain: foto
+ * fisik STNK-nya, nomor rangka dan mesin, sampai KTP dan alamat yang tercetak
+ * di tanda terima.
+ *
+ * Perbandingannya sengaja disamakan persis dengan getDocumentHandovers —
+ * termasuk sifat case-sensitive-nya — supaya daftar dan detail tidak pernah
+ * berbeda pendapat soal siapa yang berhak.
+ *
+ * @returns pesan penolakan bila ditolak, null bila boleh lewat
+ */
+function handoverAccessDenial(req, handover) {
+  const denial = 'Akses ditolak. Dokumen ini tidak ditugaskan kepada Anda.'
+
+  if (req.user.role === 'Salesman') {
+    if (!handover || handover.salesman_name !== req.user.name) return denial
+  } else if (req.user.role === 'Ekspedisi') {
+    if (!handover || handover.assigned_courier_id !== req.user.userId) return denial
+  }
+
+  return null
+}
 
 export async function getDocumentHandovers(req, res, next) {
   try {
@@ -333,7 +369,14 @@ export async function createDocumentHandover(req, res, next) {
 export async function addHandoverStep(req, res, next) {
   try {
     const { id } = req.params
-    const { step_type, given_by_name, received_by_name, notes } = req.body
+    const {
+      step_type,
+      given_by_name,
+      received_by_name,
+      notes,
+      receipt_items,
+      receiver_is_customer,
+    } = req.body
 
     const handover = await prisma.document_handovers.findUnique({
       where: { id: parseInt(id) },
@@ -405,6 +448,21 @@ export async function addHandoverStep(req, res, next) {
       }
     }
 
+    let signature_giver_url = null
+    let signature_receiver_url = null
+    let photo_power_of_attorney_url = null
+    if (req.files) {
+      if (req.files.signature_giver?.[0]) {
+        signature_giver_url = `/uploads/handovers/${req.files.signature_giver[0].filename}`
+      }
+      if (req.files.signature_receiver?.[0]) {
+        signature_receiver_url = `/uploads/handovers/${req.files.signature_receiver[0].filename}`
+      }
+      if (req.files.photo_power_of_attorney?.[0]) {
+        photo_power_of_attorney_url = `/uploads/handovers/${req.files.photo_power_of_attorney[0].filename}`
+      }
+    }
+
     // Serah terima lewat pihak ketiga (ekspedisi, atau salesman di lapangan)
     // tidak diawasi langsung oleh kantor -- foto ini satu-satunya bukti bahwa
     // dokumen benar sudah sampai ke konsumen, bukan cuma klaim ketik nama.
@@ -416,13 +474,96 @@ export async function addHandoverStep(req, res, next) {
       return res.status(400).json({ error: 'Foto penyerahan fisik wajib dilampirkan sebagai bukti dokumen sudah diterima konsumen.' })
     }
 
+    // Tanda terima hanya terbit saat dokumen benar-benar sampai ke konsumen,
+    // dan hanya untuk STNK/BPKB.
+    const issuesReceipt = CONSUMER_STEP_TYPES.includes(step_type) &&
+      RECEIPT_DOCUMENT_TYPES.includes(handover.document_type)
+
+    // receiver_is_customer datang sebagai teks dari multipart form-data --
+    // ini KLAIM dari form, belum tentu benar.
+    const receiverIsCustomerClaim = receiver_is_customer === undefined
+      ? true
+      : String(receiver_is_customer) !== 'false'
+
+    // Aturan surat kuasa BPKB (di bawah) sebelumnya mempercayai klaim itu
+    // mentah-mentah -- petugas bisa mengetik nama orang lain sambil
+    // membiarkan "Konsumen sendiri yang menerima" tercentang, dan surat
+    // kuasa jadi tidak wajib. Diverifikasi ulang di server terhadap nama
+    // pemilik dokumen sesungguhnya:
+    //   - klaim "BUKAN konsumen" dihormati apa adanya -- itu klaim yang lebih
+    //     ketat, tidak ada yang perlu dilonggarkan.
+    //   - klaim "konsumen sendiri" hanya dipercaya kalau received_by_name
+    //     benar-benar cocok dengan nama pemilik. Tidak cocok -> dianggap
+    //     BUKAN konsumen, menutup celah "tidak mencentang".
+    //   - kalau nama pemilik sama sekali tidak bisa ditentukan: STNK tetap
+    //     memakai klaim form apa adanya (syaratnya memang lebih ringan),
+    //     tapi BPKB gagal TERTUTUP -- dianggap BUKAN konsumen sehingga surat
+    //     kuasa tetap wajib. Aturan otorisasi ini adalah pemeriksaan
+    //     terakhir; kalau datanya tidak lengkap dia tidak boleh melonggar.
+    //   - derivasi ini cuma relevan untuk langkah yang benar-benar
+    //     menerbitkan tanda terima (issuesReceipt). Langkah lain
+    //     (admin_ke_sales, sales_terima, admin_ke_ekspedisi) menyerahkan ke
+    //     salesman/kurir, bukan konsumen -- membandingkan nama di situ cuma
+    //     mengotori kolom audit, jadi biarkan nilainya ikut klaim form apa
+    //     adanya (default true, sama seperti sebelum verifikasi ini ada).
+    let receiverIsCustomer = receiverIsCustomerClaim
+    let ownerName = null
+    if (issuesReceipt && receiverIsCustomerClaim) {
+      const track = await prisma.showroom_stnk_bpkb_tracks.findUnique({
+        where: { engine_number: handover.engine_number },
+        select: { stnk_name: true },
+      })
+      ownerName = track?.stnk_name || handover.consumer_name || null
+
+      if (ownerName) {
+        const namesMatch = ownerName.trim().toLowerCase() === String(received_by_name || '').trim().toLowerCase()
+        receiverIsCustomer = namesMatch
+      } else if (handover.document_type === 'BPKB') {
+        receiverIsCustomer = false
+        logger.warn(req, 'Nama pemilik BPKB tidak bisa ditentukan -- verifikasi penerima gagal tertutup, surat kuasa tetap diwajibkan', {
+          handover_id: handover.id,
+          engine_number: handover.engine_number,
+        })
+      } else {
+        logger.warn(req, 'Nama pemilik dokumen tidak bisa ditentukan untuk verifikasi penerima -- memakai klaim form apa adanya', {
+          handover_id: handover.id,
+          engine_number: handover.engine_number,
+        })
+      }
+    }
+
+    if (issuesReceipt) {
+      if (!signature_giver_url || !signature_receiver_url) {
+        return res.status(400).json({
+          error: 'Tanda tangan petugas dan penerima wajib diisi untuk menerbitkan tanda terima.',
+        })
+      }
+
+      // Syarat di kaki form BPKB: bila diwakilkan, wajib surat kuasa bermaterai.
+      // STNK sengaja tidak diwajibkan -- syaratnya lebih ringan dan volumenya
+      // hampir empat kali lipat.
+      if (handover.document_type === 'BPKB' && !receiverIsCustomer && !photo_power_of_attorney_url) {
+        return res.status(400).json({
+          error: ownerName
+            ? `Penerima BPKB bukan konsumen sendiri (nama pemilik menurut sistem: ${ownerName}). Foto surat kuasa bermaterai wajib dilampirkan.`
+            : 'Penerima BPKB bukan konsumen sendiri. Foto surat kuasa bermaterai wajib dilampirkan.',
+        })
+      }
+    }
+
     const newStatus = transition.to
     const handoverMode = step_type === 'admin_ke_sales' ? 'via_sales'
       : step_type === 'admin_ke_ekspedisi' ? 'ekspedisi'
       : handover.handover_mode
 
-    const [step] = await prisma.$transaction([
-      prisma.document_handover_steps.create({
+    const step = await prisma.$transaction(async (tx) => {
+      // Dibaca-lalu-ditulis di dalam satu transaksi; SQLite menyerialkan
+      // penulisan, jadi dua penyerahan bersamaan tidak bisa dapat nomor sama.
+      const receiptNumber = issuesReceipt
+        ? await issueReceiptNumber(tx, handover.document_type)
+        : null
+
+      const created = await tx.document_handover_steps.create({
         data: {
           handover_id: parseInt(id),
           step_type,
@@ -432,10 +573,17 @@ export async function addHandoverStep(req, res, next) {
           photo_handover_url,
           notes: notes || null,
           performed_by: req.user.userId,
+          receipt_number: receiptNumber,
+          signature_giver_url,
+          signature_receiver_url,
+          photo_power_of_attorney_url,
+          receiver_is_customer: receiverIsCustomer,
+          receipt_items: issuesReceipt ? (receipt_items || null) : null,
         },
         include: { performer: { select: { id: true, name: true } } },
-      }),
-      prisma.document_handovers.update({
+      })
+
+      await tx.document_handovers.update({
         where: { id: parseInt(id) },
         data: {
           status: newStatus,
@@ -443,10 +591,70 @@ export async function addHandoverStep(req, res, next) {
           ...(step_type === 'admin_ke_sales' && received_by_name ? { salesman_name: received_by_name } : {}),
           ...(step_type === 'serah_ke_konsumen' && received_by_name ? { consumer_name: received_by_name } : {}),
         },
-      }),
-    ])
+      })
 
-    res.status(201).json(step)
+      return created
+    })
+
+    // PDF disusun SETELAH transaksi commit -- menulis berkas di dalam transaksi
+    // menahan kunci tulis SQLite selama I/O disk. Bila penyusunan gagal, baris
+    // langkah tetap ada dengan nomornya dan PDF bisa dibangun ulang selama
+    // receipt_pdf_sha256 masih null.
+    let finalStep = step
+    if (step.receipt_number) {
+      try {
+        const data = await collectReceiptData(prisma, {
+          engineNumber: handover.engine_number,
+          documentType: handover.document_type,
+        })
+
+        if (data) {
+          let items = []
+          try {
+            const parsed = JSON.parse(step.receipt_items || '[]')
+            if (Array.isArray(parsed)) items = parsed
+          } catch { /* checklist rusak tidak boleh membatalkan penyerahan */ }
+
+          const pdf = await generateReceiptPdf({
+            receiptNumber: step.receipt_number,
+            data,
+            giverName: step.given_by_name,
+            receiverName: step.received_by_name,
+            items,
+            signatureGiverPath: signature_giver_url ? `.${signature_giver_url}` : null,
+            signatureReceiverPath: signature_receiver_url ? `.${signature_receiver_url}` : null,
+            issuedAt: step.performed_at,
+          })
+
+          finalStep = await prisma.document_handover_steps.update({
+            where: { id: step.id },
+            data: { receipt_pdf_url: pdf.urlPath, receipt_pdf_sha256: pdf.sha256 },
+            include: { performer: { select: { id: true, name: true } } },
+          })
+        } else {
+          // showroom_stnk_bpkb_tracks tidak punya baris untuk nomor mesin ini --
+          // nomor tanda terima sudah terbit dan tanda tangan sudah tersimpan,
+          // tapi PDF-nya tidak pernah ada. Tanpa log ini kejadian lolos diam-diam:
+          // HTTP 201, tidak ada exception. Bisa dibangun ulang lewat
+          // scripts/rebuild-receipt-pdfs.js selama receipt_pdf_sha256 masih null.
+          logger.warn(req, 'PDF tanda terima tidak dibuat: data pemilik dokumen tidak ditemukan', {
+            step_id: step.id,
+            receipt_number: step.receipt_number,
+            engine_number: handover.engine_number,
+          })
+        }
+      } catch (pdfError) {
+        // Penyerahan fisik sudah terjadi -- jangan gagalkan permintaan hanya
+        // karena PDF gagal disusun. Nomornya sudah terbit dan bisa dibangun ulang.
+        logger.warn(req, 'Penyusunan PDF tanda terima gagal', {
+          step_id: step.id,
+          receipt_number: step.receipt_number,
+          error: pdfError.message,
+        })
+      }
+    }
+
+    res.status(201).json(finalStep)
   } catch (err) {
     next(err)
   }
@@ -470,6 +678,10 @@ export async function getHandoverSteps(req, res, next) {
     if (!handover) {
       return res.status(404).json({ error: 'Record serah terima tidak ditemukan' })
     }
+
+    // Riwayat ini membawa stnk_name, no_polisi, mobile, no_stnk dan no_bpkb.
+    const denial = handoverAccessDenial(req, handover)
+    if (denial) return res.status(403).json({ error: denial })
 
     const track = await prisma.showroom_stnk_bpkb_tracks.findUnique({
       where: { engine_number: handover.engine_number },
@@ -498,11 +710,16 @@ export async function getHandoverPhoto(req, res, next) {
 
     const step = await prisma.document_handover_steps.findUnique({
       where: { id: parseInt(stepId) },
+      include: { handover: true },
     })
 
     if (!step) {
       return res.status(404).json({ error: 'Langkah serah terima tidak ditemukan' })
     }
+
+    // Foto dokumen di sini umumnya foto fisik STNK-nya sendiri.
+    const denial = handoverAccessDenial(req, step.handover)
+    if (denial) return res.status(403).json({ error: denial })
 
     const pathField = type === 'handover' ? step.photo_handover_url : step.photo_url
     if (!pathField) {
@@ -511,6 +728,34 @@ export async function getHandoverPhoto(req, res, next) {
 
     const filePath = pathField.replace(/^\//, '')
     res.sendFile(filePath, { root: process.cwd() })
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
+ * Unduh PDF tanda terima. Disajikan lewat route berautentikasi, tidak pernah
+ * sebagai berkas statis -- isinya memuat KTP dan alamat konsumen.
+ */
+export async function getReceiptPdf(req, res, next) {
+  try {
+    const step = await prisma.document_handover_steps.findUnique({
+      where: { id: parseInt(req.params.stepId) },
+      include: { handover: true },
+    })
+
+    if (!step) {
+      return res.status(404).json({ error: 'Langkah serah terima tidak ditemukan' })
+    }
+    if (!step.receipt_pdf_url) {
+      return res.status(404).json({ error: 'Tanda terima belum diterbitkan untuk langkah ini' })
+    }
+
+    // Satu PDF memuat nama lengkap, alamat, KTP, rangka, mesin dan plat sekaligus.
+    const denial = handoverAccessDenial(req, step.handover)
+    if (denial) return res.status(403).json({ error: denial })
+
+    res.sendFile(step.receipt_pdf_url.replace(/^\//, ''), { root: process.cwd() })
   } catch (err) {
     next(err)
   }

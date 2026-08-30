@@ -1,18 +1,28 @@
 # Catatan Sesi Terakhir — DXK Operation System
 
-Tanggal: **2026-08-05**
-Branch: **`main`** (commit `e0c8e9b`). **Sudah di-push dan sudah di-deploy ke produksi.**
-Verifikasi: **API test 182 pass / 0 fail**, lint 0 error (1 warning pre-existing), build sukses, `prisma validate` valid.
+Tanggal: **2026-08-29**
+Branch: **`feat/tanda-terima-digital`**. **BELUM di-merge ke `main`, BELUM naik produksi** — pemilik sistem sengaja ingin meninjaunya dulu di dev sebelum ini menggantikan tanda terima kertas yang berjalan sekarang.
+Verifikasi (Task 13): `npx prisma validate` valid; `npm test` **232 pass / 0 fail** (naik dari 61 sebelum fitur ini); `npm run lint` 0 error, 1 warning pre-existing (`WorkshopReportDashboard.jsx:35`, sudah dikenal, bukan regresi); `npm run build` sukses.
 
-> ⚠️ **Gateway WhatsApp (Wablas) DIHAPUS di hari yang sama.** Kalau membaca bagian
+## 0. Yang dikerjakan sesi ini — Tanda Terima Digital Penyerahan Dokumen
+
+Fitur baru (13 task, lihat `docs/superpowers/specs/2026-08-29-tanda-terima-digital-penyerahan-dokumen-design.md` dan `.superpowers/sdd/progress.md`): saat petugas mencatat STNK/BPKB sampai ke konsumen, sistem menerbitkan nomor tanda terima sendiri (`TT-STNK/DXK/26/08/00001`, `TT-BPKB/...`), mengambil dua tanda tangan digital di perangkat petugas (bukan HP konsumen), lalu mengarsipkan PDF dengan hash SHA-256. Ini menggantikan tanda terima kertas yang selama ini ditandatangani basah dan diarsipkan fisik.
+
+- **Belum di-merge, belum deploy** — sesuai permintaan pemilik sistem, menunggu review di dev.
+- **Backup harian sekarang ikut mengarsipkan `api/uploads/`**, bukan cuma database. Sebelum fitur ini, PDF/foto tanda terima tidak punya cadangan sama sekali; kalau disk VPS bermasalah, database selamat tapi bukti serah terima hilang tanpa kertas pengganti. `scripts/backup-db.js` sekarang menyalin keduanya dengan retensi sama (14).
+- **Keputusan pemilik sistem di tengah pembangunan:** penyerahan lewat ekspedisi/kurir (`ekspedisi_ke_konsumen`) WAJIB tanda tangan digital, persis seperti serah terima di counter — bukan dikecualikan. Alasannya: penyerahan lewat kurir justru momen yang paling minim pengawasan dalam seluruh proses, jadi harus dijaga sama ketatnya, bukan lebih longgar. (Lihat `.superpowers/sdd/progress.md` Task 7.)
+- **Frontend BELUM ditelusuri manual di browser.** Modal serah terima (`ShowroomDocumentHandover.jsx`), SignaturePad, dan halaman peta warna (`ShowroomUnitColors.jsx`) lulus lint+build tapi belum diklik satu per satu oleh manusia. Daftar langkah yang perlu dicoba ada di `.superpowers/sdd/task-11-report.md`.
+- Dokumentasi disinkronkan Task 13: spec ditambah kolom `receipt_items` (checklist item yang diserahkan, JSON array) yang hilang dari draf awal; `CLAUDE.md` bagian "Key gotchas" bertambah 4 entri (3 dari brief + 1 temuan reviewer soal ES-module hoisting yang membuat konvensi `DATABASE_URL` di `helpers.js` sebenarnya tidak berjalan seperti yang tertulis).
+
+> ⚠️ **Gateway WhatsApp (Wablas) masih DIHAPUS** sejak sesi 2026-08-05 di bawah. Kalau membaca bagian
 > mana pun di bawah yang menyebut pengiriman otomatis, baca §5 dulu — pengiriman
 > sekarang MANUAL lewat WhatsApp Web. Lihat [[wablas-diblokir-mode-manual]].
 
-> Catatan sesi-sesi sebelumnya (FASE 2 pickup request, self-check publik, single-session, cek-unit) sudah selesai & ter-merge — ringkasannya ada di `CLAUDE.md` dan histori `git log`.
+> Catatan sesi-sesi sebelumnya (FASE 2 pickup request, self-check publik, single-session, cek-unit) sudah selesai & ter-merge — ringkasannya ada di `CLAUDE.md` dan histori `git log`. Sisa dokumen di bawah ini (§1 dst.) adalah catatan sesi **2026-08-05** (Pusat Follow-up + pembongkaran gateway Wablas), masih akurat untuk `main`.
 
 ---
 
-## 0. Yang dikerjakan sesi ini
+## 0b. [Sesi 2026-08-05] Yang dikerjakan sesi itu
 
 Dua babak dalam satu hari: membangun Pusat Follow-up dengan gateway WhatsApp
 otomatis (§0-§2), lalu **membongkar gatewaynya** setelah nomor dealer diblokir

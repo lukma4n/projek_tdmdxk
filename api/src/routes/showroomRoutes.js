@@ -89,8 +89,10 @@ import { uploadImage } from '../middleware/upload.js'
 import {
   getDocumentHandovers, getDocumentHandoverSummary, getHandoverSalespeople, getCourierUsers,
   getAvailableDocuments, createDocumentHandover, updateDocumentHandover, deleteDocumentHandover, addHandoverStep, getHandoverSteps, getHandoverPhoto,
-  processShipmentFromPickupRequest, updateTrackingNumber,
+  processShipmentFromPickupRequest, updateTrackingNumber, getReceiptPdf,
 } from '../controllers/documentHandoverController.js'
+
+import { getUnitColors, updateUnitColor } from '../controllers/unitColorController.js'
 import { uploadHandoverPhoto } from '../middleware/upload.js'
 
 const router = Router()
@@ -286,10 +288,17 @@ router.put('/document-handovers/:id', authenticate, handoverWriteAccess, updateD
 router.delete('/document-handovers/:id', authenticate, handoverDeleteAccess, deleteDocumentHandover)
 router.post('/document-handovers/:id/steps', authenticate, handoverStepAccess, uploadHandoverPhoto.fields([
   { name: 'photo_doc', maxCount: 1 },
-  { name: 'photo_handover', maxCount: 1 }
+  { name: 'photo_handover', maxCount: 1 },
+  { name: 'signature_giver', maxCount: 1 },
+  { name: 'signature_receiver', maxCount: 1 },
+  { name: 'photo_power_of_attorney', maxCount: 1 }
 ]), addHandoverStep)
 router.get('/document-handovers/photo/:stepId', authenticate, handoverReadAccess, getHandoverPhoto)
+router.get('/document-handovers/receipt/:stepId', authenticate, handoverReadAccess, getReceiptPdf)
 router.patch('/document-handovers/:id/tracking-number', authenticate, handoverTrackingAccess, updateTrackingNumber)
+
+router.get('/unit-colors', authenticate, showroomAccess, getUnitColors)
+router.patch('/unit-colors/:code', authenticate, showroomAccess, updateUnitColor)
 
 // Pengiriman via ekspedisi -- ubah pickup request (delivery_method EKSPEDISI)
 // jadi baris document_handovers mode 'ekspedisi'.

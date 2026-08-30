@@ -1030,6 +1030,24 @@ model document_handover_steps {
 
   notes            String?
 
+  // --- Tanda terima digital (hanya terisi pada langkah serah ke konsumen) ---
+  // Nomor diterbitkan sistem sendiri, sengaja beda dari nomor DMS (ENCS/ENCB)
+  // supaya tidak pernah tertukar saat audit. Format: TT-STNK/DXK/26/08/00001
+  receipt_number              String?  @unique
+  signature_giver_url         String?  // Path PNG tanda tangan petugas
+  signature_receiver_url      String?  // Path PNG tanda tangan konsumen/penerima
+  // Wajib bila penerima bukan konsumen DAN dokumennya BPKB (syarat di kaki form)
+  photo_power_of_attorney_url String?
+  receiver_is_customer        Boolean  @default(true)
+  // Item yang benar-benar diserahkan, JSON array. BPKB: BPKB/Copy Faktur/NIK.
+  // STNK: STNK/Plat.
+  receipt_items               String?
+  receipt_pdf_url             String?
+  // Dihitung sekali saat PDF pertama dibuat dan TIDAK PERNAH diperbarui —
+  // inilah yang membuktikan berkas tak berubah setelah ditandatangani.
+  // Selama masih null, PDF boleh dibangun ulang; setelah terisi, tidak.
+  receipt_pdf_sha256          String?
+
   performed_by     Int
   performed_at     DateTime  @default(now())
 
@@ -1038,6 +1056,20 @@ model document_handover_steps {
 
   @@index([handover_id])
   @@index([step_type])
+}
+
+// Peta kode warna -> nama lengkap, mis. "BK" -> "BK-BLACK".
+//
+// Report Penjualan hanya membawa kode warna 2 huruf, sementara tanda terima
+// harus mencantumkan nama lengkapnya. Nama lengkap itu ada di Report Stock
+// Unit, tapi import stok unit MENGHAPUS baris unit yang sudah terjual
+// (runShowroomSnapshotImport), jadi datanya lewat lalu hilang. Tabel ini
+// memanennya sebelum penghapusan supaya tersimpan permanen.
+model unit_color_names {
+  code       String   @id      // "BK"
+  name       String            // "BK-BLACK"
+  source     String   @default("import") // "import" | "manual"
+  updated_at DateTime @updatedAt
 }
 
 // FASE 2 Self-Check: permintaan ambil dokumen yang diajukan konsumen dari /cek.

@@ -113,3 +113,33 @@ test('parseStockFile aggregates duplicate product codes', async () => {
     await fs.rm(dir, { recursive: true, force: true })
   }
 })
+
+test('parser sales memakai kolom 79 (KTP Customer STNK), bukan kolom 78', async () => {
+  const baris = []
+  baris[0] = 1
+  baris[1] = 'DXK'
+  baris[4] = 'SO/DXK/26/08/00999'
+  baris[5] = 'Done'
+  baris[6] = 46263                 // serial tanggal Excel, wajib angka
+  baris[15] = 'UJI KTP'
+  baris[16] = 'ML2A'
+  baris[17] = 'BK'
+  baris[19] = 'UJIENGINE0001'
+  baris[20] = 'UJIFRAME00001'
+  baris[50] = 'AT'
+  baris[51] = 'BEAT SPORTY'
+  baris[55] = 'KAB. KETAPANG'
+  baris[57] = 'TUMBANG TITI'
+  baris[78] = '9999999999999999'   // KTP Customer -- TIDAK boleh dipakai
+  baris[79] = '6104131204050002'   // KTP Customer STNK -- yang benar
+
+  const headerRows = Array.from({ length: 6 }, () => ['header'])
+  const { dir, filePath } = await writeWorkbook([...headerRows, baris])
+  try {
+    const { records } = await parseSalesFile(filePath)
+    assert.equal(records.length, 1)
+    assert.equal(records[0].no_ktp, '6104131204050002')
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true })
+  }
+})

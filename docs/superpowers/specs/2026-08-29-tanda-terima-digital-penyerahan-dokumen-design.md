@@ -82,13 +82,21 @@ receipt_number              String?  @unique
 signature_giver_url         String?
 signature_receiver_url      String?
 photo_power_of_attorney_url String?
+receiver_is_customer        Boolean  @default(true)
+receipt_items                String?  // JSON array item yang diserahkan
 receipt_pdf_url             String?
 receipt_pdf_sha256          String?
-receiver_is_customer        Boolean  @default(true)
 ```
 
+`receipt_items` menyimpan checklist item yang benar-benar diserahkan
+(BPKB: BPKB/Copy Faktur/NIK; STNK: STNK/Plat) sebagai JSON array. Ditambahkan
+saat implementasi — tidak ada di draf awal spec ini, tapi checklist yang
+dicentang petugas (lihat bagian PDF) harus disimpan supaya PDF bisa dibangun
+ulang dan riwayatnya bisa diaudit.
+
 `receipt_pdf_sha256` dihitung saat PDF dibuat dan tidak pernah diperbarui.
-Fungsinya membuktikan berkas tidak berubah setelah ditandatangani.
+Fungsinya membuktikan berkas tidak berubah setelah ditandatangani. Selama
+kolom ini masih kosong, PDF boleh dibangun ulang; setelah terisi, tidak.
 
 **Tabel baru — peta nama warna:**
 
@@ -96,7 +104,7 @@ Fungsinya membuktikan berkas tidak berubah setelah ditandatangani.
 model unit_color_names {
   code       String   @id      // "BK"
   name       String            // "BK-BLACK"
-  source     String            // "import" | "manual"
+  source     String   @default("import") // "import" | "manual"
   updated_at DateTime @updatedAt
 }
 ```

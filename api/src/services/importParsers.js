@@ -457,7 +457,10 @@ async function buildSalesResult(rows) {
         alamat_konsumen: alamatParts.length > 0 ? alamatParts.join(', ') : '',
         customer_mobile: String(row[67] || ''),
         tenor: String(row[68] || ''),
-        no_ktp: String(row[78] || ''),
+        // Kolom 78 "KTP Customer" vs 79 "KTP Customer STNK". Tanda terima
+        // mencantumkan KTP pemilik sesuai STNK/BPKB, jadi yang dipakai 79.
+        // Umumnya sama, tapi tidak selalu -- mis. motor atas nama orang tua.
+        no_ktp: String(row[79] || ''),
         leasing: String(row[80] || ''),
         dp: parseFloat(row[84]) || parseFloat(row[85]) || 0,
         harga_otr: parseFloat(row[86]) || 0,

@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { API_BASE } from '../services/api'
 import CameraCapture from '../components/common/CameraCapture'
+import SignaturePad from '../components/common/SignaturePad'
 import {
   getDocumentHandovers,
   getDocumentHandoverSummary,
@@ -13,6 +15,7 @@ import {
   getHandoverSteps,
   updateDocumentHandover,
   deleteDocumentHandover,
+  getReceiptPdfUrl,
 } from '../services/api/showroom'
 import {
   ArrowRight,
@@ -103,11 +106,23 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
   const isEkspedisi = handover.handover_mode === 'ekspedisi'
   const initialStepType = type || (isEkspedisi ? (handover.status === 'tersedia' ? 'admin_ke_ekspedisi' : 'ekspedisi_ke_konsumen') : 'serah_ke_konsumen')
   const [stepType, setStepType] = useState(initialStepType)
+  const [signatureGiver, setSignatureGiver] = useState(null)
+  const [signatureReceiver, setSignatureReceiver] = useState(null)
+  const [powerOfAttorney, setPowerOfAttorney] = useState(null)
+  const [receiverIsCustomer, setReceiverIsCustomer] = useState(true)
+  // Checklist ITU per jenis dokumen, bukan satu daftar dibagi rata ke semua
+  // dokumen dalam grup -- grup campuran STNK+BPKB (satu konsumen ambil
+  // keduanya sekaligus, dikelompokkan lewat engine_number:status:mode) punya
+  // dua checklist yang himpunannya lepas (STNK/Plat vs BPKB/Copy Faktur/NIK).
+  // Bentuk: { STNK: ['STNK', 'Plat'], BPKB: ['BPKB'] }.
+  const [receiptItemsByType, setReceiptItemsByType] = useState({})
   // Serah ke ekspedisi: penerima = akun kurir yang sudah ditugaskan (bukan
   // ketikan bebas). Konfirmasi diterima: penerima = konsumen, boleh dikoreksi.
   const [receivedBy, setReceivedBy] = useState(() => {
     if (initialStepType === 'admin_ke_ekspedisi') return handover.assigned_courier?.name || ''
-    if (initialStepType === 'ekspedisi_ke_konsumen') return handover.consumer_name || ''
+    if (initialStepType === 'ekspedisi_ke_konsumen' || initialStepType === 'serah_ke_konsumen') {
+      return handover.track?.stnk_name || handover.consumer_name || ''
+    }
     return ''
   })
   const [notes, setNotes] = useState('')
@@ -153,6 +168,33 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
   const isThirdPartyHandover = stepType === 'ekspedisi_ke_konsumen' ||
     (stepType === 'serah_ke_konsumen' && user?.role === 'Salesman')
 
+  const RECEIPT_TYPES = ['STNK', 'BPKB']
+  const CONSUMER_STEPS = ['serah_ke_konsumen', 'ekspedisi_ke_konsumen']
+  // Himpunan item lepas satu sama lain -- STNK tidak pernah punya 'BPKB',
+  // BPKB tidak pernah punya 'Plat'. Checklist yang ditawarkan dan yang
+  // dikirim ke tiap dokumen HARUS berasal dari himpunan jenisnya sendiri.
+  const ITEMS_BY_TYPE = { STNK: ['STNK', 'Plat'], BPKB: ['BPKB', 'Copy Faktur', 'NIK'] }
+
+  // Dokumen mana saja dalam grup ini yang akan menerbitkan tanda terima.
+  const receiptDocs = CONSUMER_STEPS.includes(stepType)
+    ? handovers.filter((h) => RECEIPT_TYPES.includes(h.document_type))
+    : []
+  const issuesReceipt = receiptDocs.length > 0
+  // Jenis dokumen penerbit tanda terima yang benar-benar ada di grup ini --
+  // biasanya satu, tapi grup campuran (konsumen ambil STNK+BPKB sekaligus)
+  // bisa berisi keduanya.
+  const receiptDocTypes = [...new Set(receiptDocs.map((h) => h.document_type))]
+
+  // Syarat di kaki form BPKB: bila diwakilkan, wajib surat kuasa bermaterai.
+  const requiresPowerOfAttorney = !receiverIsCustomer &&
+    receiptDocs.some((h) => h.document_type === 'BPKB')
+
+  const canSubmit = !issuesReceipt || (
+    signatureGiver &&
+    signatureReceiver &&
+    (!requiresPowerOfAttorney || powerOfAttorney)
+  )
+
   const handleSubmit = async () => {
     if (!receivedBy.trim()) {
       alert('Nama penerima wajib diisi')
@@ -160,6 +202,14 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
     }
     if (isThirdPartyHandover && !photoHandover) {
       alert('Foto penyerahan fisik wajib dilampirkan sebagai bukti dokumen sudah diterima konsumen')
+      return
+    }
+    if (issuesReceipt && (!signatureGiver || !signatureReceiver)) {
+      alert('Tanda tangan petugas dan penerima wajib diisi')
+      return
+    }
+    if (requiresPowerOfAttorney && !powerOfAttorney) {
+      alert('Penerima BPKB bukan konsumen sendiri. Foto surat kuasa bermaterai wajib dilampirkan.')
       return
     }
     setSaving(true)
@@ -177,6 +227,17 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
         formData.append('notes', notes)
         if (photoDoc) formData.append('photo_doc', photoDoc)
         if (photoHandover) formData.append('photo_handover', photoHandover)
+        // Hanya STNK/BPKB yang menerbitkan tanda terima. Buku Service dan Plat
+        // dalam grup yang sama tetap dikirim tanpa tanda tangan.
+        if (RECEIPT_TYPES.includes(h.document_type) && CONSUMER_STEPS.includes(stepType)) {
+          formData.append('receiver_is_customer', String(receiverIsCustomer))
+          // Item yang dikirim milik jenis dokumen INI saja -- bukan checklist
+          // gabungan grup (lihat catatan di deklarasi receiptItemsByType).
+          formData.append('receipt_items', JSON.stringify(receiptItemsByType[h.document_type] || []))
+          if (signatureGiver) formData.append('signature_giver', signatureGiver, 'ttd-petugas.png')
+          if (signatureReceiver) formData.append('signature_receiver', signatureReceiver, 'ttd-penerima.png')
+          if (powerOfAttorney) formData.append('photo_power_of_attorney', powerOfAttorney)
+        }
         await addHandoverStep(h.id, formData)
       } catch (err) {
         failed.push(`${DOC_TYPE_LABELS[h.document_type]?.label || h.document_type}: ${err.message || 'Error'}`)
@@ -387,6 +448,79 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
             </div>
           </div>
 
+          {issuesReceipt && (
+            <>
+              <div>
+                <label className="block text-sm font-semibold text-text mb-1.5">
+                  Yang menerima
+                </label>
+                <label className="flex items-center gap-2 mb-2 text-sm text-text">
+                  <input
+                    type="checkbox"
+                    checked={receiverIsCustomer}
+                    onChange={(e) => setReceiverIsCustomer(e.target.checked)}
+                    className="rounded border-border"
+                  />
+                  Konsumen sendiri yang menerima
+                </label>
+                {!receiverIsCustomer && (
+                  <p className="mb-2 text-xs text-warning">
+                    {receiptDocs.some((h) => h.document_type === 'BPKB')
+                      ? 'BPKB diwakilkan — surat kuasa bermaterai 10.000 wajib difoto.'
+                      : 'Pastikan KTP pemilik dan KTP pengambil sudah diperiksa.'}
+                  </p>
+                )}
+              </div>
+
+              {requiresPowerOfAttorney && (
+                <div>
+                  <label className="block text-sm font-semibold text-text mb-1.5">
+                    Foto Surat Kuasa <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => setPowerOfAttorney(e.target.files?.[0] || null)}
+                    className="w-full text-sm"
+                  />
+                </div>
+              )}
+
+              {receiptDocTypes.map((docType) => (
+                <div key={docType}>
+                  <label className="block text-sm font-semibold text-text mb-1.5">
+                    Item {DOC_TYPE_LABELS[docType]?.label || docType} yang diserahkan
+                  </label>
+                  <div className="flex flex-wrap gap-3">
+                    {ITEMS_BY_TYPE[docType].map((item) => (
+                      <label key={item} className="flex items-center gap-1.5 text-sm text-text">
+                        <input
+                          type="checkbox"
+                          checked={(receiptItemsByType[docType] || []).includes(item)}
+                          onChange={(e) => setReceiptItemsByType((prev) => {
+                            const current = prev[docType] || []
+                            return {
+                              ...prev,
+                              [docType]: e.target.checked
+                                ? [...current, item]
+                                : current.filter((i) => i !== item),
+                            }
+                          })}
+                          className="rounded border-border"
+                        />
+                        {item}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              <SignaturePad label="Tanda tangan petugas" onChange={setSignatureGiver} />
+              <SignaturePad label="Tanda tangan penerima" onChange={setSignatureReceiver} />
+            </>
+          )}
+
           {/* Notes */}
           <div>
             <label className="block text-sm font-semibold text-text mb-1.5">Catatan</label>
@@ -406,7 +540,7 @@ function HandoverStepModal({ handovers, type, salespeople, onClose, onSaved }) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={saving || !receivedBy.trim()}
+            disabled={!canSubmit || saving || !receivedBy.trim()}
             className="flex items-center gap-2 px-5 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition-colors shadow-lg shadow-accent/20"
           >
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
@@ -567,6 +701,17 @@ function TimelineModal({ handoverId, onClose }) {
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-success-soft text-success rounded-lg text-xs font-medium hover:bg-success-soft transition-colors"
                           >
                             <ImageIcon size={13} /> Lihat Foto Fisik
+                          </a>
+                        )}
+                        {step.receipt_number && (
+                          <a
+                            href={getReceiptPdfUrl(step.id)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            {step.receipt_number}
                           </a>
                         )}
                       </div>
@@ -980,7 +1125,7 @@ export default function ShowroomDocumentHandover() {
           <h1 className="text-2xl font-bold text-text-strong">Document Handling</h1>
           <p className="text-sm text-muted">Monitoring penyerahan STNK, BPKB, Buku Service & Plat ke salesman/konsumen</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           {canManageHandover && (
             <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 transition-colors shadow-lg shadow-accent/20">
               <Plus size={16} /> Tambah Dokumen
@@ -989,6 +1134,12 @@ export default function ShowroomDocumentHandover() {
           <button onClick={loadData} className="flex items-center gap-2 px-4 py-2.5 bg-panel border border-border rounded-xl text-sm font-semibold text-muted hover:bg-hover transition-colors">
             <RefreshCw size={16} /> Refresh
           </button>
+          <Link
+            to="/showroom/warna-unit"
+            className="text-xs font-semibold text-muted hover:text-accent transition-colors"
+          >
+            Nama Warna Unit
+          </Link>
         </div>
       </div>
 

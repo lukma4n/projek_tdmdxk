@@ -50,6 +50,7 @@ const ShowroomLabelBukuService = lazy(() => import('./pages/ShowroomLabelBukuSer
 const ShowroomCetakStck = lazy(() => import('./pages/ShowroomCetakStck'))
 const ShowroomDocumentFollowup = lazy(() => import('./pages/ShowroomDocumentFollowup'))
 const ShowroomDocumentHandover = lazy(() => import('./pages/ShowroomDocumentHandover'))
+const ShowroomUnitColors = lazy(() => import('./pages/ShowroomUnitColors'))
 const StnkBpkbCheck = lazy(() => import('./pages/StnkBpkbCheck'))
 const StockUnitCheck = lazy(() => import('./pages/StockUnitCheck'))
 const DataFreshness = lazy(() => import('./pages/DataFreshness'))
@@ -554,6 +555,14 @@ function App() {
           element={
             <RoleGuard menuKey="DOCUMENT_HANDOVER">
               <LazyPage><ShowroomDocumentHandover /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="showroom/warna-unit"
+          element={
+            <RoleGuard roles={[ROLES.ADMIN_SHOWROOM, ROLES.KEPALA_CABANG]}>
+              <LazyPage><ShowroomUnitColors /></LazyPage>
             </RoleGuard>
           }
         />

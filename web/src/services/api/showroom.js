@@ -1,4 +1,4 @@
-import fetchWithAuth from './fetchWithAuth.js'
+import fetchWithAuth, { API_BASE } from './fetchWithAuth.js'
 
 // Dashboard
 export const getShowroomDashboard = () => fetchWithAuth('/showroom/dashboard')
@@ -348,3 +348,15 @@ export const getPickupRequests = (params = {}) => {
 }
 export const updatePickupRequest = (id, data) => fetchWithAuth(`/showroom/pickup-requests/${id}`, { method: 'PATCH', body: data })
 export const processShipmentFromPickupRequest = (id, data) => fetchWithAuth(`/showroom/pickup-requests/${id}/process-shipment`, { method: 'POST', body: data })
+
+export const getUnitColors = () => fetchWithAuth('/showroom/unit-colors')
+
+export const updateUnitColor = (code, name) =>
+  fetchWithAuth(`/showroom/unit-colors/${encodeURIComponent(code)}`, {
+    method: 'PATCH',
+    body: { name },
+  })
+
+// PDF diambil lewat route berautentikasi, bukan tautan statis.
+export const getReceiptPdfUrl = (stepId) =>
+  `${API_BASE}/showroom/document-handovers/receipt/${stepId}`
