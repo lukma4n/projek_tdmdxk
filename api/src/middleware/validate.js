@@ -11,7 +11,11 @@ export function validate(schema) {
       next()
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const messages = error.errors.map((e) => `${e.path.join('.')}: ${e.message}`)
+        // Zod 4 menamai daftar masalah `issues`; `errors` hanya ada di Zod 3.
+        // Tanpa fallback ini, validasi gagal justru melempar TypeError dan
+        // terbaca user sebagai 500 "kesalahan server", bukan 400 yang jelas.
+        const issues = error.issues || error.errors || []
+        const messages = issues.map((e) => `${e.path.join('.')}: ${e.message}`)
         return res.status(400).json({ error: 'Validasi gagal', details: messages })
       }
       next(error)

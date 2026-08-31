@@ -40,7 +40,13 @@ async function fetchWithAuth(endpoint, options = {}) {
       }
 
       const error = await response.json().catch(() => ({ error: 'Network error' }))
-      throw new Error(error.error || `HTTP ${response.status}`)
+      let message = error.error || `HTTP ${response.status}`
+      // Error 5xx sengaja disamarkan backend, jadi tempelkan requestId supaya
+      // kejadiannya bisa dilacak ke baris log server (lihat errorHandler.js).
+      if (response.status >= 500 && error.requestId) {
+        message += ` (ref: ${String(error.requestId).slice(0, 8)})`
+      }
+      throw new Error(message)
     }
 
     if (config.responseType === 'blob') {

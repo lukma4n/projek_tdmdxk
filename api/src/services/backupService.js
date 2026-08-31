@@ -3,8 +3,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
+import { DatabaseSync } from 'node:sqlite'
 import { PrismaClient } from '@prisma/client'
-import { prisma } from '../config/db.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -28,15 +28,44 @@ function safeBackupName(name) {
   return name
 }
 
-export async function createDatabaseBackup(reason = 'manual') {
-  await fs.mkdir(backupDir, { recursive: true })
+/**
+ * Salin database ke `target` lewat koneksi SQLite READ-ONLY.
+ *
+ * Cara lama -- `wal_checkpoint(TRUNCATE)` lalu `copyFile` -- punya dua cacat
+ * yang sudah menjatuhkan produksi (31 Agustus 2026: seluruh login mati dengan
+ * SQLITE_IOERR 522 "disk I/O error"):
+ *
+ * 1. Backup terjadwal jalan sebagai PROSES TERPISAH dari aplikasi. Saat
+ *    koneksi tulisnya ditutup, SQLite menghapus dev.db-wal & dev.db-shm --
+ *    padahal proses aplikasi masih memegangnya. Handle aplikasi jadi menunjuk
+ *    file terhapus dan setiap query berikutnya gagal I/O.
+ * 2. Kegagalan checkpoint ditelan diam-diam, lalu file tetap disalin. Backup
+ *    bisa kehilangan transaksi yang masih tertinggal di WAL tanpa ada tanda.
+ *
+ * Koneksi read-only tidak pernah checkpoint dan tidak pernah menghapus
+ * -wal/-shm, jadi aplikasi yang sedang berjalan tidak terusik. `VACUUM INTO`
+ * sendiri sudah menghasilkan snapshot konsisten yang SUDAH mencakup isi WAL,
+ * sehingga checkpoint memang tidak diperlukan. Kegagalan dibiarkan melempar.
+ */
+export async function copyDatabaseSnapshot(source, target) {
+  // VACUUM INTO menolak menulis ke berkas yang sudah ada.
+  await fs.rm(target, { force: true })
+
+  const db = new DatabaseSync(source, { readOnly: true })
+  try {
+    db.exec(`VACUUM INTO '${target.replace(/'/g, "''")}'`)
+  } finally {
+    db.close()
+  }
+}
+
+export async function createDatabaseBackup(reason = 'manual', { sourcePath = dbPath, targetDir = backupDir } = {}) {
+  await fs.mkdir(targetDir, { recursive: true })
   const safeReason = String(reason).toLowerCase().replace(/[^a-z0-9_-]/g, '_').slice(0, 40) || 'manual'
   const filename = `dev.db.backup.${safeReason}.${timestamp()}`
-  const target = path.join(backupDir, filename)
+  const target = path.join(targetDir, filename)
 
-  // Mode WAL: flush data dari dev.db-wal ke dev.db agar salinan file konsisten/komplit.
-  await prisma.$queryRawUnsafe('PRAGMA wal_checkpoint(TRUNCATE);').catch(() => {})
-  await fs.copyFile(dbPath, target)
+  await copyDatabaseSnapshot(sourcePath, target)
 
   // Backup pre-import dibuat setiap kali import dijalankan dan dulu hanya bisa
   // dibersihkan lewat endpoint manual — di produksi menumpuk jadi 123 file /
@@ -143,6 +172,10 @@ export async function restoreDatabaseBackup(filename) {
   try {
     await fs.rename(dbPath, oldDbPath)
     await fs.rename(tempTarget, dbPath)
+    // -wal/-shm yang tertinggal MILIK database lama. Dibiarkan di tempatnya,
+    // isinya akan diterapkan ke database hasil restore dan merusaknya.
+    await fs.rm(`${dbPath}-wal`, { force: true })
+    await fs.rm(`${dbPath}-shm`, { force: true })
     await fs.unlink(oldDbPath).catch(() => {})
   } catch (error) {
     await fs.rename(oldDbPath, dbPath).catch(() => {})

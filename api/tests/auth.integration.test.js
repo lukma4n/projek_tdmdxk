@@ -79,3 +79,28 @@ test('auth flow: logout clears cookie and makes /me 401', async () => {
   res = await agent.get('/api/auth/me')
   assert.equal(res.status, 401)
 })
+
+// Regresi: Zod 4 memakai `error.issues`, bukan `error.errors`. Saat middleware
+// validate masih membaca `.errors`, body tak valid melempar TypeError dan
+// terkirim ke user sebagai 500 "Terjadi kesalahan pada server".
+test('auth flow: body tanpa username/password dijawab 400, bukan 500', async () => {
+  const res = await request(app).post('/api/auth/login').send({})
+
+  assert.equal(res.status, 400)
+  assert.equal(res.body.error, 'Validasi gagal')
+  assert.ok(Array.isArray(res.body.details), 'details harus berupa array')
+  assert.ok(
+    res.body.details.some((d) => d.startsWith('username:')),
+    `details harus menyebut field yang gagal, dapat: ${JSON.stringify(res.body.details)}`
+  )
+})
+
+test('auth flow: password bukan string dijawab 400 dengan pesan field', async () => {
+  const res = await request(app)
+    .post('/api/auth/login')
+    .send({ username: 'test_admin', password: 12345 })
+
+  assert.equal(res.status, 400)
+  assert.equal(res.body.error, 'Validasi gagal')
+  assert.ok(res.body.details.some((d) => d.startsWith('password:')))
+})
