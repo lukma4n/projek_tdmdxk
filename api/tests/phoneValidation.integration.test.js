@@ -100,3 +100,16 @@ test('source=handovers menandai consumer_phone kosong sebagai tidak valid, tidak
 
   await cleanupHandovers()
 })
+
+test('export excel mengembalikan file xlsx dengan header yang benar', async () => {
+  const res = await callAuthenticated('get', '/api/phone-validation/export?source=customers', crmCookie)
+  assert.equal(res.status, 200)
+  assert.match(res.headers['content-type'], /spreadsheetml/)
+  assert.match(res.headers['content-disposition'], /attachment/)
+  assert.match(res.headers['content-disposition'], /Validasi_Nomor_HP_customers_/)
+})
+
+test('export tanpa akses VALIDASI_NOMOR_HP mendapat 403', async () => {
+  const res = await callAuthenticated('get', '/api/phone-validation/export?source=customers', partmanCookie)
+  assert.equal(res.status, 403)
+})

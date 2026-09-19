@@ -1,6 +1,7 @@
 import { prisma } from '../config/db.js'
 import { clampLimit, clampPage } from '../utils/pagination.js'
 import { periksaNomor, ALASAN_NOMOR } from '../utils/phone.js'
+import xlsx from 'xlsx'
 
 function applySearch(rows, search) {
   if (!search) return rows
@@ -81,6 +82,34 @@ export async function getInvalidPhones(req, res, next) {
       summary,
       pagination: { page, limit, total: filtered.length, totalPages: Math.max(1, Math.ceil(filtered.length / limit)) },
     })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function exportInvalidPhonesExcel(req, res, next) {
+  try {
+    const source = req.query.source === 'handovers' ? 'handovers' : 'customers'
+    const invalidRows = applySearch(await loadInvalidRows(source), req.query.search)
+
+    const sheetData = invalidRows.map((r, i) => ({
+      No: i + 1,
+      Nama: r.name,
+      Referensi: r.reference,
+      'Nomor Asli': r.raw_phone,
+      'Alasan Tidak Valid': ALASAN_NOMOR[r.alasan] || r.alasan,
+    }))
+
+    const ws = xlsx.utils.json_to_sheet(sheetData)
+    const wb = xlsx.utils.book_new()
+    xlsx.utils.book_append_sheet(wb, ws, 'Nomor Tidak Valid')
+    const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' })
+
+    const today = new Date().toISOString().split('T')[0]
+    const filename = `Validasi_Nomor_HP_${source}_${today}.xlsx`
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.send(buf)
   } catch (error) {
     next(error)
   }
