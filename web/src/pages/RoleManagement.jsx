@@ -13,6 +13,7 @@ const MENUS = [
   { key: 'WORKSHOP_REPORT', label: 'Laporan Bengkel' },
   { key: 'PROGRAM', label: 'Master Program' },
   { key: 'CUSTOMER', label: 'Data Konsumen' },
+  { key: 'VALIDASI_NOMOR_HP', label: 'Validasi Nomor HP' },
   { key: 'FOLLOWUP', label: 'Follow-up KPB' },
   { key: 'DOCUMENT_FOLLOWUP', label: 'Follow-up STNK/BPKB' },
   { key: 'DOCUMENT_HANDOVER', label: 'Document Handling' },

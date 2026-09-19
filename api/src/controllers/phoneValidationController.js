@@ -105,7 +105,8 @@ export async function exportInvalidPhonesExcel(req, res, next) {
     xlsx.utils.book_append_sheet(wb, ws, 'Nomor Tidak Valid')
     const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' })
 
-    const today = new Date().toISOString().split('T')[0]
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     const filename = `Validasi_Nomor_HP_${source}_${today}.xlsx`
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
