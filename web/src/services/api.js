@@ -6,6 +6,7 @@ import * as users from './api/users.js'
 import * as stock from './api/stock.js'
 import * as workshop from './api/workshop.js'
 import * as customers from './api/customers.js'
+import * as phoneValidation from './api/phoneValidation.js'
 import * as followup from './api/followup.js'
 import * as whatsappTemplates from './api/whatsappTemplates.js'
 import * as opname from './api/opname.js'
@@ -21,6 +22,7 @@ export const api = {
   ...stock,
   ...workshop,
   ...customers,
+  ...phoneValidation,
   ...followup,
   ...whatsappTemplates,
   ...opname,

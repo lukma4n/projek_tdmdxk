@@ -17,6 +17,7 @@ const WorkshopSalesAnalysis = lazy(() => import('./pages/WorkshopSalesAnalysis')
 const WorkshopClosingDaily = lazy(() => import('./pages/WorkshopClosingDaily'))
 const KpbLcrMonitor = lazy(() => import('./pages/KpbLcrMonitor'))
 const Customers = lazy(() => import('./pages/Customers'))
+const PhoneValidation = lazy(() => import('./pages/PhoneValidation'))
 const FollowupKpb = lazy(() => import('./pages/FollowupKpb'))
 const FollowupCenter = lazy(() => import('./pages/FollowupCenter'))
 const KartuCekDokumen = lazy(() => import('./pages/KartuCekDokumen'))
@@ -255,6 +256,14 @@ function App() {
           element={
             <RoleGuard menuKey="CUSTOMER">
               <LazyPage><Customers /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="validasi-nomor-hp"
+          element={
+            <RoleGuard menuKey="VALIDASI_NOMOR_HP">
+              <LazyPage><PhoneValidation /></LazyPage>
             </RoleGuard>
           }
         />
