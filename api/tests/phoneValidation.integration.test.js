@@ -67,3 +67,36 @@ test('role tanpa akses VALIDASI_NOMOR_HP mendapat 403', async () => {
   const res = await callAuthenticated('get', '/api/phone-validation?source=customers', partmanCookie)
   assert.equal(res.status, 403)
 })
+
+const ENG_PREFIX = 'PHVENG-'
+const ENG_KOSONG = `${ENG_PREFIX}KOSONG`
+const ENG_VALID = `${ENG_PREFIX}VALID`
+
+async function cleanupHandovers() {
+  await prismaTest.document_handovers.deleteMany({ where: { engine_number: { startsWith: ENG_PREFIX } } })
+}
+
+test('source=handovers menandai consumer_phone kosong sebagai tidak valid, tidak bocor ke source=customers', async () => {
+  const user = await prismaTest.users.findUnique({ where: { username: 'test_crm' } })
+  await cleanupHandovers()
+  await prismaTest.document_handovers.createMany({
+    data: [
+      { engine_number: ENG_KOSONG, document_type: 'STNK', consumer_name: 'PHV Handover Kosong', consumer_phone: '', created_by: user.id },
+      { engine_number: ENG_VALID, document_type: 'STNK', consumer_name: 'PHV Handover Bagus', consumer_phone: '081234567890', created_by: user.id },
+    ],
+  })
+
+  const res = await callAuthenticated('get', '/api/phone-validation?source=handovers&limit=500', crmCookie)
+  assert.equal(res.status, 200)
+  const punyaKita = res.body.data.filter((r) => r.reference.startsWith(ENG_PREFIX))
+  assert.deepEqual(punyaKita.map((r) => r.reference), [`${ENG_KOSONG} (STNK)`])
+  assert.equal(punyaKita[0].alasan, 'kosong')
+
+  const resCustomers = await callAuthenticated('get', '/api/phone-validation?source=customers&limit=500', crmCookie)
+  assert.ok(
+    !resCustomers.body.data.some((r) => r.reference.startsWith(ENG_PREFIX)),
+    'baris handover tidak boleh muncul saat source=customers',
+  )
+
+  await cleanupHandovers()
+})

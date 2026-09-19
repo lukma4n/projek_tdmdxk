@@ -39,12 +39,37 @@ async function loadInvalidCustomerRows() {
     .filter((r) => !r.valid)
 }
 
+async function loadInvalidHandoverRows() {
+  const rows = await prisma.document_handovers.findMany({
+    select: { id: true, consumer_name: true, consumer_phone: true, engine_number: true, document_type: true },
+    orderBy: { created_at: 'desc' },
+  })
+  return rows
+    .map((r) => {
+      const cek = periksaNomor(r.consumer_phone)
+      return {
+        id: r.id,
+        name: r.consumer_name || '',
+        reference: `${r.engine_number} (${r.document_type})`,
+        raw_phone: r.consumer_phone || '',
+        alasan: cek.alasan,
+        valid: cek.valid,
+      }
+    })
+    .filter((r) => !r.valid)
+}
+
+async function loadInvalidRows(source) {
+  return source === 'handovers' ? loadInvalidHandoverRows() : loadInvalidCustomerRows()
+}
+
 export async function getInvalidPhones(req, res, next) {
   try {
+    const source = req.query.source === 'handovers' ? 'handovers' : 'customers'
     const page = clampPage(req.query.page)
     const limit = clampLimit(req.query.limit, 50)
 
-    const invalidRows = await loadInvalidCustomerRows()
+    const invalidRows = await loadInvalidRows(source)
     const filtered = applySearch(invalidRows, req.query.search)
     const summary = buildSummary(filtered)
 
