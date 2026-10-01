@@ -280,9 +280,18 @@ export function TeamPerformanceGroups({ teams = [], posList = [], collapsible = 
           <section key={`pos:${p.pos}`} className="rounded-2xl border-2 border-accent/30 bg-accent-soft p-3 sm:p-4 space-y-3">
             <div className="flex items-center justify-between gap-3 border-l-4 border-accent pl-3">
               <div className="min-w-0">
-                <p className="text-lg font-black leading-tight text-text-strong uppercase">POS {p.pos_name || p.pos}</p>
+                {/* Nama Pos dan Kapos sama tegasnya agar Kepala Pos langsung terbaca. */}
+                <p className="flex flex-wrap items-center gap-x-2.5 text-lg font-black leading-tight text-text-strong uppercase">
+                  <span>POS {p.pos_name || p.pos}</span>
+                  {p.pos_name && (
+                    <>
+                      <span className="font-normal text-faint" aria-hidden="true">|</span>
+                      <span>KAPOS {p.pos}</span>
+                    </>
+                  )}
+                </p>
                 <p className="text-[11px] text-muted">
-                  {p.pos_name ? `Kepala Pos: ${p.pos}` : 'Kepala Pos'} • {tlCount} Team Leader • {salesCount} sales
+                  {!p.pos_name && 'Kepala Pos • '}{tlCount} Team Leader • {salesCount} sales
                 </p>
               </div>
               <div className="text-right shrink-0">
