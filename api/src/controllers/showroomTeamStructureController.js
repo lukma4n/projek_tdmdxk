@@ -106,6 +106,42 @@ export async function updatePosStatus(req, res, next) {
   }
 }
 
+// Ubah nama Pos sekaligus di semua susunan tim yang memakainya (semua bulan),
+// agar laporan lama dan baru tetap konsisten.
+export async function renamePos(req, res, next) {
+  try {
+    const id = parseInt(req.params.id)
+    const name = normalizeKey(req.body.name)
+    if (!id) return res.status(400).json({ error: 'ID tidak valid' })
+    if (!name) return res.status(400).json({ error: 'Nama Pos wajib diisi' })
+
+    const result = await prisma.$transaction(async (tx) => {
+      const current = await tx.showroom_pos.findUnique({ where: { id } })
+      if (!current) return { status: 404, error: 'Pos tidak ditemukan' }
+      if (current.name === name) return { row: current, moved: 0 }
+      const clash = await tx.showroom_pos.findUnique({ where: { name } })
+      if (clash) return { status: 409, error: `Pos ${name} sudah ada` }
+
+      const row = await tx.showroom_pos.update({ where: { id }, data: { name } })
+      const { count } = await tx.showroom_team_assignments.updateMany({
+        where: { title: current.name, role: { in: [TEAM_ROLES.KAPOS, TEAM_ROLES.TL] } },
+        data: { title: name },
+      })
+      return { row, moved: count, oldName: current.name }
+    })
+    if (result.error) return res.status(result.status).json({ error: result.error })
+
+    res.json({
+      message: result.moved > 0
+        ? `Pos ${result.oldName} diganti menjadi ${result.row.name} (${result.moved} baris susunan tim ikut diperbarui)`
+        : `Nama Pos tersimpan: ${result.row.name}`,
+      data: result.row,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export async function upsertTeamAssignment(req, res, next) {
   try {
     const period = parsePeriod(req.body)

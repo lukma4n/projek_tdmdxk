@@ -84,6 +84,7 @@ export default function ShowroomTeamStructure() {
   const [posList, setPosList] = useState([])
   const [showPosManager, setShowPosManager] = useState(false)
   const [newPos, setNewPos] = useState('')
+  const [editingPos, setEditingPos] = useState(null) // { id, name }
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -132,6 +133,14 @@ export default function ShowroomTeamStructure() {
     } catch (err) {
       setError(err.message || 'Gagal menyimpan Pos')
     }
+  }
+
+  const handleRenamePos = async (event) => {
+    event.preventDefault()
+    if (!editingPos?.name.trim()) return
+    await runPos(() => api.renameShowroomPos(editingPos.id, editingPos.name))
+    setEditingPos(null)
+    await loadData() // nama Pos di susunan ikut berganti
   }
 
   const handleAddPos = async (event) => {
@@ -403,7 +412,7 @@ export default function ShowroomTeamStructure() {
             </div>
             <p className="text-xs text-muted">
               Daftar lokasi Pos untuk dipilih sebagai Nama Pos (Kepala Pos) dan Lokasi Pos tim (Team Leader).
-              Pos tidak dihapus agar laporan bulan lama tetap terbaca — cukup nonaktifkan.
+              Pos tidak dihapus agar laporan bulan lama tetap terbaca — cukup nonaktifkan. Mengubah nama Pos ikut mengganti namanya di semua susunan tim, termasuk bulan lalu.
             </p>
             <form onSubmit={handleAddPos} className="flex gap-2">
               <input
@@ -419,15 +428,38 @@ export default function ShowroomTeamStructure() {
             <div className="divide-y divide-border rounded-lg border border-border">
               {posList.length === 0 && <p className="p-3 text-center text-xs text-faint">Belum ada Pos.</p>}
               {posList.map((p) => (
-                <div key={p.id} className="flex items-center justify-between px-3 py-2">
-                  <span className={`text-sm font-semibold ${p.is_active ? 'text-text' : 'text-faint line-through'}`}>POS {p.name}</span>
-                  <button
-                    onClick={() => runPos(() => api.updateShowroomPosStatus(p.id, !p.is_active))}
-                    className={`rounded-md border px-2 py-0.5 text-xs ${p.is_active ? 'border-border text-muted hover:bg-hover' : 'border-accent text-accent-text hover:bg-accent-soft'}`}
-                  >
-                    {p.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                  </button>
-                </div>
+                editingPos?.id === p.id ? (
+                  <form key={p.id} onSubmit={handleRenamePos} className="flex items-center gap-2 px-3 py-2">
+                    <span className="text-sm font-semibold text-muted">POS</span>
+                    <input
+                      autoFocus
+                      value={editingPos.name}
+                      onChange={(e) => setEditingPos({ ...editingPos, name: e.target.value.toUpperCase() })}
+                      className="min-w-0 flex-1 rounded-md border border-border bg-hover px-2 py-1 text-sm"
+                    />
+                    <button type="submit" className="rounded-md bg-accent px-2 py-1 text-xs font-semibold text-white hover:brightness-110">Simpan</button>
+                    <button type="button" onClick={() => setEditingPos(null)} className="rounded-md p-1 text-faint hover:bg-hover hover:text-text"><X size={14} /></button>
+                  </form>
+                ) : (
+                  <div key={p.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                    <span className={`text-sm font-semibold ${p.is_active ? 'text-text' : 'text-faint line-through'}`}>POS {p.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setEditingPos({ id: p.id, name: p.name })}
+                        className="flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-xs text-muted hover:bg-hover"
+                        title="Ubah nama — ikut mengganti nama Pos di semua susunan tim"
+                      >
+                        <Pencil size={11} /> Ubah
+                      </button>
+                      <button
+                        onClick={() => runPos(() => api.updateShowroomPosStatus(p.id, !p.is_active))}
+                        className={`rounded-md border px-2 py-0.5 text-xs ${p.is_active ? 'border-border text-muted hover:bg-hover' : 'border-accent text-accent-text hover:bg-accent-soft'}`}
+                      >
+                        {p.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                      </button>
+                    </div>
+                  </div>
+                )
               ))}
             </div>
           </div>

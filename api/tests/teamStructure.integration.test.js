@@ -326,3 +326,24 @@ test('API master Pos: tambah, nonaktifkan, dan nama Pos Kapos/TL wajib dari mast
   const list = await request(app).get('/api/showroom/pos').set('Cookie', cookie)
   assert.equal(list.body.data.find((p) => p.name === 'UJI POS MELANO').is_active, false)
 })
+
+test('API ubah nama Pos ikut memperbarui susunan tim semua bulan', async () => {
+  await seedMarch()
+  const { cookie } = await loginAs('test_kacab', 'password123')
+  const typo = await request(app).post('/api/showroom/pos').set('Cookie', cookie).send({ name: 'UJI POS KENDAWANGN' })
+  await request(app).post('/api/showroom/pos').set('Cookie', cookie).send({ name: 'UJI POS LAIN' })
+  await request(app).post('/api/showroom/team-structure').set('Cookie', cookie)
+    .send({ year: Y, month: 3, person_name: 'UJI TL DUA', role: 'TL', title: 'UJI POS KENDAWANGN' })
+  await ensureMonthStructure(prismaTest, Y, 4)
+
+  const clash = await request(app).patch(`/api/showroom/pos/${typo.body.data.id}`).set('Cookie', cookie).send({ name: 'uji pos lain' })
+  assert.equal(clash.status, 409)
+
+  const renamed = await request(app).patch(`/api/showroom/pos/${typo.body.data.id}`).set('Cookie', cookie).send({ name: 'uji pos kendawangan' })
+  assert.equal(renamed.status, 200)
+  assert.equal(renamed.body.data.name, 'UJI POS KENDAWANGAN')
+
+  const rows = await prismaTest.showroom_team_assignments.findMany({ where: { period_year: Y, person_name: 'UJI TL DUA' } })
+  assert.equal(rows.length, 2)
+  assert.ok(rows.every((r) => r.title === 'UJI POS KENDAWANGAN'), 'Maret dan April ikut berganti')
+})
