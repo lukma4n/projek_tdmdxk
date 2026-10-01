@@ -88,17 +88,17 @@ export function SectionCard({ title, icon: Icon, children, action, collapsible =
  * @param {boolean} collapsible - jika true (default Analysis), pakai toggle; jika false (Closing), always-expanded
  * @param {boolean} isTopTeam - jika true, tampilkan badge TOP TEAM
  */
-function teamCardSubtitle({ kind = 'team', pos, salesmen }) {
+function teamCardSubtitle({ kind = 'team', pos, salesmen, hidePos = false }) {
   if (kind === 'unmapped') return `${salesmen.length} sales belum ada di susunan tim`
   if (kind === 'kapos') return 'Penjualan pribadi Kepala Pos'
   const count = `${salesmen.length} ${kind === 'independent' ? 'sales' : 'salesman'}`
-  return pos ? `Pos ${pos} • ${count}` : count
+  return pos && !hidePos ? `Pos ${pos} • ${count}` : count
 }
 
-export function TeamCard({ team, kind = 'team', pos = null, total, salesmen, collapsible = true, isTopTeam = false }) {
+export function TeamCard({ team, kind = 'team', pos = null, hidePos = false, total, salesmen, collapsible = true, isTopTeam = false }) {
   const [expanded, setExpanded] = useState(false)
   const title = teamCardTitle({ team, kind })
-  const subtitle = teamCardSubtitle({ kind, pos, salesmen })
+  const subtitle = teamCardSubtitle({ kind, pos, salesmen, hidePos })
   const maxCount = Math.max(...salesmen.map((s) => s.count), 1)
   const isOpen = collapsible ? expanded : true
 
@@ -229,12 +229,13 @@ export function TeamPerformanceGroups({ teams = [], posList = [], collapsible = 
   const topTeam = highlightTop
     ? teams.filter((t) => t.kind === 'team').reduce((max, t) => (t.total > (max?.total || 0) ? t : max), null)
     : null
-  const cardsFor = (list) => (
+  const cardsFor = (list, insidePos = false) => (
     <div className={gridClassName}>
       {list.map((t) => (
         <TeamCard
           key={`${t.kind}:${t.team}`}
           {...t}
+          hidePos={insidePos}
           collapsible={collapsible}
           isTopTeam={!!topTeam && t.kind === 'team' && t.team === topTeam.team}
         />
@@ -242,31 +243,39 @@ export function TeamPerformanceGroups({ teams = [], posList = [], collapsible = 
     </div>
   )
 
-  const sections = posList.map((p) => ({
-    key: `pos:${p.pos}`,
-    title: `POS ${p.pos}`,
-    total: p.total,
-    teams: teams.filter((t) => t.pos === p.pos),
-  }))
-  // Tim tanpa Pos, Independen, dan Belum terpetakan sudah jelas dari judul
+  // Tim tanpa Pos, Sales Showroom, dan Belum terpetakan sudah jelas dari judul
   // kartunya masing-masing, jadi cukup dipisah garis tanpa judul bagian.
+  const plainSections = []
   const withoutPos = teams.filter((t) => !t.pos && t.kind === 'team')
-  if (withoutPos.length) sections.push({ key: 'tanpa-pos', title: null, teams: withoutPos })
+  if (withoutPos.length) plainSections.push({ key: 'tanpa-pos', teams: withoutPos })
   const rest = teams.filter((t) => t.kind === 'independent' || t.kind === 'unmapped')
-  if (rest.length) sections.push({ key: 'lainnya', title: null, teams: rest })
+  if (rest.length) plainSections.push({ key: 'lainnya', teams: rest })
 
   return (
     <div className="space-y-5">
-      {sections.map((section, idx) => (
-        <div key={section.key} className={`space-y-3 ${!section.title && idx > 0 ? 'border-t border-border pt-5' : ''}`}>
-          {section.title && (
-            <div className="flex items-baseline justify-between border-b border-border pb-1.5">
-              <p className="text-xs font-bold tracking-wide text-text">{section.title}</p>
-              {section.total != null && (
-                <p className="text-xs text-muted"><span className="text-base font-black text-text tabular-nums">{section.total}</span> unit</p>
-              )}
+      {/* Pos dibungkus blok berbingkai & berwarna agar timnya terbaca sebagai satu kesatuan. */}
+      {posList.map((p) => {
+        const posTeams = teams.filter((t) => t.pos === p.pos)
+        const tlCount = posTeams.filter((t) => t.kind === 'team').length
+        return (
+          <section key={`pos:${p.pos}`} className="rounded-2xl border-2 border-accent/30 bg-accent-soft p-3 sm:p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3 border-l-4 border-accent pl-3">
+              <div>
+                <p className="text-[10px] font-bold tracking-widest text-accent-text">POS</p>
+                <p className="text-lg font-black leading-tight text-text-strong">{p.pos}</p>
+                <p className="text-[11px] text-muted">Kepala Pos • {tlCount} Team Leader</p>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-black leading-none text-accent-text tabular-nums">{p.total}</p>
+                <p className="text-[11px] text-muted">unit</p>
+              </div>
             </div>
-          )}
+            {cardsFor(posTeams, true)}
+          </section>
+        )
+      })}
+      {plainSections.map((section, idx) => (
+        <div key={section.key} className={idx > 0 || posList.length > 0 ? 'border-t border-border pt-5' : ''}>
           {cardsFor(section.teams)}
         </div>
       ))}
