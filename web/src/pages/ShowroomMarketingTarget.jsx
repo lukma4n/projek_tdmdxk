@@ -62,12 +62,12 @@ function groupTargetRows(data, posList) {
     rows: data.filter((r) => r.role === 'TL' && r.pos === p.pos),
   }))
   const direct = data.filter((r) => r.role === 'TL' && !r.pos)
-  if (direct.length) groups.push({ key: 'tl', title: 'TEAM LEADER TANPA POS', rows: direct })
+  if (direct.length) groups.push({ key: 'tl', title: 'TEAM LEADER', rows: direct })
   const independent = data.filter((r) => r.role === 'INDEPENDEN')
   if (independent.length) groups.push({ key: 'independen', title: 'SALES INDEPENDEN', rows: independent })
   const others = data.filter((r) => r.role === 'LAINNYA')
   if (others.length) {
-    groups.push({ key: 'lainnya', title: 'TARGET TANPA PEMEGANG DI SUSUNAN', subtitle: 'Periksa halaman Susunan Tim', rows: others })
+    groups.push({ key: 'lainnya', title: 'TARGET LAINNYA', subtitle: 'Pemegangnya tidak ada di susunan tim bulan ini', rows: others })
   }
   return groups
 }

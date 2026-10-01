@@ -225,7 +225,7 @@ export default function ShowroomTeamStructure() {
 
           {tree.teams.length > 0 && (
             <section className="rounded-xl border border-border bg-panel p-4 shadow-sm">
-              <p className="mb-3 text-base font-bold text-text">Team Leader tanpa Pos</p>
+              <p className="mb-3 text-base font-bold text-text">Team Leader</p>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {tree.teams.map((t) => <TeamBox key={t.person_name} team={t} onEdit={openEdit} />)}
               </div>

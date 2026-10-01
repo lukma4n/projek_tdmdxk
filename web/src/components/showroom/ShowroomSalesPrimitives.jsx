@@ -248,15 +248,17 @@ export function TeamPerformanceGroups({ teams = [], posList = [], collapsible = 
     total: p.total,
     teams: teams.filter((t) => t.pos === p.pos),
   }))
+  // Tim tanpa Pos, Independen, dan Belum terpetakan sudah jelas dari judul
+  // kartunya masing-masing, jadi cukup dipisah garis tanpa judul bagian.
   const withoutPos = teams.filter((t) => !t.pos && t.kind === 'team')
-  if (withoutPos.length) sections.push({ key: 'tanpa-pos', title: sections.length ? 'TIM TANPA POS' : null, teams: withoutPos })
+  if (withoutPos.length) sections.push({ key: 'tanpa-pos', title: null, teams: withoutPos })
   const rest = teams.filter((t) => t.kind === 'independent' || t.kind === 'unmapped')
-  if (rest.length) sections.push({ key: 'lainnya', title: sections.length ? 'DI LUAR TIM' : null, teams: rest })
+  if (rest.length) sections.push({ key: 'lainnya', title: null, teams: rest })
 
   return (
     <div className="space-y-5">
-      {sections.map((section) => (
-        <div key={section.key} className="space-y-3">
+      {sections.map((section, idx) => (
+        <div key={section.key} className={`space-y-3 ${!section.title && idx > 0 ? 'border-t border-border pt-5' : ''}`}>
           {section.title && (
             <div className="flex items-baseline justify-between border-b border-border pb-1.5">
               <p className="text-xs font-bold tracking-wide text-text">{section.title}</p>
