@@ -372,7 +372,7 @@ export default function ShowroomClosingDaily() {
               </span>
             </div>
             <h2 className="text-2xl font-black text-text-strong tracking-tight uppercase">
-              LAPORAN CLOSING HARIAN SHOWROOM
+              LAPORAN CLOSING HARIAN TDM KETAPANG
             </h2>
             <p className="text-sm text-muted font-medium">
               Tanggal: {formatTanggalIndo(data?.period?.from)}
