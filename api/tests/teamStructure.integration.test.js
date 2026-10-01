@@ -20,6 +20,7 @@ const SO_PREFIX = 'UJI-TIM-'
 const SALES_NAMES = ['UJI SALES A', 'UJI SALES B', 'UJI SALES C', 'UJI TL SATU', 'UJI TL DUA', 'UJI KAPOS', 'UJI INDIE']
 
 async function cleanup() {
+  await prismaTest.showroom_pos.deleteMany({ where: { name: { startsWith: 'UJI POS' } } })
   await prismaTest.showroom_team_assignments.deleteMany({ where: { period_year: { gte: Y - 1, lte: Y + 1 } } })
   await prismaTest.showroom_marketing_targets.deleteMany({ where: { period_year: { gte: Y - 1, lte: Y + 1 } } })
   await prismaTest.customers.deleteMany({ where: { so_number: { startsWith: SO_PREFIX } } })
@@ -295,4 +296,33 @@ test('API target menolak pemegang yang bukan TL/independen di bulan itu', async 
   const ok = await request(app).post('/api/showroom/marketing-targets').set('Cookie', cookie)
     .send({ team_leader: 'UJI INDIE', period_year: Y, period_month: 3, target_unit: 5 })
   assert.equal(ok.status, 200)
+})
+
+test('API master Pos: tambah, nonaktifkan, dan nama Pos Kapos/TL wajib dari master', async () => {
+  await seedMarch()
+  const { cookie } = await loginAs('test_kacab', 'password123')
+
+  const created = await request(app).post('/api/showroom/pos').set('Cookie', cookie).send({ name: ' uji pos melano ' })
+  assert.equal(created.status, 200)
+  assert.equal(created.body.data.name, 'UJI POS MELANO')
+
+  const unknown = await request(app).post('/api/showroom/team-structure').set('Cookie', cookie)
+    .send({ year: Y, month: 3, person_name: 'UJI KAPOS', role: 'KAPOS', title: 'UJI POS TIDAK ADA' })
+  assert.equal(unknown.status, 400)
+  assert.match(unknown.body.error, /belum ada di master Pos/)
+
+  const ok = await request(app).post('/api/showroom/team-structure').set('Cookie', cookie)
+    .send({ year: Y, month: 3, person_name: 'UJI TL DUA', role: 'TL', title: 'uji pos melano' })
+  assert.equal(ok.status, 200)
+  assert.equal(ok.body.data.title, 'UJI POS MELANO')
+
+  // Keterangan sales tetap bebas (mis. "Sales Counter"), tidak dicek ke master.
+  const free = await request(app).post('/api/showroom/team-structure').set('Cookie', cookie)
+    .send({ year: Y, month: 3, person_name: 'UJI INDIE', role: 'INDEPENDEN', title: 'Sales Counter' })
+  assert.equal(free.status, 200)
+
+  const off = await request(app).patch(`/api/showroom/pos/${created.body.data.id}/status`).set('Cookie', cookie).send({ is_active: false })
+  assert.equal(off.status, 200)
+  const list = await request(app).get('/api/showroom/pos').set('Cookie', cookie)
+  assert.equal(list.body.data.find((p) => p.name === 'UJI POS MELANO').is_active, false)
 })

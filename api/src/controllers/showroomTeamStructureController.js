@@ -69,6 +69,43 @@ export async function copyTeamStructure(req, res, next) {
   }
 }
 
+// Master Pos (lokasi) — pilihan Nama Pos (Kapos) dan Lokasi Pos tim (TL).
+export async function getPosList(req, res, next) {
+  try {
+    const rows = await prisma.showroom_pos.findMany({ orderBy: { name: 'asc' } })
+    res.json({ data: rows })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function upsertPos(req, res, next) {
+  try {
+    const name = normalizeKey(req.body.name)
+    if (!name) return res.status(400).json({ error: 'Nama Pos wajib diisi' })
+    const row = await prisma.showroom_pos.upsert({
+      where: { name },
+      create: { name },
+      update: { is_active: true },
+    })
+    res.json({ message: `Pos ${name} tersimpan`, data: row })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function updatePosStatus(req, res, next) {
+  try {
+    const id = parseInt(req.params.id)
+    if (!id) return res.status(400).json({ error: 'ID tidak valid' })
+    const row = await prisma.showroom_pos.update({ where: { id }, data: { is_active: Boolean(req.body.is_active) } })
+    res.json({ message: row.is_active ? `Pos ${row.name} diaktifkan` : `Pos ${row.name} dinonaktifkan`, data: row })
+  } catch (error) {
+    if (error?.code === 'P2025') return res.status(404).json({ error: 'Pos tidak ditemukan' })
+    next(error)
+  }
+}
+
 export async function upsertTeamAssignment(req, res, next) {
   try {
     const period = parsePeriod(req.body)
@@ -81,6 +118,13 @@ export async function upsertTeamAssignment(req, res, next) {
       title: cleanString(req.body.title) || null,
     }
     if (row.role === TEAM_ROLES.KAPOS || row.role === TEAM_ROLES.INDEPENDEN) row.parent_name = null
+
+    // Untuk Kapos/TL, keterangan = nama Pos dan wajib berasal dari master Pos.
+    if ((row.role === TEAM_ROLES.KAPOS || row.role === TEAM_ROLES.TL) && row.title) {
+      row.title = normalizeKey(row.title)
+      const pos = await prisma.showroom_pos.findUnique({ where: { name: row.title } })
+      if (!pos) return res.status(400).json({ error: `Pos "${row.title}" belum ada di master Pos` })
+    }
 
     await ensureMonthStructure(prisma, period.year, period.month, req.user?.userId || null)
     const monthRows = await prisma.showroom_team_assignments.findMany({

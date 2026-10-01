@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../services/api'
-import { Copy, Loader2, Pencil, Plus, RefreshCw, Save, Trash2, X } from 'lucide-react'
+import { Copy, Loader2, MapPin, Pencil, Plus, RefreshCw, Save, Trash2, X } from 'lucide-react'
 
 const MONTHS = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -81,6 +81,9 @@ export default function ShowroomTeamStructure() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [form, setForm] = useState(null)
+  const [posList, setPosList] = useState([])
+  const [showPosManager, setShowPosManager] = useState(false)
+  const [newPos, setNewPos] = useState('')
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -104,6 +107,39 @@ export default function ShowroomTeamStructure() {
       .then((res) => setCandidates(res.data || []))
       .catch(() => {})
   }, [])
+
+  const loadPosList = useCallback(async () => {
+    try {
+      const res = await api.getShowroomPosList()
+      setPosList(res.data || [])
+    } catch {
+      setPosList([])
+    }
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(() => { void loadPosList() }, 0)
+    return () => clearTimeout(timer)
+  }, [loadPosList])
+
+  const runPos = async (action) => {
+    setMessage('')
+    setError('')
+    try {
+      const res = await action()
+      setMessage(res.message)
+      await loadPosList()
+    } catch (err) {
+      setError(err.message || 'Gagal menyimpan Pos')
+    }
+  }
+
+  const handleAddPos = async (event) => {
+    event.preventDefault()
+    if (!newPos.trim()) return
+    await runPos(() => api.upsertShowroomPos(newPos))
+    setNewPos('')
+  }
 
   const rows = structure.data || []
   const tree = buildTree(rows)
@@ -179,6 +215,9 @@ export default function ShowroomTeamStructure() {
           </select>
           <button onClick={loadData} className="flex items-center gap-2 rounded-lg border border-border bg-panel px-3 py-2 text-sm text-muted hover:bg-hover">
             <RefreshCw size={16} /> Refresh
+          </button>
+          <button onClick={() => setShowPosManager(true)} className="flex items-center gap-2 rounded-lg border border-border bg-panel px-3 py-2 text-sm text-muted hover:bg-hover">
+            <MapPin size={16} /> Kelola Pos
           </button>
           <button
             onClick={() => setForm({ ...EMPTY_FORM })}
@@ -282,7 +321,7 @@ export default function ShowroomTeamStructure() {
               <label className="mb-1 block text-xs font-semibold text-muted">Peran *</label>
               <select
                 value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value, parent_name: '' })}
+                onChange={(e) => setForm({ ...form, role: e.target.value, parent_name: '', title: '' })}
                 className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
               >
                 {ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
@@ -308,18 +347,31 @@ export default function ShowroomTeamStructure() {
 
             <div>
               <label className="mb-1 block text-xs font-semibold text-muted">
-                {form.role === 'KAPOS' ? 'Nama Pos (opsional)' : form.role === 'TL' ? 'Lokasi Pos tim (opsional)' : 'Keterangan (opsional)'}
+                {form.role === 'KAPOS' ? 'Nama Pos' : form.role === 'TL' ? 'Lokasi Pos tim' : 'Keterangan (opsional)'}
               </label>
-              <input
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
-                placeholder={
-                  form.role === 'KAPOS' ? 'Contoh: MELANO — tampil sebagai "POS MELANO" di laporan'
-                    : form.role === 'TL' ? 'Contoh: KENDAWANGAN — tampil sebagai "POS KENDAWANGAN" di kartu tim'
-                      : 'Contoh: Sales Counter, Sales Senior'
-                }
-              />
+              {form.role === 'KAPOS' || form.role === 'TL' ? (
+                <>
+                  <select
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
+                  >
+                    <option value="">(Tidak ada)</option>
+                    {/* Pos lama yang sudah dinonaktifkan tetap tampil bila sedang dipakai. */}
+                    {posList.filter((p) => p.is_active || p.name === form.title).map((p) => (
+                      <option key={p.id} value={p.name}>POS {p.name}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[11px] text-faint">Pos belum ada di daftar? Tambahkan lewat tombol Kelola Pos.</p>
+                </>
+              ) : (
+                <input
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
+                  placeholder="Contoh: Sales Counter, Sales Senior"
+                />
+              )}
             </div>
 
             <div className="flex items-center justify-between gap-2">
@@ -336,6 +388,49 @@ export default function ShowroomTeamStructure() {
               </div>
             </div>
           </form>
+        </div>
+      )}
+
+      {showPosManager && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={(event) => event.target === event.currentTarget && setShowPosManager(false)}
+        >
+          <div className="w-full max-w-md space-y-4 rounded-xl border border-border bg-panel p-6 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-text">Master Pos</h2>
+              <button type="button" onClick={() => setShowPosManager(false)} className="rounded-lg p-1 text-faint hover:bg-hover hover:text-text"><X size={18} /></button>
+            </div>
+            <p className="text-xs text-muted">
+              Daftar lokasi Pos untuk dipilih sebagai Nama Pos (Kepala Pos) dan Lokasi Pos tim (Team Leader).
+              Pos tidak dihapus agar laporan bulan lama tetap terbaca — cukup nonaktifkan.
+            </p>
+            <form onSubmit={handleAddPos} className="flex gap-2">
+              <input
+                value={newPos}
+                onChange={(e) => setNewPos(e.target.value.toUpperCase())}
+                className="flex-1 rounded-lg border border-border bg-hover px-3 py-2 text-sm"
+                placeholder="Nama Pos baru, mis. SANDAI"
+              />
+              <button type="submit" className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white hover:brightness-110">
+                <Plus size={15} /> Tambah
+              </button>
+            </form>
+            <div className="divide-y divide-border rounded-lg border border-border">
+              {posList.length === 0 && <p className="p-3 text-center text-xs text-faint">Belum ada Pos.</p>}
+              {posList.map((p) => (
+                <div key={p.id} className="flex items-center justify-between px-3 py-2">
+                  <span className={`text-sm font-semibold ${p.is_active ? 'text-text' : 'text-faint line-through'}`}>POS {p.name}</span>
+                  <button
+                    onClick={() => runPos(() => api.updateShowroomPosStatus(p.id, !p.is_active))}
+                    className={`rounded-md border px-2 py-0.5 text-xs ${p.is_active ? 'border-border text-muted hover:bg-hover' : 'border-accent text-accent-text hover:bg-accent-soft'}`}
+                  >
+                    {p.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

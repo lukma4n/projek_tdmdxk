@@ -847,6 +847,17 @@ model showroom_marketing_targets {
   @@index([team_leader])
 }
 
+// Master Pos (lokasi), mis. MELANO, SANDAI, KENDAWANGAN. Dipakai sebagai
+// pilihan Nama Pos (baris KAPOS) dan Lokasi Pos tim (baris TL) di
+// showroom_team_assignments.title. Tidak dihapus, hanya dinonaktifkan.
+model showroom_pos {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
 // Susunan tim per bulan: Kapos -> TL -> Sales, plus sales INDEPENDEN.
 // Laporan bulan X selalu membaca susunan bulan X, jadi mutasi tidak menulis
 // ulang riwayat. Bulan tanpa baris memakai bulan terakhir sebelumnya

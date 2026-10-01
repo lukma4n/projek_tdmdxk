@@ -245,6 +245,10 @@ export const copyShowroomTeamStructure = ({ year, month }) =>
   fetchWithAuth('/showroom/team-structure/copy', { method: 'POST', body: { year, month } })
 export const upsertShowroomTeamAssignment = (data) => fetchWithAuth('/showroom/team-structure', { method: 'POST', body: data })
 export const deleteShowroomTeamAssignment = (id) => fetchWithAuth(`/showroom/team-structure/${id}`, { method: 'DELETE' })
+export const getShowroomPosList = () => fetchWithAuth('/showroom/pos')
+export const upsertShowroomPos = (name) => fetchWithAuth('/showroom/pos', { method: 'POST', body: { name } })
+export const updateShowroomPosStatus = (id, is_active) =>
+  fetchWithAuth(`/showroom/pos/${id}/status`, { method: 'PATCH', body: { is_active } })
 
 // Opname
 export const getShowroomOpnameSessions = (params = {}) => {
