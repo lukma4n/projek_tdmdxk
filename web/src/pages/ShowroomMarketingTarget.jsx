@@ -56,8 +56,11 @@ const ROLE_LABEL = {
 function groupTargetRows(data, posList) {
   const groups = posList.map((p) => ({
     key: `pos:${p.pos}`,
-    title: `POS ${p.pos}`,
-    subtitle: p.direct_unit > 0 ? `termasuk ${p.direct_unit} unit penjualan langsung Kapos` : 'Kepala Pos',
+    title: `POS ${(p.pos_name || p.pos).toUpperCase()}`,
+    subtitle: [
+      p.pos_name ? `Kepala Pos: ${p.pos}` : 'Kepala Pos',
+      p.direct_unit > 0 ? `termasuk ${p.direct_unit} unit atas nama Kapos` : null,
+    ].filter(Boolean).join(' • '),
     subtotal: p,
     rows: data.filter((r) => r.role === 'TL' && r.pos === p.pos),
   }))

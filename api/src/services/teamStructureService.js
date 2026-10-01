@@ -200,14 +200,27 @@ export async function computeTeamPerformance(prisma, { from, to, branchCode = 'D
     }))
     .sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || b.total - a.total || a.team.localeCompare(b.team))
 
+  // Nama Pos (mis. lokasi) disimpan di kolom title baris KAPOS.
+  const posNames = new Map()
+  for (const index of indexByMonth.values()) {
+    for (const info of index.values()) {
+      if (info.role === TEAM_ROLES.KAPOS && info.title) posNames.set(info.name, info.title)
+    }
+  }
+
   const posMap = new Map()
   for (const t of byTeam) {
     if (!t.pos) continue
-    if (!posMap.has(t.pos)) posMap.set(t.pos, { pos: t.pos, total: 0, direct: 0, teams: [] })
+    if (!posMap.has(t.pos)) {
+      posMap.set(t.pos, { pos: t.pos, pos_name: posNames.get(t.pos) || null, total: 0, direct: 0, teams: [], sales_count: 0 })
+    }
     const p = posMap.get(t.pos)
     p.total += t.total
     if (t.kind === 'kapos') p.direct += t.total
-    else p.teams.push(t.team)
+    else {
+      p.teams.push(t.team)
+      p.sales_count += t.salesmen.length
+    }
   }
   const byPos = [...posMap.values()].sort((a, b) => b.total - a.total)
 
@@ -254,7 +267,7 @@ export async function computeTargetSummary(prisma, { year, month = null, branchC
     return holders.get(name)
   }
   const posFor = (name) => {
-    if (!posAgg.has(name)) posAgg.set(name, { pos: name, target_unit: 0, actual_unit: 0, direct_unit: 0, teams: new Set() })
+    if (!posAgg.has(name)) posAgg.set(name, { pos: name, pos_name: null, target_unit: 0, actual_unit: 0, direct_unit: 0, teams: new Set() })
     return posAgg.get(name)
   }
 
@@ -271,6 +284,9 @@ export async function computeTargetSummary(prisma, { year, month = null, branchC
     const targetByName = new Map(targets.map((t) => [normalizeKey(t.team_leader), t]))
 
     const index = buildMemberIndex(rows)
+    for (const r of rows) {
+      if (r.role === TEAM_ROLES.KAPOS && r.title) posFor(normalizeKey(r.person_name)).pos_name = r.title
+    }
     const seen = new Set()
     for (const r of rows) {
       if (r.role !== TEAM_ROLES.TL && r.role !== TEAM_ROLES.INDEPENDEN) continue
@@ -325,7 +341,8 @@ export async function computeTargetSummary(prisma, { year, month = null, branchC
     .sort((a, b) => (a.pos || '￿').localeCompare(b.pos || '￿') || a.team_leader.localeCompare(b.team_leader))
 
   const pos = [...posAgg.values()]
-    .map((p) => ({ pos: p.pos, teams: [...p.teams].sort(), target_unit: p.target_unit, actual_unit: p.actual_unit, direct_unit: p.direct_unit, ...achievementStatus(p.target_unit, p.actual_unit) }))
+    .filter((p) => p.teams.size > 0 || p.direct_unit > 0)
+    .map((p) => ({ pos: p.pos, pos_name: p.pos_name, teams: [...p.teams].sort(), target_unit: p.target_unit, actual_unit: p.actual_unit, direct_unit: p.direct_unit, ...achievementStatus(p.target_unit, p.actual_unit) }))
     .sort((a, b) => a.pos.localeCompare(b.pos))
 
   const totalTarget = data.reduce((sum, r) => sum + r.target_unit, 0)

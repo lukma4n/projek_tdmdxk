@@ -15,7 +15,7 @@ cd api && npx prisma generate
 cd api && npm run db:migrate     # prisma migrate dev
 cd api && npm run db:seed
 
-cd api && npm test               # node --test, runs tests/*.test.js (267 tests)
+cd api && npm test               # node --test, runs tests/*.test.js (268 tests)
 ```
 
 Test DB (`api/prisma/prisma/test.db`) is auto-synced via `pretest` (`prisma db push --accept-data-loss`). Do not commit it.
@@ -136,7 +136,7 @@ FASE 2 (pickup-request flow) is **merged to main**; branch `feat/fase2-pickup-re
 - **Security:** single-session anti-sharing, idle auto-logout 60 min, login audit. Page `/security-audit` (IT Master only): active sessions + login history + force-reset session. Endpoints under `/api/security/*`. Table `login_logs`; `users.session_id`/`session_last_active`.
 - **Tanda terima digital STNK/BPKB** (merged from `feat/tanda-terima-digital`, branch deleted; live in production): system-issued receipt number (`TT-STNK/...`, `TT-BPKB/...`), two on-device signatures (officer + receiver), archived PDF with SHA-256 hash. Extends the existing `serah_ke_konsumen`/`ekspedisi_ke_konsumen` handover steps rather than adding a new flow.
 - **Ops:** daily backup via cron 02:00 WIB (`api/scripts/backup-db.js`, keep 14) — archives the database **and** `api/uploads/` (same 14-day retention).
-- 267 tests. Production: VPS tdmketapang.net, PM2 + Nginx, deploy from `main`.
+- 268 tests. Production: VPS tdmketapang.net, PM2 + Nginx, deploy from `main`.
 
 ## Documentation map
 

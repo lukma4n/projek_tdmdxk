@@ -119,7 +119,7 @@ test('performa dikelompokkan Pos -> TL, Kapos, Independen, dan Belum terpetakan'
   assert.equal(byKey.get(`unmapped:${UNMAPPED_GROUP}`).total, 1)
   assert.equal(perf.unmappedTotal, 1)
 
-  assert.deepEqual(perf.byPos, [{ pos: 'UJI KAPOS', total: 4, direct: 1, teams: ['UJI TL SATU'] }])
+  assert.deepEqual(perf.byPos, [{ pos: 'UJI KAPOS', pos_name: null, total: 4, direct: 1, teams: ['UJI TL SATU'], sales_count: 3 }])
   assert.equal(perf.salesWithClosing, 5)
   assert.equal(perf.totalMembers, 7)
 })
@@ -129,7 +129,19 @@ test('kartu Kapos tidak muncul bila Kapos tidak punya penjualan', async () => {
   await sale('UJI SALES A', d(3, 2))
   const perf = await computeTeamPerformance(prismaTest, range(3))
   assert.equal(perf.byTeam.some((t) => t.kind === 'kapos'), false)
-  assert.deepEqual(perf.byPos, [{ pos: 'UJI KAPOS', total: 1, direct: 0, teams: ['UJI TL SATU'] }])
+  assert.deepEqual(perf.byPos, [{ pos: 'UJI KAPOS', pos_name: null, total: 1, direct: 0, teams: ['UJI TL SATU'], sales_count: 3 }])
+})
+
+test('nama Pos diambil dari keterangan baris Kapos', async () => {
+  await seedMarch()
+  await prismaTest.showroom_team_assignments.update({
+    where: { period_year_period_month_person_name: { period_year: Y, period_month: 3, person_name: 'UJI KAPOS' } },
+    data: { title: 'MELANO' },
+  })
+  const perf = await computeTeamPerformance(prismaTest, range(3))
+  assert.equal(perf.byPos[0].pos_name, 'MELANO')
+  const summary = await computeTargetSummary(prismaTest, { year: Y, month: 3 })
+  assert.equal(summary.pos[0].pos_name, 'MELANO')
 })
 
 test('rentang lintas bulan memetakan tiap transaksi dengan susunan bulannya', async () => {

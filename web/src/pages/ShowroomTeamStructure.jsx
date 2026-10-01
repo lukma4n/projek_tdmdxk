@@ -212,8 +212,10 @@ export default function ShowroomTeamStructure() {
           {tree.kapos.map((k) => (
             <section key={k.person_name} className="rounded-xl border border-border bg-panel p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
-                <button onClick={() => openEdit(k)} className="flex items-center gap-2 text-base font-bold text-text hover:text-accent-text">
-                  POS {k.person_name} <span className="text-xs font-normal text-muted">Kepala Pos</span> <Pencil size={13} />
+                <button onClick={() => openEdit(k)} className="flex items-center gap-2 text-left text-base font-bold text-text hover:text-accent-text">
+                  <span className="uppercase">POS {k.title || k.person_name}</span>
+                  <span className="text-xs font-normal text-muted">Kepala Pos: {k.person_name}</span>
+                  <Pencil size={13} />
                 </button>
                 <span className="text-xs text-muted">{k.teams.length} TL • {k.teams.reduce((n, t) => n + t.members.length, 0)} sales</span>
               </div>
@@ -303,12 +305,14 @@ export default function ShowroomTeamStructure() {
             )}
 
             <div>
-              <label className="mb-1 block text-xs font-semibold text-muted">Keterangan (opsional)</label>
+              <label className="mb-1 block text-xs font-semibold text-muted">
+                {form.role === 'KAPOS' ? 'Nama Pos (opsional)' : 'Keterangan (opsional)'}
+              </label>
               <input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
-                placeholder="Contoh: Sales Counter, Sales Senior"
+                placeholder={form.role === 'KAPOS' ? 'Contoh: MELANO — tampil sebagai "POS MELANO" di laporan' : 'Contoh: Sales Counter, Sales Senior'}
               />
             </div>
 

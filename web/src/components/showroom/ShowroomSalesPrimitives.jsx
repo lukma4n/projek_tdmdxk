@@ -251,23 +251,31 @@ export function TeamPerformanceGroups({ teams = [], posList = [], collapsible = 
   const rest = teams.filter((t) => t.kind === 'independent' || t.kind === 'unmapped')
   if (rest.length) plainSections.push({ key: 'lainnya', teams: rest })
 
+  const grandTotal = teams.reduce((sum, t) => sum + t.total, 0)
+
   return (
     <div className="space-y-5">
       {/* Pos dibungkus blok berbingkai & berwarna agar timnya terbaca sebagai satu kesatuan. */}
       {posList.map((p) => {
         const posTeams = teams.filter((t) => t.pos === p.pos)
         const tlCount = posTeams.filter((t) => t.kind === 'team').length
+        const salesCount = posTeams.filter((t) => t.kind === 'team').reduce((sum, t) => sum + t.salesmen.length, 0)
+        const share = grandTotal > 0 ? Math.round((p.total / grandTotal) * 100) : 0
         return (
           <section key={`pos:${p.pos}`} className="rounded-2xl border-2 border-accent/30 bg-accent-soft p-3 sm:p-4 space-y-3">
             <div className="flex items-center justify-between gap-3 border-l-4 border-accent pl-3">
-              <div>
-                <p className="text-[10px] font-bold tracking-widest text-accent-text">POS</p>
-                <p className="text-lg font-black leading-tight text-text-strong">{p.pos}</p>
-                <p className="text-[11px] text-muted">Kepala Pos • {tlCount} Team Leader</p>
+              <div className="min-w-0">
+                <p className="text-lg font-black leading-tight text-text-strong uppercase">POS {p.pos_name || p.pos}</p>
+                <p className="text-[11px] text-muted">
+                  {p.pos_name ? `Kepala Pos: ${p.pos}` : 'Kepala Pos'} • {tlCount} Team Leader • {salesCount} sales
+                </p>
               </div>
-              <div className="text-right">
-                <p className="text-3xl font-black leading-none text-accent-text tabular-nums">{p.total}</p>
-                <p className="text-[11px] text-muted">unit</p>
+              <div className="text-right shrink-0">
+                <p className="leading-none">
+                  <span className="text-3xl font-black text-accent-text tabular-nums">{p.total}</span>
+                  <span className="ml-1 text-xs text-muted">unit</span>
+                </p>
+                <p className="mt-1 text-[11px] text-muted">{share}% dari total</p>
               </div>
             </div>
             {cardsFor(posTeams, true)}
