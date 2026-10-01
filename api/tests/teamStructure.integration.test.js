@@ -347,3 +347,20 @@ test('API ubah nama Pos ikut memperbarui susunan tim semua bulan', async () => {
   assert.equal(rows.length, 2)
   assert.ok(rows.every((r) => r.title === 'UJI POS KENDAWANGAN'), 'Maret dan April ikut berganti')
 })
+
+test('API hapus Pos: boleh bila belum dipakai, ditolak bila sudah dipakai susunan tim', async () => {
+  await seedMarch()
+  const { cookie } = await loginAs('test_kacab', 'password123')
+  const unused = await request(app).post('/api/showroom/pos').set('Cookie', cookie).send({ name: 'UJI POS SALAH KETIK' })
+  const used = await request(app).post('/api/showroom/pos').set('Cookie', cookie).send({ name: 'UJI POS DIPAKAI' })
+  await request(app).post('/api/showroom/team-structure').set('Cookie', cookie)
+    .send({ year: Y, month: 3, person_name: 'UJI TL DUA', role: 'TL', title: 'UJI POS DIPAKAI' })
+
+  const blocked = await request(app).delete(`/api/showroom/pos/${used.body.data.id}`).set('Cookie', cookie)
+  assert.equal(blocked.status, 409)
+  assert.match(blocked.body.error, /sudah dipakai/)
+
+  const ok = await request(app).delete(`/api/showroom/pos/${unused.body.data.id}`).set('Cookie', cookie)
+  assert.equal(ok.status, 200)
+  assert.equal(await prismaTest.showroom_pos.count({ where: { name: 'UJI POS SALAH KETIK' } }), 0)
+})

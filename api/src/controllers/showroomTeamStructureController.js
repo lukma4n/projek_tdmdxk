@@ -142,6 +142,30 @@ export async function renamePos(req, res, next) {
   }
 }
 
+// Hapus hanya untuk Pos yang belum pernah dipakai susunan tim (mis. salah input);
+// yang sudah dipakai harus diubah namanya atau dinonaktifkan agar riwayat utuh.
+export async function deletePos(req, res, next) {
+  try {
+    const id = parseInt(req.params.id)
+    if (!id) return res.status(400).json({ error: 'ID tidak valid' })
+    const row = await prisma.showroom_pos.findUnique({ where: { id } })
+    if (!row) return res.status(404).json({ error: 'Pos tidak ditemukan' })
+
+    const used = await prisma.showroom_team_assignments.count({
+      where: { title: row.name, role: { in: [TEAM_ROLES.KAPOS, TEAM_ROLES.TL] } },
+    })
+    if (used > 0) {
+      return res.status(409).json({
+        error: `Pos ${row.name} sudah dipakai di ${used} baris susunan tim. Gunakan Ubah untuk memperbaiki nama, atau Nonaktifkan bila Pos ditutup.`,
+      })
+    }
+    await prisma.showroom_pos.delete({ where: { id } })
+    res.json({ message: `Pos ${row.name} dihapus` })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export async function upsertTeamAssignment(req, res, next) {
   try {
     const period = parsePeriod(req.body)

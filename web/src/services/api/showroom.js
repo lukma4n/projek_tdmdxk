@@ -247,6 +247,7 @@ export const upsertShowroomTeamAssignment = (data) => fetchWithAuth('/showroom/t
 export const deleteShowroomTeamAssignment = (id) => fetchWithAuth(`/showroom/team-structure/${id}`, { method: 'DELETE' })
 export const getShowroomPosList = () => fetchWithAuth('/showroom/pos')
 export const upsertShowroomPos = (name) => fetchWithAuth('/showroom/pos', { method: 'POST', body: { name } })
+export const deleteShowroomPos = (id) => fetchWithAuth(`/showroom/pos/${id}`, { method: 'DELETE' })
 export const renameShowroomPos = (id, name) => fetchWithAuth(`/showroom/pos/${id}`, { method: 'PATCH', body: { name } })
 export const updateShowroomPosStatus = (id, is_active) =>
   fetchWithAuth(`/showroom/pos/${id}/status`, { method: 'PATCH', body: { is_active } })

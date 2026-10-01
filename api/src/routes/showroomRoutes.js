@@ -58,7 +58,7 @@ import {
 } from '../controllers/showroomTeamLeaderController.js'
 import {
   getTeamStructure, getTeamStructureCandidates, copyTeamStructure, upsertTeamAssignment, deleteTeamAssignment,
-  getPosList, upsertPos, updatePosStatus, renamePos,
+  getPosList, upsertPos, updatePosStatus, renamePos, deletePos,
 } from '../controllers/showroomTeamStructureController.js'
 import {
   getStnkBpkbTrackMonitoring, previewStnkBpkbTrack, uploadStnkBpkbTrack, exportStnkBpkbTrackExcel,
@@ -252,6 +252,7 @@ router.get('/pos', authenticate, showroomAccess, getPosList)
 router.post('/pos', authenticate, showroomAccess, upsertPos)
 router.patch('/pos/:id/status', authenticate, showroomAccess, updatePosStatus)
 router.patch('/pos/:id', authenticate, showroomAccess, renamePos)
+router.delete('/pos/:id', authenticate, showroomAccess, deletePos)
 
 // STNK & BPKB Track Monitoring
 const stnkBpkbTrackAdminAccess = authorize('Admin')

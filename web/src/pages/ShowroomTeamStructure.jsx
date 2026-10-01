@@ -412,7 +412,7 @@ export default function ShowroomTeamStructure() {
             </div>
             <p className="text-xs text-muted">
               Daftar lokasi Pos untuk dipilih sebagai Nama Pos (Kepala Pos) dan Lokasi Pos tim (Team Leader).
-              Pos tidak dihapus agar laporan bulan lama tetap terbaca — cukup nonaktifkan. Mengubah nama Pos ikut mengganti namanya di semua susunan tim, termasuk bulan lalu.
+              Ubah nama ikut mengganti namanya di semua susunan tim, termasuk bulan lalu. Hapus hanya untuk Pos yang belum pernah dipakai (mis. salah input); Pos yang ditutup cukup dinonaktifkan agar laporan lama tetap terbaca.
             </p>
             <form onSubmit={handleAddPos} className="flex gap-2">
               <input
@@ -456,6 +456,13 @@ export default function ShowroomTeamStructure() {
                         className={`rounded-md border px-2 py-0.5 text-xs ${p.is_active ? 'border-border text-muted hover:bg-hover' : 'border-accent text-accent-text hover:bg-accent-soft'}`}
                       >
                         {p.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                      </button>
+                      <button
+                        onClick={() => confirm(`Hapus POS ${p.name}? Hanya bisa bila Pos belum pernah dipakai di susunan tim.`) && runPos(() => api.deleteShowroomPos(p.id))}
+                        className="rounded-md p-1 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
+                        title="Hapus (hanya bila belum pernah dipakai)"
+                      >
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
