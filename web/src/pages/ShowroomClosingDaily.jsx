@@ -364,26 +364,14 @@ export default function ShowroomClosingDaily() {
         }`}
       >
         {/* Report Header */}
-        <div className="flex items-start justify-between pb-6 border-b border-border">
+        <div className="pb-6 border-b border-border">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="px-2 py-0.5 rounded-md bg-accent-soft text-accent text-[10px] font-bold tracking-wider">
-                TDM KETAPANG
-              </span>
-            </div>
             <h2 className="text-2xl font-black text-text-strong tracking-tight uppercase">
               LAPORAN CLOSING HARIAN TDM KETAPANG
             </h2>
             <p className="text-sm text-muted font-medium">
               Tanggal: {formatTanggalIndo(data?.period?.from)}
             </p>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-[10px] font-bold text-faint tracking-wider">STATUS LAPORAN</span>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-soft border border-emerald-100">
-              <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
-              <span className="text-xs font-bold text-success">FINALIZED</span>
-            </div>
           </div>
         </div>
 
