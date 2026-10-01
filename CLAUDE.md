@@ -126,6 +126,8 @@ DB value `IT Master` bypasses all `authorize()` middleware. All other roles are 
 - **Backup memakai koneksi read-only + `VACUUM INTO`** (`copyDatabaseSnapshot` di `services/backupService.js`), bukan `wal_checkpoint` + `copyFile`. Koneksi read-only tidak pernah menghapus `-wal`/`-shm`, dan `VACUUM INTO` sudah menghasilkan snapshot konsisten termasuk isi WAL. Jangan kembalikan ke pola checkpoint-lalu-salin, dan jangan bungkus kegagalannya dengan `.catch(() => {})` — dulu backup rusak terlihat sukses.
 - **Nomor tanda terima diterbitkan di dalam transaksi interaktif** (`addHandoverStep`), sementara **PDF disusun setelah commit**. Menulis berkas di dalam transaksi menahan kunci tulis SQLite selama I/O disk.
 
+- **Laporan tim penjualan memakai susunan tim per bulan** (`showroom_team_assignments`, `services/teamStructureService.js`): Kapos → TL → Sales, plus sales INDEPENDEN. Tiap transaksi dipetakan dengan susunan **bulan `so_date`-nya**; bulan tanpa susunan mewarisi bulan terakhir sebelumnya. `showroom_salespeople.team_leader` tidak lagi dipakai laporan — jangan kembalikan pengelompokan ke master, karena itu menulis ulang laporan bulan lalu setiap ada mutasi. Target (`showroom_marketing_targets.team_leader`) dipegang TL atau INDEPENDEN; target Pos dihitung, tidak disimpan. Data awal diisi `api/scripts/seed-team-structure.js` (idempoten).
+
 ### Major features (on `main`, current)
 
 FASE 2 (pickup-request flow) is **merged to main**; branch `feat/fase2-pickup-request` deleted. Current notable features:

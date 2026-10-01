@@ -45,6 +45,33 @@ const STATUS_LABEL = {
   no_target: 'Belum ada target',
 }
 
+const ROLE_LABEL = {
+  TL: 'TL',
+  INDEPENDEN: 'Independen',
+  LAINNYA: 'Tidak ada di susunan',
+}
+
+// Kelompokkan baris pemegang target: Pos (dengan subtotal), TL langsung,
+// Independen, lalu target yang pemegangnya tidak ada di susunan bulan itu.
+function groupTargetRows(data, posList) {
+  const groups = posList.map((p) => ({
+    key: `pos:${p.pos}`,
+    title: `POS ${p.pos}`,
+    subtitle: p.direct_unit > 0 ? `termasuk ${p.direct_unit} unit penjualan langsung Kapos` : 'Kepala Pos',
+    subtotal: p,
+    rows: data.filter((r) => r.role === 'TL' && r.pos === p.pos),
+  }))
+  const direct = data.filter((r) => r.role === 'TL' && !r.pos)
+  if (direct.length) groups.push({ key: 'tl', title: 'TEAM LEADER TANPA POS', rows: direct })
+  const independent = data.filter((r) => r.role === 'INDEPENDEN')
+  if (independent.length) groups.push({ key: 'independen', title: 'SALES INDEPENDEN', rows: independent })
+  const others = data.filter((r) => r.role === 'LAINNYA')
+  if (others.length) {
+    groups.push({ key: 'lainnya', title: 'TARGET TANPA PEMEGANG DI SUSUNAN', subtitle: 'Periksa halaman Susunan Tim', rows: others })
+  }
+  return groups
+}
+
 function currentYear() {
   return new Date().getFullYear()
 }
@@ -65,7 +92,7 @@ export default function ShowroomMarketingTarget() {
   const [year, setYear] = useState(currentYear())
   const [month, setMonth] = useState(new Date().getMonth() + 1)
   const [summary, setSummary] = useState(null)
-  const [teamLeaders, setTeamLeaders] = useState([])
+  const [holders, setHolders] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
@@ -84,12 +111,8 @@ export default function ShowroomMarketingTarget() {
     setLoading(true)
     setError('')
     try {
-      const [sumRes, tlRes] = await Promise.all([
-        api.getShowroomMarketingTargetSummary({ year, month }),
-        api.getShowroomTeamLeaders({ all: true }),
-      ])
+      const sumRes = await api.getShowroomMarketingTargetSummary({ year, month })
       setSummary(sumRes)
-      setTeamLeaders(tlRes.data || [])
     } catch (err) {
       setError(err.message || 'Gagal memuat data target marketing')
     } finally {
@@ -102,6 +125,19 @@ export default function ShowroomMarketingTarget() {
     return () => clearTimeout(timer)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [year, month])
+
+  // Pilihan pemegang target mengikuti susunan tim bulan yang dipilih di form.
+  useEffect(() => {
+    if (!showForm) return
+    let cancelled = false
+    api.getShowroomTeamStructure({ year: form.period_year, month: form.period_month })
+      .then((res) => {
+        if (cancelled) return
+        setHolders((res.data || []).filter((r) => r.role === 'TL' || r.role === 'INDEPENDEN'))
+      })
+      .catch(() => { if (!cancelled) setHolders([]) })
+    return () => { cancelled = true }
+  }, [showForm, form.period_year, form.period_month])
 
   const openCreateForm = () => {
     setEditingId(null)
@@ -174,6 +210,21 @@ export default function ShowroomMarketingTarget() {
 
   const data = summary?.data || []
   const totalSummary = summary?.summary || {}
+  const groups = groupTargetRows(data, summary?.pos || [])
+
+  const renderStatus = (status) => (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[status]}`}>
+      {status === 'aman' && <CheckCircle2 size={12} />}
+      {(status === 'waspada' || status === 'kritis') && <AlertTriangle size={12} />}
+      {STATUS_LABEL[status]}
+    </span>
+  )
+  const renderGap = (target, gap) => {
+    if (target <= 0) return '-'
+    return gap <= 0
+      ? <span className="text-success">+{Math.abs(gap)}</span>
+      : <span className="text-rose-700">-{gap}</span>
+  }
 
   return (
     <div className="space-y-6">
@@ -181,7 +232,7 @@ export default function ShowroomMarketingTarget() {
         <div>
           <h1 className="text-2xl font-bold text-text-strong">Target Marketing</h1>
           <p className="text-sm text-muted">
-            Setting target jualan per Team Leader per bulan. Actual dihitung otomatis dari closing DO.
+            Target per Team Leader dan sales independen per bulan. Target Pos = jumlah target TL di bawahnya. Actual dihitung otomatis dari closing DO.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -226,6 +277,16 @@ export default function ShowroomMarketingTarget() {
       {message && <div className="rounded-lg border border-success-200 bg-success-50 p-3 text-sm text-success-700">{message}</div>}
       {error && <div className="rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-600">{error}</div>}
 
+      {totalSummary.unmapped_actual > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-warning-soft p-3 text-sm text-warning">
+          <AlertTriangle size={16} />
+          <span>
+            {totalSummary.unmapped_actual} unit dijual oleh sales yang belum ada di susunan tim bulan ini, sehingga tidak masuk tim mana pun.
+            Tambahkan mereka di halaman Susunan Tim.
+          </span>
+        </div>
+      )}
+
       {/* Summary cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="rounded-xl border border-border bg-panel p-4">
@@ -257,7 +318,7 @@ export default function ShowroomMarketingTarget() {
       <div className="rounded-xl border border-border bg-panel shadow-sm overflow-hidden">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div>
-            <span className="text-sm font-semibold text-text">Pencapaian per Team Leader</span>
+            <span className="text-sm font-semibold text-text">Pencapaian per Pos, Team Leader &amp; Sales Independen</span>
             <p className="text-xs text-muted">Actual dihitung dari tabel customers (closing DO) untuk {MONTHS.find((m) => m.value === month)?.label} {year}.</p>
           </div>
         </div>
@@ -266,79 +327,93 @@ export default function ShowroomMarketingTarget() {
             <Loader2 className="animate-spin text-accent" size={24} />
           </div>
         ) : data.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted">Belum ada Team Leader aktif di master.</div>
+          <div className="p-8 text-center text-sm text-muted">Belum ada susunan tim untuk bulan ini. Atur di halaman Susunan Tim.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-hover">
-                  {['No', 'Team Leader', '# Sales', 'Target', 'Actual', 'Pencapaian', 'Sisa', 'Status', 'Aksi'].map((h) => (
+                  {['No', 'Pemegang Target', '# Sales', 'Target', 'Actual', 'Pencapaian', 'Sisa', 'Status', 'Aksi'].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase text-muted">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {data.map((row, idx) => {
-                  const periodRows = row.targets || []
-                  return (
-                    <tr key={row.team_leader} className="hover:bg-hover/50">
-                      <td className="px-4 py-3 text-sm text-muted">{idx + 1}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-text">{row.team_leader}</td>
-                      <td className="px-4 py-3 text-sm text-muted tabular-nums">{row.sales_count}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-text tabular-nums">
-                        {row.target_unit > 0 ? row.target_unit.toLocaleString('id-ID') : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-success tabular-nums">
-                        {row.actual_unit.toLocaleString('id-ID')}
-                      </td>
-                      <td className="px-4 py-3 text-sm tabular-nums">
-                        {row.target_unit > 0 ? `${row.achievement_percent}%` : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm tabular-nums">
-                        {row.target_unit > 0
-                          ? (row.gap <= 0
-                            ? <span className="text-success">+{Math.abs(row.gap)}</span>
-                            : <span className="text-rose-700">-{row.gap}</span>)
-                          : '-'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[row.status]}`}>
-                          {row.status === 'aman' && <CheckCircle2 size={12} />}
-                          {row.status === 'waspada' && <AlertTriangle size={12} />}
-                          {row.status === 'kritis' && <AlertTriangle size={12} />}
-                          {STATUS_LABEL[row.status]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        {isEditable && periodRows.length > 0 ? (
-                          <div className="flex gap-1">
-                            {periodRows.map((p) => (
-                              <div key={p.id} className="flex items-center gap-1 rounded-lg border border-border bg-panel px-1.5 py-1 text-xs">
-                                <button
-                                  onClick={() => openEditForm({ id: p.id, team_leader: row.team_leader, period_year: p.period_year, period_month: p.period_month, target_unit: p.target_unit, notes: p.notes })}
-                                  className="rounded p-1 text-muted hover:bg-hover hover:text-text"
-                                  title="Edit"
-                                >
-                                  <Pencil size={12} />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete({ id: p.id, team_leader: row.team_leader, period_year: p.period_year, period_month: p.period_month })}
-                                  className="rounded p-1 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
-                                  title="Hapus"
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-faint">-</span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
+              {groups.map((group) => (
+                <tbody key={group.key} className="divide-y divide-slate-100 border-b border-border">
+                  <tr className="bg-hover/60">
+                    <td colSpan={3} className="px-4 py-2.5">
+                      <p className="text-xs font-bold tracking-wide text-text">{group.title}</p>
+                      {group.subtitle && <p className="text-[11px] text-muted">{group.subtitle}</p>}
+                    </td>
+                    {group.subtotal ? (
+                      <>
+                        <td className="px-4 py-2.5 text-sm font-bold text-text tabular-nums">
+                          {group.subtotal.target_unit > 0 ? group.subtotal.target_unit.toLocaleString('id-ID') : '-'}
+                        </td>
+                        <td className="px-4 py-2.5 text-sm font-bold text-success tabular-nums">{group.subtotal.actual_unit.toLocaleString('id-ID')}</td>
+                        <td className="px-4 py-2.5 text-sm font-bold tabular-nums">
+                          {group.subtotal.target_unit > 0 ? `${group.subtotal.achievement_percent}%` : '-'}
+                        </td>
+                        <td className="px-4 py-2.5 text-sm font-bold tabular-nums">{renderGap(group.subtotal.target_unit, group.subtotal.gap)}</td>
+                        <td className="px-4 py-2.5">{renderStatus(group.subtotal.status)}</td>
+                        <td />
+                      </>
+                    ) : <td colSpan={6} />}
+                  </tr>
+                  {group.rows.map((row, idx) => {
+                    const periodRows = row.targets || []
+                    return (
+                      <tr key={row.team_leader} className="hover:bg-hover/50">
+                        <td className="px-4 py-3 text-sm text-muted">{idx + 1}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`font-semibold text-text ${group.subtotal ? 'pl-3' : ''}`}>{row.team_leader}</span>
+                          {(row.title || row.role === 'LAINNYA') && (
+                            <span className="ml-2 text-[11px] text-muted">{row.title || ROLE_LABEL[row.role]}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted tabular-nums">{row.sales_count}</td>
+                        <td className="px-4 py-3 text-sm font-semibold text-text tabular-nums">
+                          {row.target_unit > 0 ? row.target_unit.toLocaleString('id-ID') : '-'}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-semibold text-success tabular-nums">
+                          {row.actual_unit.toLocaleString('id-ID')}
+                        </td>
+                        <td className="px-4 py-3 text-sm tabular-nums">
+                          {row.target_unit > 0 ? `${row.achievement_percent}%` : '-'}
+                        </td>
+                        <td className="px-4 py-3 text-sm tabular-nums">{renderGap(row.target_unit, row.gap)}</td>
+                        <td className="px-4 py-3">{renderStatus(row.status)}</td>
+                        <td className="px-4 py-3">
+                          {isEditable && periodRows.length > 0 ? (
+                            <div className="flex gap-1">
+                              {periodRows.map((p) => (
+                                <div key={p.id} className="flex items-center gap-1 rounded-lg border border-border bg-panel px-1.5 py-1 text-xs">
+                                  <button
+                                    onClick={() => openEditForm({ id: p.id, team_leader: row.team_leader, period_year: p.period_year, period_month: p.period_month, target_unit: p.target_unit, notes: p.notes })}
+                                    className="rounded p-1 text-muted hover:bg-hover hover:text-text"
+                                    title="Edit"
+                                  >
+                                    <Pencil size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete({ id: p.id, team_leader: row.team_leader, period_year: p.period_year, period_month: p.period_month })}
+                                    className="rounded p-1 text-rose-500 hover:bg-rose-50 hover:text-rose-700"
+                                    title="Hapus"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-faint">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              ))}
             </table>
           </div>
         )}
@@ -359,15 +434,23 @@ export default function ShowroomMarketingTarget() {
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-muted">Team Leader *</label>
+                <label className="mb-1 block text-xs font-semibold text-muted">Pemegang Target *</label>
                 <select
                   required
                   value={form.team_leader}
                   onChange={(e) => setForm({ ...form, team_leader: upper(e.target.value) })}
                   className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
                 >
-                  <option value="">-- Pilih Team Leader --</option>
-                  {teamLeaders.map((tl) => <option key={tl.id} value={tl.name}>{tl.name}</option>)}
+                  <option value="">-- Pilih TL / Sales Independen --</option>
+                  {/* Saat edit, pemegang lama tetap bisa dipilih walau sudah tidak ada di susunan. */}
+                  {form.team_leader && !holders.some((h) => h.person_name === form.team_leader) && (
+                    <option value={form.team_leader}>{form.team_leader}</option>
+                  )}
+                  {holders.map((h) => (
+                    <option key={h.person_name} value={h.person_name}>
+                      {h.person_name} ({h.role === 'TL' ? (h.parent_name ? `TL · Pos ${h.parent_name}` : 'TL') : (h.title || 'Independen')})
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -428,7 +511,7 @@ export default function ShowroomMarketingTarget() {
       )}
 
       <div className="flex items-center gap-2 text-xs text-muted">
-        <Users size={14} /> {data.length} tim • {data.reduce((s, r) => s + r.sales_count, 0)} sales aktif • {MONTHS.find((m) => m.value === month)?.label} {year}
+        <Users size={14} /> {(summary?.pos || []).length} pos • {totalSummary.team_count || 0} tim • {data.filter((r) => r.role === 'INDEPENDEN').length} sales independen • {MONTHS.find((m) => m.value === month)?.label} {year}
       </div>
     </div>
   )

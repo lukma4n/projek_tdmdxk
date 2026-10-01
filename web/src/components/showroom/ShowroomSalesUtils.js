@@ -147,3 +147,11 @@ export const dashboardStatCards = (summary, period, analysis, comparison) => [
     iconBgClass: 'bg-purple-100 text-purple-600',
   },
 ]
+
+/** Judul kartu per jenis kelompok dari susunan tim (lihat api teamStructureService). */
+export function teamCardTitle({ team, kind = 'team' }) {
+  if (kind === 'kapos') return `KAPOS ${team} (LANGSUNG)`
+  if (kind === 'independent') return 'SALES INDEPENDEN'
+  if (kind === 'unmapped') return 'BELUM TERPETAKAN'
+  return `TEAM ${team}`
+}

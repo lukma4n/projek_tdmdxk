@@ -26,7 +26,7 @@ import {
   LEASING_COLORS,
 } from '../components/showroom/ShowroomSalesUtils'
 import {
-  TeamCard,
+  TeamPerformanceGroups,
 } from '../components/showroom/ShowroomSalesPrimitives'
 
 export default function ShowroomClosingDaily() {
@@ -144,10 +144,6 @@ export default function ShowroomClosingDaily() {
 
   const summary = data?.summary || {}
 
-  // Cari team dengan total tertinggi untuk badge TOP TEAM
-  const topTeam = (data?.byTeam || []).reduce((max, team) => 
-    team.total > (max?.total || 0) ? team : max, null
-  )
 
   const allTransactions = data?.transactions || []
 
@@ -414,18 +410,15 @@ export default function ShowroomClosingDaily() {
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border">
             <Users size={18} className="text-accent" />
             <h3 className="font-bold text-text">Team Performance (Kumulatif Bulan Ini)</h3>
-            <span className="text-xs text-muted ml-auto">{data?.byTeam?.length || 0} Team</span>
+            <span className="text-xs text-muted ml-auto">{(data?.byTeam || []).filter((t) => t.kind === 'team').length} Team</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 scrollbar-hide overflow-x-auto">
-            {(data?.byTeam || []).map((team) => (
-              <TeamCard 
-                key={team.team} 
-                {...team} 
-                collapsible={false}
-                isTopTeam={topTeam && team.team === topTeam.team}
-              />
-            ))}
-          </div>
+          <TeamPerformanceGroups
+            teams={data?.byTeam || []}
+            posList={data?.byPos || []}
+            collapsible={false}
+            highlightTop
+            gridClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 scrollbar-hide overflow-x-auto"
+          />
         </div>
 
         {/* Cash & Credit + Leasing */}

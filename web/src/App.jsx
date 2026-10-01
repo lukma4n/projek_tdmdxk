@@ -39,6 +39,7 @@ const ShowroomDiscountTable = lazy(() => import('./pages/ShowroomDiscountTable')
 const ShowroomTacLeasing = lazy(() => import('./pages/ShowroomTacLeasing'))
 const ShowroomDealerBurden = lazy(() => import('./pages/ShowroomDealerBurden'))
 const ShowroomSalespeople = lazy(() => import('./pages/ShowroomSalespeople'))
+const ShowroomTeamStructure = lazy(() => import('./pages/ShowroomTeamStructure'))
 const ShowroomTeamLeader = lazy(() => import('./pages/ShowroomTeamLeader'))
 const ShowroomKsuMaster = lazy(() => import('./pages/ShowroomKsuMaster'))
 const ShowroomOpname = lazy(() => import('./pages/ShowroomOpname'))
@@ -435,6 +436,14 @@ function App() {
           element={
             <RoleGuard menuKey="SHOWROOM">
               <LazyPage><ShowroomSalespeople /></LazyPage>
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="showroom/team-structure"
+          element={
+            <RoleGuard menuKey="SHOWROOM">
+              <LazyPage><ShowroomTeamStructure /></LazyPage>
             </RoleGuard>
           }
         />

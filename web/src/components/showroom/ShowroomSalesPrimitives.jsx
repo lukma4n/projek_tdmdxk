@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight } from 'lucide-react'
-import { LEASING_COLORS, LEASING_TYPES } from './ShowroomSalesUtils'
+import { LEASING_COLORS, LEASING_TYPES, teamCardTitle } from './ShowroomSalesUtils'
 
 export function CountBar({ label, value, total, color = 'bg-accent' }) {
   const width = total ? Math.max((value / total) * 100, 4) : 0
@@ -88,8 +88,17 @@ export function SectionCard({ title, icon: Icon, children, action, collapsible =
  * @param {boolean} collapsible - jika true (default Analysis), pakai toggle; jika false (Closing), always-expanded
  * @param {boolean} isTopTeam - jika true, tampilkan badge TOP TEAM
  */
-export function TeamCard({ team, total, salesmen, collapsible = true, isTopTeam = false }) {
+function teamCardSubtitle({ kind = 'team', pos, salesmen }) {
+  if (kind === 'unmapped') return `${salesmen.length} sales belum ada di susunan tim`
+  if (kind === 'kapos') return 'Penjualan pribadi Kepala Pos'
+  const count = `${salesmen.length} ${kind === 'independent' ? 'sales' : 'salesman'}`
+  return pos ? `Pos ${pos} • ${count}` : count
+}
+
+export function TeamCard({ team, kind = 'team', pos = null, total, salesmen, collapsible = true, isTopTeam = false }) {
   const [expanded, setExpanded] = useState(false)
+  const title = teamCardTitle({ team, kind })
+  const subtitle = teamCardSubtitle({ kind, pos, salesmen })
   const maxCount = Math.max(...salesmen.map((s) => s.count), 1)
   const isOpen = collapsible ? expanded : true
 
@@ -115,18 +124,18 @@ export function TeamCard({ team, total, salesmen, collapsible = true, isTopTeam 
             <div className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold text-sm ${
               isTopTeam ? 'bg-warning-soft text-warning' : 'bg-accent-soft text-accent-text'
             }`}>
-              {team.charAt(0)}
+              {(kind === 'independent' ? 'I' : kind === 'unmapped' ? '?' : team.charAt(0))}
             </div>
             <div className="text-left">
               <div className="flex items-center gap-2">
-                <p className="font-bold text-text text-sm">TEAM {team}</p>
+                <p className="font-bold text-text text-sm">{title}</p>
                 {isTopTeam && (
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-warning-soft text-warning text-[9px] font-black tracking-wide">
                     🏆 TOP
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted">{salesmen.length} salesman</p>
+              <p className="text-xs text-muted">{subtitle}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -144,18 +153,18 @@ export function TeamCard({ team, total, salesmen, collapsible = true, isTopTeam 
             <div className={`flex h-7 w-7 items-center justify-center rounded-md font-bold text-xs shrink-0 mt-0.5 ${
               isTopTeam ? 'bg-warning-soft text-warning' : 'bg-accent-soft text-accent-text'
             }`}>
-              {team.charAt(0)}
+              {(kind === 'independent' ? 'I' : kind === 'unmapped' ? '?' : team.charAt(0))}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="font-bold text-text text-xs leading-snug break-words">TEAM {team}</p>
+                <p className="font-bold text-text text-xs leading-snug break-words">{title}</p>
                 {isTopTeam && (
                   <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-warning-soft text-warning text-[8px] font-black tracking-wide whitespace-nowrap shadow-sm">
                     🏆 TOP TEAM
                   </span>
                 )}
               </div>
-              <p className="text-[10px] text-muted">{salesmen.length} salesman</p>
+              <p className="text-[10px] text-muted">{subtitle}</p>
             </div>
           </div>
           <span className={`text-lg font-black tabular-nums shrink-0 ${
@@ -207,6 +216,58 @@ export function TeamCard({ team, total, salesmen, collapsible = true, isTopTeam 
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * TeamPerformanceGroups — kartu tim dikelompokkan per Pos (subtotal Pos di
+ * judulnya), lalu TL tanpa Pos, lalu Independen & Belum terpetakan.
+ * `posList` = byPos / byPosPeriod dari API dasbor penjualan.
+ */
+export function TeamPerformanceGroups({ teams = [], posList = [], collapsible = true, gridClassName, highlightTop = false }) {
+  const topTeam = highlightTop
+    ? teams.filter((t) => t.kind === 'team').reduce((max, t) => (t.total > (max?.total || 0) ? t : max), null)
+    : null
+  const cardsFor = (list) => (
+    <div className={gridClassName}>
+      {list.map((t) => (
+        <TeamCard
+          key={`${t.kind}:${t.team}`}
+          {...t}
+          collapsible={collapsible}
+          isTopTeam={!!topTeam && t.kind === 'team' && t.team === topTeam.team}
+        />
+      ))}
+    </div>
+  )
+
+  const sections = posList.map((p) => ({
+    key: `pos:${p.pos}`,
+    title: `POS ${p.pos}`,
+    total: p.total,
+    teams: teams.filter((t) => t.pos === p.pos),
+  }))
+  const withoutPos = teams.filter((t) => !t.pos && t.kind === 'team')
+  if (withoutPos.length) sections.push({ key: 'tanpa-pos', title: sections.length ? 'TIM TANPA POS' : null, teams: withoutPos })
+  const rest = teams.filter((t) => t.kind === 'independent' || t.kind === 'unmapped')
+  if (rest.length) sections.push({ key: 'lainnya', title: sections.length ? 'DI LUAR TIM' : null, teams: rest })
+
+  return (
+    <div className="space-y-5">
+      {sections.map((section) => (
+        <div key={section.key} className="space-y-3">
+          {section.title && (
+            <div className="flex items-baseline justify-between border-b border-border pb-1.5">
+              <p className="text-xs font-bold tracking-wide text-text">{section.title}</p>
+              {section.total != null && (
+                <p className="text-xs text-muted"><span className="text-base font-black text-text tabular-nums">{section.total}</span> unit</p>
+              )}
+            </div>
+          )}
+          {cardsFor(section.teams)}
+        </div>
+      ))}
     </div>
   )
 }

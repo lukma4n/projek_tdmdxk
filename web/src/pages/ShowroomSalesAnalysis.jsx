@@ -24,11 +24,12 @@ import {
   dashboardStatCards,
   DATE_PRESETS,
   getDateRangePreset,
+  teamCardTitle,
 } from '../components/showroom/ShowroomSalesUtils'
 import {
   StatCard,
   SectionCard,
-  TeamCard,
+  TeamPerformanceGroups,
   AreaBreakdownTable,
 } from '../components/showroom/ShowroomSalesPrimitives'
 
@@ -460,7 +461,7 @@ export default function ShowroomSalesAnalysis() {
               icon={Users}
               action={
                 <span className="text-xs font-semibold text-muted">
-                  {data?.byTeamPeriod?.length || 0} Tim • {summary.salesWithClosing || 0}/{summary.totalActiveSales || 0} sales closing
+                  {(data?.byTeamPeriod || []).filter((t) => t.kind === 'team').length} Tim • {summary.salesWithClosing || 0}/{summary.totalActiveSales || 0} sales closing
                   <span className={`ml-2 px-2 py-0.5 rounded-full font-bold ${(summary.productiveRate || 0) >= 60 ? 'bg-success-soft text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
                     {summary.productiveRate || 0}% produktif
                   </span>
@@ -468,11 +469,11 @@ export default function ShowroomSalesAnalysis() {
               }
             >
               {(data?.byTeamPeriod || []).length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(data?.byTeamPeriod || []).map((team) => (
-                    <TeamCard key={team.team} {...team} collapsible />
-                  ))}
-                </div>
+                <TeamPerformanceGroups
+                  teams={data.byTeamPeriod}
+                  posList={data.byPosPeriod || []}
+                  gridClassName="grid grid-cols-1 md:grid-cols-2 gap-4"
+                />
               ) : (
                 <p className="text-sm text-faint py-4 text-center">Belum ada data team untuk periode ini.</p>
               )}
@@ -527,11 +528,12 @@ export default function ShowroomSalesAnalysis() {
           {(data?.teamComparison || []).length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {(data.teamComparison).map((item) => (
-                <div key={item.team} className="p-3 bg-hover border border-border rounded-xl space-y-1">
+                <div key={`${item.kind}:${item.team}`} className="p-3 bg-hover border border-border rounded-xl space-y-1">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-accent" />
-                    <span className="font-bold text-text text-xs uppercase truncate" title={item.team}>{item.team}</span>
+                    <span className="font-bold text-text text-xs uppercase truncate" title={teamCardTitle(item)}>{teamCardTitle(item)}</span>
                   </div>
+                  {item.pos && item.kind === 'team' && <p className="text-[10px] text-faint">Pos {item.pos}</p>}
                   <div className="flex items-baseline gap-2 pt-1">
                     <p className="text-xl font-black text-text tabular-nums">{item.current}</p>
                     <div className={`flex items-center text-[10px] font-bold ${item.growth >= 0 ? 'text-success' : 'text-rose-600'}`}>

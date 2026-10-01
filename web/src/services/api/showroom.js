@@ -237,6 +237,15 @@ export const uploadShowroomTeamLeaders = (file) => {
   return fetchWithAuth('/showroom/team-leaders/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
 }
 
+// Susunan tim per bulan (Kapos -> TL -> Sales, Independen)
+export const getShowroomTeamStructure = ({ year, month }) =>
+  fetchWithAuth(`/showroom/team-structure?year=${year}&month=${month}`)
+export const getShowroomTeamStructureCandidates = () => fetchWithAuth('/showroom/team-structure/candidates')
+export const copyShowroomTeamStructure = ({ year, month }) =>
+  fetchWithAuth('/showroom/team-structure/copy', { method: 'POST', body: { year, month } })
+export const upsertShowroomTeamAssignment = (data) => fetchWithAuth('/showroom/team-structure', { method: 'POST', body: data })
+export const deleteShowroomTeamAssignment = (id) => fetchWithAuth(`/showroom/team-structure/${id}`, { method: 'DELETE' })
+
 // Opname
 export const getShowroomOpnameSessions = (params = {}) => {
   const query = new URLSearchParams(params).toString()
@@ -307,7 +316,7 @@ export const uploadShowroomStnkBpkbTrackCombined = (file1, file2) => {
   return fetchWithAuth('/showroom/stnk-bpkb-tracks/combined/import', { method: 'POST', body: formData, headers: {}, timeout: 300000 })
 }
 
-// Marketing Targets (per Team Leader, bulanan)
+// Marketing Targets (per TL atau sales independen, bulanan)
 export const getShowroomMarketingTargets = (params = {}) => {
   const query = new URLSearchParams(params).toString()
   return fetchWithAuth(`/showroom/marketing-targets${query ? '?' + query : ''}`)

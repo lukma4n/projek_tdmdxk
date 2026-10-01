@@ -55,8 +55,10 @@ ditambahkan di master, ia juga otomatis dimasukkan ke susunan bulan berjalan
 2. Tidak ada → pakai bulan terakhir **sebelumnya** yang punya baris (hanya dibaca, tidak ditulis).
 3. Tidak ada sama sekali → susunan kosong; semua penjualan masuk "Belum terpetakan".
 
-Halaman Susunan Tim yang membuka bulan kosong **menyalin** susunan efektif ke bulan
-itu (ditulis), supaya admin tinggal mengubah yang mutasi.
+Membuka bulan kosong di halaman Susunan Tim **tidak** menulis apa pun; halaman
+menampilkan susunan warisan beserta tombol "Salin ke <bulan>". Perubahan pertama
+(tambah/ubah/keluarkan orang) otomatis menyalin susunan efektif ke bulan itu dulu,
+jadi admin tinggal mengubah yang mutasi.
 
 ## Perhitungan laporan
 

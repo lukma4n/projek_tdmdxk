@@ -104,6 +104,7 @@ const navStructure = [
           { path: '/showroom/harga-otr', label: 'Master Harga', menuKey: 'SHOWROOM' },
           { path: '/showroom/salespeople', label: 'Master Sales', menuKey: 'SHOWROOM' },
           { path: '/showroom/team-leader', label: 'Master Team Leader', menuKey: 'SHOWROOM' },
+          { path: '/showroom/team-structure', label: 'Susunan Tim', menuKey: 'SHOWROOM' },
           { path: '/showroom/dealer-burden', label: 'Master Beban Dealer', menuKey: 'SHOWROOM' },
           { path: '/showroom/program', label: 'Master Program', menuKey: 'SHOWROOM' },
           { path: '/showroom/bbn', label: 'Master BBN', menuKey: 'SHOWROOM' },
