@@ -144,7 +144,7 @@ export async function computeTeamPerformance(prisma, { from, to, branchCode = 'D
   const groups = new Map()
   const groupFor = (kind, team, pos) => {
     const id = `${kind}:${team}`
-    if (!groups.has(id)) groups.set(id, { team, kind, pos, total: 0, members: new Map() })
+    if (!groups.has(id)) groups.set(id, { team, kind, pos, location: null, total: 0, members: new Map() })
     const g = groups.get(id)
     if (pos && !g.pos) g.pos = pos
     return g
@@ -159,7 +159,10 @@ export async function computeTeamPerformance(prisma, { from, to, branchCode = 'D
   // Anggota tanpa penjualan tetap tampil (0 unit) — dari semua bulan dalam rentang.
   for (const index of indexByMonth.values()) {
     for (const info of index.values()) {
-      memberFor(groupFor(info.kind, info.team, info.pos), info.name, info)
+      const group = groupFor(info.kind, info.team, info.pos)
+      memberFor(group, info.name, info)
+      // Lokasi Pos tim (mis. KENDAWANGAN) = keterangan baris TL-nya.
+      if (info.role === TEAM_ROLES.TL && info.title) group.location = info.title
     }
   }
 
@@ -193,6 +196,7 @@ export async function computeTeamPerformance(prisma, { from, to, branchCode = 'D
     .filter((g) => (g.kind !== 'unmapped' && g.kind !== 'kapos') || g.total > 0)
     .map((g) => ({
       team: g.team,
+      location: g.location,
       kind: g.kind,
       pos: g.pos,
       total: g.total,

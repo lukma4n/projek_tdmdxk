@@ -533,7 +533,11 @@ export default function ShowroomSalesAnalysis() {
                     <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-accent" />
                     <span className="font-bold text-text text-xs uppercase truncate" title={teamCardTitle(item)}>{teamCardTitle(item)}</span>
                   </div>
-                  {item.pos && item.kind === 'team' && <p className="text-[10px] text-faint">Pos {item.pos}</p>}
+                  {item.kind === 'team' && (item.location || item.pos) && (
+                    <p className="text-[10px] text-faint uppercase">
+                      {[item.location && `Pos ${item.location}`, item.pos && `Kapos ${item.pos}`].filter(Boolean).join(' • ')}
+                    </p>
+                  )}
                   <div className="flex items-baseline gap-2 pt-1">
                     <p className="text-xl font-black text-text tabular-nums">{item.current}</p>
                     <div className={`flex items-center text-[10px] font-bold ${item.growth >= 0 ? 'text-success' : 'text-rose-600'}`}>

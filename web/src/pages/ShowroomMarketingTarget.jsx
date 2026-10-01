@@ -371,7 +371,9 @@ export default function ShowroomMarketingTarget() {
                         <td className="px-4 py-3 text-sm">
                           <span className={`font-semibold text-text ${group.subtotal ? 'pl-3' : ''}`}>{row.team_leader}</span>
                           {(row.title || row.role === 'LAINNYA') && (
-                            <span className="ml-2 text-[11px] text-muted">{row.title || ROLE_LABEL[row.role]}</span>
+                            <span className="ml-2 text-[11px] text-muted">
+                              {row.title ? (row.role === 'TL' ? `Pos ${row.title.toUpperCase()}` : row.title) : ROLE_LABEL[row.role]}
+                            </span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm text-muted tabular-nums">{row.sales_count}</td>

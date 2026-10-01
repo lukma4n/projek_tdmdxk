@@ -55,7 +55,9 @@ function TeamBox({ team, onEdit }) {
     <div className="rounded-lg border border-border bg-panel">
       <div className="flex items-center justify-between border-b border-border bg-hover px-3 py-2">
         <button onClick={() => onEdit(team)} className="flex items-center gap-1.5 text-sm font-bold text-text hover:text-accent-text">
-          TL {team.person_name} <Pencil size={12} />
+          TL {team.person_name}
+          {team.title && <span className="text-[11px] font-semibold uppercase text-accent-text">· Pos {team.title}</span>}
+          <Pencil size={12} />
         </button>
         <span className="text-xs text-muted">{team.members.length} sales</span>
       </div>
@@ -306,13 +308,17 @@ export default function ShowroomTeamStructure() {
 
             <div>
               <label className="mb-1 block text-xs font-semibold text-muted">
-                {form.role === 'KAPOS' ? 'Nama Pos (opsional)' : 'Keterangan (opsional)'}
+                {form.role === 'KAPOS' ? 'Nama Pos (opsional)' : form.role === 'TL' ? 'Lokasi Pos tim (opsional)' : 'Keterangan (opsional)'}
               </label>
               <input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
-                placeholder={form.role === 'KAPOS' ? 'Contoh: MELANO — tampil sebagai "POS MELANO" di laporan' : 'Contoh: Sales Counter, Sales Senior'}
+                placeholder={
+                  form.role === 'KAPOS' ? 'Contoh: MELANO — tampil sebagai "POS MELANO" di laporan'
+                    : form.role === 'TL' ? 'Contoh: KENDAWANGAN — tampil sebagai "POS KENDAWANGAN" di kartu tim'
+                      : 'Contoh: Sales Counter, Sales Senior'
+                }
               />
             </div>
 

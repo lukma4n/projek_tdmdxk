@@ -88,6 +88,15 @@ export function SectionCard({ title, icon: Icon, children, action, collapsible =
  * @param {boolean} collapsible - jika true (default Analysis), pakai toggle; jika false (Closing), always-expanded
  * @param {boolean} isTopTeam - jika true, tampilkan badge TOP TEAM
  */
+/** Lokasi Pos tim (keterangan baris TL di Susunan Tim), mis. "POS KENDAWANGAN". */
+function LocationBadge({ location }) {
+  return (
+    <span className="mr-1.5 inline-block rounded bg-accent-soft px-1.5 py-px text-[10px] font-bold tracking-wide text-accent-text uppercase align-middle">
+      Pos {location}
+    </span>
+  )
+}
+
 function teamCardSubtitle({ kind = 'team', pos, salesmen, hidePos = false }) {
   if (kind === 'unmapped') return `${salesmen.length} sales belum ada di susunan tim`
   if (kind === 'kapos') return 'Penjualan pribadi Kepala Pos'
@@ -95,7 +104,7 @@ function teamCardSubtitle({ kind = 'team', pos, salesmen, hidePos = false }) {
   return pos && !hidePos ? `Pos ${pos} • ${count}` : count
 }
 
-export function TeamCard({ team, kind = 'team', pos = null, hidePos = false, total, salesmen, collapsible = true, isTopTeam = false }) {
+export function TeamCard({ team, kind = 'team', pos = null, location = null, hidePos = false, total, salesmen, collapsible = true, isTopTeam = false }) {
   const [expanded, setExpanded] = useState(false)
   const title = teamCardTitle({ team, kind })
   const subtitle = teamCardSubtitle({ kind, pos, salesmen, hidePos })
@@ -135,7 +144,10 @@ export function TeamCard({ team, kind = 'team', pos = null, hidePos = false, tot
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted">{subtitle}</p>
+              <p className="text-xs text-muted">
+                {location && <LocationBadge location={location} />}
+                {subtitle}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -164,7 +176,10 @@ export function TeamCard({ team, kind = 'team', pos = null, hidePos = false, tot
                   </span>
                 )}
               </div>
-              <p className="text-[10px] text-muted">{subtitle}</p>
+              <p className="text-[10px] text-muted">
+                {location && <LocationBadge location={location} />}
+                {subtitle}
+              </p>
             </div>
           </div>
           <span className={`text-lg font-black tabular-nums shrink-0 ${

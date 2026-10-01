@@ -301,7 +301,7 @@ export async function getShowroomSalesDashboard(req, res, next) {
     const teamComparison = teamPeriodResult.byTeam.map((t) => {
       const prev = prevTeamMap[`${t.kind}:${t.team}`] || 0
       const growth = prev > 0 ? Math.round(((t.total - prev) / prev) * 100) : 0
-      return { team: t.team, kind: t.kind, pos: t.pos, current: t.total, prev, growth }
+      return { team: t.team, kind: t.kind, pos: t.pos, location: t.location, current: t.total, prev, growth }
     })
 
     // Enrich byTeamPeriod: tambah prev count per salesman (untuk MoM per-sales di TeamCard).

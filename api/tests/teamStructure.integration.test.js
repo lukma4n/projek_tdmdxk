@@ -132,14 +132,20 @@ test('kartu Kapos tidak muncul bila Kapos tidak punya penjualan', async () => {
   assert.deepEqual(perf.byPos, [{ pos: 'UJI KAPOS', pos_name: null, total: 1, direct: 0, teams: ['UJI TL SATU'], sales_count: 3 }])
 })
 
-test('nama Pos diambil dari keterangan baris Kapos', async () => {
+test('nama Pos dari keterangan Kapos, lokasi Pos tim dari keterangan TL', async () => {
   await seedMarch()
   await prismaTest.showroom_team_assignments.update({
     where: { period_year_period_month_person_name: { period_year: Y, period_month: 3, person_name: 'UJI KAPOS' } },
     data: { title: 'MELANO' },
   })
+  await prismaTest.showroom_team_assignments.update({
+    where: { period_year_period_month_person_name: { period_year: Y, period_month: 3, person_name: 'UJI TL DUA' } },
+    data: { title: 'SANDAI' },
+  })
   const perf = await computeTeamPerformance(prismaTest, range(3))
   assert.equal(perf.byPos[0].pos_name, 'MELANO')
+  assert.equal(perf.byTeam.find((t) => t.team === 'UJI TL DUA').location, 'SANDAI', 'lokasi Pos tim dari keterangan TL')
+  assert.equal(perf.byTeam.find((t) => t.team === 'UJI TL SATU').location, null)
   const summary = await computeTargetSummary(prismaTest, { year: Y, month: 3 })
   assert.equal(summary.pos[0].pos_name, 'MELANO')
 })
