@@ -67,7 +67,7 @@ sehingga rentang lintas bulan dan perbandingan bulan lalu tetap benar.
 
 Kelompok hasil (`byTeam`):
 - `kind: 'team'` — satu per TL; anggota = TL + SALES-nya; `pos` = Kapos atau null.
-- `kind: 'kapos'` — penjualan pribadi Kapos, `pos` = nama Kapos.
+- `kind: 'kapos'` — SO atas nama Kapos, `pos` = nama Kapos. Kapos tidak berjualan pribadi (dititipkan ke tim), jadi kelompok ini hanya muncul bila ternyata ada SO atas namanya.
 - `kind: 'independent'` — satu kelompok "INDEPENDEN" berisi semua sales independen.
 - `kind: 'unmapped'` — "BELUM TERPETAKAN": salesman yang berjualan tapi tidak ada di susunan.
 

@@ -124,6 +124,14 @@ test('performa dikelompokkan Pos -> TL, Kapos, Independen, dan Belum terpetakan'
   assert.equal(perf.totalMembers, 7)
 })
 
+test('kartu Kapos tidak muncul bila Kapos tidak punya penjualan', async () => {
+  await seedMarch()
+  await sale('UJI SALES A', d(3, 2))
+  const perf = await computeTeamPerformance(prismaTest, range(3))
+  assert.equal(perf.byTeam.some((t) => t.kind === 'kapos'), false)
+  assert.deepEqual(perf.byPos, [{ pos: 'UJI KAPOS', total: 1, direct: 0, teams: ['UJI TL SATU'] }])
+})
+
 test('rentang lintas bulan memetakan tiap transaksi dengan susunan bulannya', async () => {
   await seedMarch()
   // April: SALES A pindah ke TL DUA.

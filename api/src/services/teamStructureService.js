@@ -187,8 +187,10 @@ export async function computeTeamPerformance(prisma, { from, to, branchCode = 'D
     if (!info) unmappedTotal += 1
   }
 
+  // Kapos tidak berjualan pribadi (penjualannya dititipkan ke tim), jadi kartunya
+  // hanya muncul bila ternyata ada SO atas namanya — agar unit itu tidak hilang.
   const byTeam = [...groups.values()]
-    .filter((g) => g.kind !== 'unmapped' || g.total > 0)
+    .filter((g) => (g.kind !== 'unmapped' && g.kind !== 'kapos') || g.total > 0)
     .map((g) => ({
       team: g.team,
       kind: g.kind,
