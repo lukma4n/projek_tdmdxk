@@ -1,6 +1,7 @@
 import xlsx from 'xlsx'
 import { safeReadExcel } from '../utils/excelValidator.js'
 import { prisma } from '../config/db.js'
+import { addSalesToCurrentMonth } from '../services/teamStructureService.js'
 
 function clean(value = '') {
   return String(value || '').trim()
@@ -77,6 +78,9 @@ export async function upsertSalesperson(req, res, next) {
         synced_at: new Date(),
       },
     })
+    // Mutasi sales lama dilakukan di halaman Susunan Tim; di sini hanya
+    // memastikan sales baru tidak jatuh ke "Belum terpetakan".
+    await addSalesToCurrentMonth(prisma, name, teamLeader)
     res.json({ message: 'Data Sales tersimpan', data: row })
   } catch (error) {
     next(error)

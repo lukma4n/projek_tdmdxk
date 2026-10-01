@@ -57,6 +57,9 @@ import {
   updateTeamLeaderStatus,
 } from '../controllers/showroomTeamLeaderController.js'
 import {
+  getTeamStructure, getTeamStructureCandidates, copyTeamStructure, upsertTeamAssignment, deleteTeamAssignment,
+} from '../controllers/showroomTeamStructureController.js'
+import {
   getStnkBpkbTrackMonitoring, previewStnkBpkbTrack, uploadStnkBpkbTrack, exportStnkBpkbTrackExcel,
   previewStnkBpkbTrackCombined, uploadStnkBpkbTrackCombined,
   updateStnkBpkbTrackMobile, getPickupRequests, updatePickupRequest, getPickupRequestKtp,
@@ -237,6 +240,13 @@ router.post('/team-leaders/preview', authenticate, showroomAccess, upload.single
 router.post('/team-leaders/import', authenticate, showroomAccess, upload.single('file'), uploadTeamLeadersImport)
 router.delete('/team-leaders/:id', authenticate, showroomAccess, deleteTeamLeader)
 router.patch('/team-leaders/:id/status', authenticate, showroomAccess, updateTeamLeaderStatus)
+
+// Susunan tim per bulan (Kapos -> TL -> Sales, Independen)
+router.get('/team-structure', authenticate, showroomAccess, getTeamStructure)
+router.get('/team-structure/candidates', authenticate, showroomAccess, getTeamStructureCandidates)
+router.post('/team-structure/copy', authenticate, showroomAccess, copyTeamStructure)
+router.post('/team-structure', authenticate, showroomAccess, upsertTeamAssignment)
+router.delete('/team-structure/:id', authenticate, showroomAccess, deleteTeamAssignment)
 
 // STNK & BPKB Track Monitoring
 const stnkBpkbTrackAdminAccess = authorize('Admin')

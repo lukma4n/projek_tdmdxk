@@ -1,7 +1,8 @@
 import { prisma } from '../config/db.js'
 import xlsx from 'xlsx'
 import { formatForExcel } from '../utils/excelUtils.js'
-import { buildTeamPerformanceFromMaster, normalizeKey } from '../utils/salesPerformance.js'
+import { normalizeKey } from '../utils/salesPerformance.js'
+import { computeTeamPerformance } from '../services/teamStructureService.js'
 import { countWorkingDays } from '../utils/workingDays.js'
 
 function startOfMonth(date) {
@@ -100,15 +101,16 @@ export async function getShowroomSalesDashboard(req, res, next) {
     }
 
     // ─── Team Performance ───────────────────────────────────
-    // Fetch master salespeople ONCE, share across both team queries
+    // Dikelompokkan memakai susunan tim bulan transaksi (showroom_team_assignments),
+    // bukan master hari ini — mutasi tim tidak menulis ulang laporan lama.
+    // Master sales hanya dipakai untuk nama tampilan leaderboard.
     const masterSalespeople = await prisma.showroom_salespeople.findMany({
       where: { is_active: true },
       orderBy: { name: 'asc' },
     })
-    const activeSalesCount = masterSalespeople.length
 
     // Kumulatif dari awal bulan s/d tanggal filter
-    const teamResult = await buildTeamPerformanceFromMaster(prisma, { dateWhere: monthBaseWhere, preFetchedMaster: masterSalespeople })
+    const teamResult = await computeTeamPerformance(prisma, { from: monthStart, to })
 
     // Total penjualan bulan ini untuk hitung persentase
     const totalMonthCount = await prisma.customers.count({ where: monthBaseWhere })
@@ -236,7 +238,8 @@ export async function getShowroomSalesDashboard(req, res, next) {
         : false
 
     // Always compute period data separately since date ranges differ
-    const teamPeriodResult = await buildTeamPerformanceFromMaster(prisma, { dateWhere: baseWhere, preFetchedMaster: masterSalespeople })
+    const teamPeriodResult = await computeTeamPerformance(prisma, { from, to })
+    const activeSalesCount = teamPeriodResult.totalMembers
     const byLeasingPeriod = await buildLeasingBreakdown(baseWhere, creditCount)
 
     // Top Model untuk periode yang dipilih saja
@@ -293,12 +296,12 @@ export async function getShowroomSalesDashboard(req, res, next) {
     }
 
     // ─── Team Comparison (vs Previous Month) ───
-    const teamPeriodResultPrev = await buildTeamPerformanceFromMaster(prisma, { dateWhere: prevWhere, preFetchedMaster: masterSalespeople })
-    const prevTeamMap = Object.fromEntries(teamPeriodResultPrev.byTeam.map((t) => [t.team, t.total]))
+    const teamPeriodResultPrev = await computeTeamPerformance(prisma, { from: prevFrom, to: prevTo })
+    const prevTeamMap = Object.fromEntries(teamPeriodResultPrev.byTeam.map((t) => [`${t.kind}:${t.team}`, t.total]))
     const teamComparison = teamPeriodResult.byTeam.map((t) => {
-      const prev = prevTeamMap[t.team] || 0
+      const prev = prevTeamMap[`${t.kind}:${t.team}`] || 0
       const growth = prev > 0 ? Math.round(((t.total - prev) / prev) * 100) : 0
-      return { team: t.team, current: t.total, prev, growth }
+      return { team: t.team, kind: t.kind, pos: t.pos, current: t.total, prev, growth }
     })
 
     // Enrich byTeamPeriod: tambah prev count per salesman (untuk MoM per-sales di TeamCard).
@@ -381,7 +384,7 @@ export async function getShowroomSalesDashboard(req, res, next) {
     fromStartOfDay.setHours(0, 0, 0, 0)
     const daysInPeriod = Math.max(1, Math.ceil((toStartOfDay - fromStartOfDay) / (1000 * 60 * 60 * 24)) + 1)
     const avgUnitsPerDay = closingDo / daysInPeriod
-    const salesCount = teamPeriodResult.totalActiveSales || 1
+    const salesCount = teamPeriodResult.totalMembers || 1
     const avgUnitsPerSales = closingDo / salesCount
 
     // Proyeksi berbasis HARI KERJA (Senin–Sabtu, exclude tanggal merah).
@@ -447,6 +450,7 @@ export async function getShowroomSalesDashboard(req, res, next) {
         paretoShare,
       },
       byTeam: teamResult.byTeam,
+      byPos: teamResult.byPos,
       byLeasing,
       byModel: byModel.map((d) => ({
         name: d.model || 'Tidak diketahui',
@@ -456,6 +460,7 @@ export async function getShowroomSalesDashboard(req, res, next) {
       byKecamatan,
       // Period-only data for Dashboard tab
       byTeamPeriod,
+      byPosPeriod: teamPeriodResult.byPos,
       byLeasingPeriod,
       byModelPeriod,
       byKabupatenPeriod,

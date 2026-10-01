@@ -825,10 +825,11 @@ model showroom_team_leaders {
   synced_at   DateTime @default(now())
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
-
-  marketing_targets showroom_marketing_targets[]
 }
 
+// Target bulanan per pemegang target: TL atau sales INDEPENDEN (lihat
+// showroom_team_assignments bulan yang sama). Nama kolom team_leader dipertahankan
+// demi data lama; target Pos tidak disimpan, dijumlahkan dari target TL-nya.
 model showroom_marketing_targets {
   id           Int      @id @default(autoincrement())
   period_year  Int
@@ -841,11 +842,29 @@ model showroom_marketing_targets {
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
-  team_leader_ref showroom_team_leaders @relation(fields: [team_leader], references: [name])
-
   @@unique([period_year, period_month, team_leader])
   @@index([period_year, period_month])
   @@index([team_leader])
+}
+
+// Susunan tim per bulan: Kapos -> TL -> Sales, plus sales INDEPENDEN.
+// Laporan bulan X selalu membaca susunan bulan X, jadi mutasi tidak menulis
+// ulang riwayat. Bulan tanpa baris memakai bulan terakhir sebelumnya
+// (services/teamStructureService.js).
+model showroom_team_assignments {
+  id           Int      @id @default(autoincrement())
+  period_year  Int
+  period_month Int
+  person_name  String
+  role         String // KAPOS | TL | SALES | INDEPENDEN
+  parent_name  String? // SALES -> TL, TL -> Kapos (boleh NULL)
+  title        String?
+  created_by   Int?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@unique([period_year, period_month, person_name])
+  @@index([period_year, period_month])
 }
 
 model showroom_stnk_bpkb_tracks {
