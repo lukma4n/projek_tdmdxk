@@ -47,7 +47,7 @@ const STATUS_LABEL = {
 
 const ROLE_LABEL = {
   TL: 'TL',
-  INDEPENDEN: 'Independen',
+  INDEPENDEN: 'Sales Showroom',
   LAINNYA: 'Tidak ada di susunan',
 }
 
@@ -64,7 +64,7 @@ function groupTargetRows(data, posList) {
   const direct = data.filter((r) => r.role === 'TL' && !r.pos)
   if (direct.length) groups.push({ key: 'tl', title: 'TEAM LEADER', rows: direct })
   const independent = data.filter((r) => r.role === 'INDEPENDEN')
-  if (independent.length) groups.push({ key: 'independen', title: 'SALES INDEPENDEN', rows: independent })
+  if (independent.length) groups.push({ key: 'independen', title: 'SALES SHOWROOM', rows: independent })
   const others = data.filter((r) => r.role === 'LAINNYA')
   if (others.length) {
     groups.push({ key: 'lainnya', title: 'TARGET LAINNYA', subtitle: 'Pemegangnya tidak ada di susunan tim bulan ini', rows: others })
@@ -232,7 +232,7 @@ export default function ShowroomMarketingTarget() {
         <div>
           <h1 className="text-2xl font-bold text-text-strong">Target Marketing</h1>
           <p className="text-sm text-muted">
-            Target per Team Leader dan sales independen per bulan. Target Pos = jumlah target TL di bawahnya. Actual dihitung otomatis dari closing DO.
+            Target per Team Leader dan Sales Showroom per bulan. Target Pos = jumlah target TL di bawahnya. Actual dihitung otomatis dari closing DO.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -318,7 +318,7 @@ export default function ShowroomMarketingTarget() {
       <div className="rounded-xl border border-border bg-panel shadow-sm overflow-hidden">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div>
-            <span className="text-sm font-semibold text-text">Pencapaian per Pos, Team Leader &amp; Sales Independen</span>
+            <span className="text-sm font-semibold text-text">Pencapaian per Pos, Team Leader &amp; Sales Showroom</span>
             <p className="text-xs text-muted">Actual dihitung dari tabel customers (closing DO) untuk {MONTHS.find((m) => m.value === month)?.label} {year}.</p>
           </div>
         </div>
@@ -441,14 +441,14 @@ export default function ShowroomMarketingTarget() {
                   onChange={(e) => setForm({ ...form, team_leader: upper(e.target.value) })}
                   className="w-full rounded-lg border border-border bg-hover px-3 py-2 text-sm"
                 >
-                  <option value="">-- Pilih TL / Sales Independen --</option>
+                  <option value="">-- Pilih TL / Sales Showroom --</option>
                   {/* Saat edit, pemegang lama tetap bisa dipilih walau sudah tidak ada di susunan. */}
                   {form.team_leader && !holders.some((h) => h.person_name === form.team_leader) && (
                     <option value={form.team_leader}>{form.team_leader}</option>
                   )}
                   {holders.map((h) => (
                     <option key={h.person_name} value={h.person_name}>
-                      {h.person_name} ({h.role === 'TL' ? (h.parent_name ? `TL · Pos ${h.parent_name}` : 'TL') : (h.title || 'Independen')})
+                      {h.person_name} ({h.role === 'TL' ? (h.parent_name ? `TL · Pos ${h.parent_name}` : 'TL') : (h.title || 'Sales Showroom')})
                     </option>
                   ))}
                 </select>
@@ -511,7 +511,7 @@ export default function ShowroomMarketingTarget() {
       )}
 
       <div className="flex items-center gap-2 text-xs text-muted">
-        <Users size={14} /> {(summary?.pos || []).length} pos • {totalSummary.team_count || 0} tim • {data.filter((r) => r.role === 'INDEPENDEN').length} sales independen • {MONTHS.find((m) => m.value === month)?.label} {year}
+        <Users size={14} /> {(summary?.pos || []).length} pos • {totalSummary.team_count || 0} tim • {data.filter((r) => r.role === 'INDEPENDEN').length} Sales Showroom • {MONTHS.find((m) => m.value === month)?.label} {year}
       </div>
     </div>
   )

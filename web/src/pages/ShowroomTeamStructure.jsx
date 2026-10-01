@@ -11,7 +11,7 @@ const ROLE_OPTIONS = [
   { value: 'SALES', label: 'Sales' },
   { value: 'TL', label: 'Team Leader' },
   { value: 'KAPOS', label: 'Kepala Pos' },
-  { value: 'INDEPENDEN', label: 'Sales Independen' },
+  { value: 'INDEPENDEN', label: 'Sales Showroom' },
 ]
 
 const EMPTY_FORM = { person_name: '', role: 'SALES', parent_name: '', title: '' }
@@ -234,7 +234,7 @@ export default function ShowroomTeamStructure() {
 
           {tree.independents.length > 0 && (
             <section className="rounded-xl border border-border bg-panel p-4 shadow-sm">
-              <p className="text-base font-bold text-text">Sales Independen</p>
+              <p className="text-base font-bold text-text">Sales Showroom</p>
               <p className="mb-2 text-xs text-muted">Tidak masuk tim mana pun, tapi bisa diberi target sendiri di Target Marketing.</p>
               <div className="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-3">
                 {tree.independents.map((p) => <PersonChip key={p.person_name} person={p} onEdit={openEdit} />)}

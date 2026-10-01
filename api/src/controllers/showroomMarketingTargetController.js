@@ -82,7 +82,7 @@ export async function upsertMarketingTarget(req, res, next) {
 
     if (!(await isTargetHolder(teamLeader, periodYear, periodMonth))) {
       return res.status(400).json({
-        error: `"${teamLeader}" bukan Team Leader atau sales independen di susunan tim ${periodMonth}/${periodYear}`,
+        error: `"${teamLeader}" bukan Team Leader atau Sales Showroom di susunan tim ${periodMonth}/${periodYear}`,
       })
     }
 

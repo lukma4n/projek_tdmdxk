@@ -369,7 +369,7 @@ export function validateAssignment(row, monthRows) {
       return `"${row.parent_name}" bukan Kepala Pos di bulan ini`
     }
   } else if (row.parent_name) {
-    return 'Kepala Pos dan sales independen tidak punya atasan'
+    return 'Kepala Pos dan Sales Showroom tidak punya atasan'
   }
 
   // Peran yang membawahi orang lain tidak boleh diganti selama masih punya anggota.
