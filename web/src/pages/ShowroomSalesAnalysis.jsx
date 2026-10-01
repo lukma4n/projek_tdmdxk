@@ -614,7 +614,7 @@ export default function ShowroomSalesAnalysis() {
               </div>
             </SectionCard>
 
-            <SectionCard title="Leasing Breakdown (% dari Total Kredit)" icon={CreditCard}>
+            <SectionCard title="Leasing Performance (% dari Total Kredit)" icon={CreditCard}>
               {(data?.byLeasingPeriod || []).length > 0 ? (
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="h-40 w-40 shrink-0 flex items-center justify-center relative">

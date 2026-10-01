@@ -455,11 +455,11 @@ export default function ShowroomClosingDaily() {
             </div>
           </div>
 
-          {/* Right: Leasing Breakdown */}
+          {/* Right: Leasing Performance */}
           <div className="bg-panel rounded-xl border border-border p-4">
             <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
               <CreditCard size={16} className="text-accent" />
-              <h3 className="font-bold text-text text-sm uppercase tracking-wide">Leasing Breakdown</h3>
+              <h3 className="font-bold text-text text-sm uppercase tracking-wide">Leasing Performance</h3>
             </div>
             <div className="space-y-3">
               {(data?.byLeasing || []).map((item) => (
