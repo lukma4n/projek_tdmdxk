@@ -16,6 +16,7 @@ import {
   ChevronRight,
   BarChart3,
   Contact,
+  PhoneOff,
   QrCode,
   Inbox,
   Activity,
@@ -73,6 +74,7 @@ const navStructure = [
     items: [
       { path: '/follow-up', label: 'Pusat Follow-up', icon: Target, menuKey: 'FOLLOWUP_CENTER' },
       { path: '/customers', label: 'Data Konsumen', icon: Contact, menuKey: 'CUSTOMER' },
+      { path: '/validasi-nomor-hp', label: 'Validasi Nomor HP', icon: PhoneOff, menuKey: 'VALIDASI_NOMOR_HP' },
       { path: '/follow-up-kpb', label: 'Follow-up KPB', icon: MessageCircle, menuKey: 'FOLLOWUP' },
       { path: '/follow-up-stnk', label: 'Follow-up STNK', icon: FileText, menuKey: 'DOCUMENT_FOLLOWUP' },
       { path: '/follow-up-bpkb', label: 'Follow-up BPKB', icon: FileBadge, menuKey: 'DOCUMENT_FOLLOWUP' },

@@ -50,6 +50,8 @@ const permissionSeedData = [
   { menu_key: 'PROGRAM', roles: [ROLES.KEPALA_BENGKEL, ROLES.SERVICE_ADVISOR] },
   // Data Konsumen
   { menu_key: 'CUSTOMER', roles: [ROLES.KEPALA_BENGKEL, ROLES.ADMIN_CRM, ROLES.SERVICE_ADVISOR] },
+  // Validasi Nomor HP Konsumen
+  { menu_key: 'VALIDASI_NOMOR_HP', roles: [ROLES.ADMIN_CRM, ROLES.ADMIN_SHOWROOM] },
   // Pusat Follow-up terpadu
   { menu_key: 'FOLLOWUP_CENTER', roles: [ROLES.ADMIN_CRM, ROLES.FRONDESK, ROLES.SERVICE_ADVISOR, ROLES.KEPALA_BENGKEL, ROLES.KEPALA_CABANG, ROLES.ADMIN_SHOWROOM] },
   // Follow-up KPB
